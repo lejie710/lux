@@ -390,7 +390,7 @@ The standard library `unittest` runs everywhere; no test runner is installed ins
 - **Tests with fakes for `session`, `runner`, `preparation` and `staging`.** A fake machine and a fake clock exercise the ending path, the timeout and the cleanup without booting anything. A whole run is recorded from the fixtures through the real pipeline. All eight experiment descriptions are staged, including those that may not yet be run.
 - **One test class against real git.** The prediction gate is run against a temporary repository made with the installed `git`, so the commands the gate sends are proven and not only the answers a fake gives. It is skipped where `git` is not installed.
 - **Refusal tests.** Prediction gate, key regeneration, overwriting, self-comparison and the outcome rule, as listed in section 9.
-- **Committed recordings.** `test_committed_recordings` checks that the recordings in the repository still follow from their own event logs, still compare as published, may be compared, and satisfy the repeat precondition.
+- **Committed recordings.** `test_committed_recordings` checks that the six recordings in the repository still follow from their own event logs, still compare as published, may be compared, and satisfy the repeat precondition. It also pins what each pilot was observed to do (`docs/PILOTS.md`): outcome, first differing event and differing registers.
 - **One integration test, skipped unless `LUX_VM_TESTS=1`.** It boots the normal run twice, asserts the agreement gate passed, that the two runs are equal on every compared field, that a fresh run equals the committed `normal-1`, and that no process is left. It never runs a changed boot.
 - **Mutation checks.** Four rules the question depends on were broken on purpose to confirm a test fails; see `docs/MUTATION_CHECKS.md`.
 
@@ -428,10 +428,16 @@ Not tested: behaviour on another QEMU version or machine type, hardware accelera
 
 The recording format is still called `lux-recording/1`. Its shape changed in review (rows 10, 18, 19, 20, 23), before any site or other reader depended on it, and all three committed recordings were made again with the new shape. Their register values and event logs are the same as before.
 
+### Staged and since recorded
+
+The pilots `e1`, `e4` and `e5` were staged by tests only when this section was first written. They have since been recorded with this package, each from the same template as the normal run, and the staging worked as written: no change to the recorder was needed. `docs/PILOTS.md` says what each recording shows. Two points that were open are thereby settled by observation, for this firmware build only:
+
+- The firmware reads a `SecureBootEnable` switch that was set to 0 in the store file while the machine was off (`e1`, `e4`).
+- The firmware reads, measures and enforces a `dbx` record appended to the store file directly (`e5`). The record was not written through a signed update, so the recording says nothing about how the firmware treats such an update.
+
 ### Staged but never run
 
-The recorder can stage `e1`, `e4`, `e5`, `boot-order`, `signature-byte` and `rebuilt-firmware`, and tests cover the staging. None of them has been booted with this package. Three points are therefore unproven and must be settled when each prediction is written:
+The recorder can stage `boot-order`, `signature-byte` and `rebuilt-firmware`, and tests cover the staging. None of them has been booted with this package. These points are therefore unproven and must be settled when each prediction is written:
 
 - `boot-order` reverses `BootOrder` in the store file while the machine is off. UEFI 2.11 (chapter 3 Boot Manager, opening text, PDF page 152) guarantees that a change to the boot order takes effect only after the next reset. This project's staging additionally needs two bootable entries, which is its own condition and not a quoted requirement. Whether the offline edit meets both is not established.
-- `e5` appends a `dbx` record to the store file directly. Whether the firmware accepts a record written this way has not been observed.
 - `signature-byte` has no byte chosen. The byte is a parameter of the prediction (section 6), and the recorder refuses the run until a committed prediction names it.

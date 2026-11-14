@@ -16,9 +16,11 @@ Record header (60 bytes): marker (2), state (1), reserved (1), attributes
 (4), monotonic count (8), timestamp (16), key index (4), name size (4), data
 size (4), vendor identifier (16). The name (UTF-16) and the data follow.
 
-The edits made here have **not** been proven against a boot in this project
-unless a recording says so; they stage experiments whose runs wait for a
-committed prediction.
+Which edits have been proven against a boot: switching `SecureBootEnable`
+off (recordings `e1` and `e4`) and appending a `dbx` record (recording `e5`);
+in both the firmware read the edited store and acted on it. Reversing
+`BootOrder` has not been booted: it stages an experiment whose run waits for
+a committed prediction.
 """
 import struct
 import uuid

@@ -13,7 +13,8 @@ This repository holds three parts: **the recorder**, **the content**, and the fi
 | `recorder/` | A Python package (standard library only) that prepares keys, loader and variable store, records a named run, compares two recordings, and scores a comparison against a prediction into a result file |
 | `recordings/normal-1`, `normal-2` | The normal run, recorded twice. The two are identical on every compared field |
 | `recordings/e2` | A **pilot**: one content byte of the loader changed, Secure Boot on. The firmware refused it. It differs from the normal run in TPM registers 4, 5 and 7 and in no other register |
-| `recordings/comparisons/` | The two comparison files those statements come from |
+| `recordings/e1`, `e4`, `e5` | The three other **pilots**, described under "Pilots and counted experiments" and in `docs/PILOTS.md` |
+| `recordings/comparisons/` | The five comparison files those statements come from: the two normal runs, and each pilot against `normal-1` |
 | `content/` | The site's words as five JSON files in one shape: seven stops, the experiments section, the sources and the glossary. `content/README.md` describes the shape |
 | `scripts/check_content.py` | Checks the content against the committed recordings and the rules in `content/README.md`. Standard library only |
 | `site/` | The site: React, TypeScript and Vite, no other runtime package. Built so far: the navigation, the opening, the move inside the machine, stop 1 and its evidence panel. It reads its words from `content/` and writes none of its own. `site/ASSETS.md` says how each picture was made |
@@ -58,14 +59,14 @@ If they disagree anywhere, the command exits with an error and writes nothing. T
 
 The measure of this project is a prediction committed **before** an experiment is run. Experiments that were tried during the early research, before any prediction existed, cannot meet that. They are declared as **pilots**: shown, never counted. There are four:
 
-| Pilot | What it changes |
-|---|---|
-| `e1` | One byte of the loader's content, Secure Boot switched off |
-| `e2` | The same byte, Secure Boot on |
-| `e4` | Secure Boot switched off, nothing else |
-| `e5` | The signed loader's hash added to the revocation list (`dbx`) |
+| Pilot | What it changes | What the recording shows | Registers that differ from the normal run |
+|---|---|---|---|
+| `e1` | One byte of the loader's content, Secure Boot switched off | The changed loader ran | 4, 7 |
+| `e2` | The same byte, Secure Boot on | Refused, `Access Denied` | 4, 5, 7 |
+| `e4` | Secure Boot switched off, nothing else | The signed loader ran | 7 |
+| `e5` | The signed loader's hash added to the revocation list (`dbx`) | Refused, `Access Denied` | 4, 5, 7 |
 
-All four were tried in the early research, with other tooling and a throwaway key set. Only `e2` has been recorded with this recorder; `e1`, `e4` and `e5` can be staged by it and have not been booted with it.
+All four were tried in the early research, with other tooling and a throwaway key set, and all four have since been recorded with this recorder, from the same variable store template as the normal run. They stay pilots: no prediction, no score. `docs/PILOTS.md` gives the first differing event of each, why each register differs, and what the recordings do not show.
 
 A **counted** experiment (`boot-order`, `signature-byte`, `rebuilt-firmware`) is one that has never been run. The recorder refuses to run it unless all of this holds:
 
@@ -85,7 +86,8 @@ The recording stores the prediction's hash, commit and values, so a prediction e
 - **One machine, one set of tool versions.** The recordings have been reproduced on the machine that made them. Another QEMU version, machine type or firmware package may give other register values; the recorder then says so instead of producing a recording that looks comparable.
 - **Event type names are tool names.** They are the names `tpm2_eventlog` prints, not citations of a specification. The Trusted Computing Group document that defines the event log has not been read for this project yet.
 - **The story stops assigned to events are this project's own mapping**, declared rule by rule in `recorder/storymap.py`.
-- **Several experiments can be staged but have never been booted with this recorder**; `docs/DESIGN.md` section 11 lists what is unproven about them.
+- **The counted experiments can be staged but have never been booted**; `docs/DESIGN.md` section 11 lists what is unproven about them.
+- **The pilots edit the variable store file while the machine is off.** `e5` writes the revocation record directly and not through a signed update, so it shows how this firmware treats a list that is there, not how it treats an update.
 - **The test keys are public.** See `recorder/testkeys/README.md`. Never trust them anywhere.
 - **The test certificates are not yet valid at the guest's fixed clock**, and this firmware accepts them all the same. That is observed behaviour, described in the same README.
 - **Debian or Ubuntu only, as written.** Tool versions are read with `dpkg-query`.
@@ -131,7 +133,7 @@ If your tools build a different loader or a different template, or your firmware
 
 ### 2. Record a run
 
-The names `normal-1`, `normal-2` and `e2` are the committed recordings. They are evidence, and `record` refuses to write over an existing name. So use names of your own:
+The names `normal-1`, `normal-2`, `e1`, `e2`, `e4` and `e5` are the committed recordings. They are evidence, and `record` refuses to write over an existing name. So use names of your own:
 
 ```
 python3 -m recorder record my-normal --experiment normal
@@ -176,7 +178,7 @@ Comparing `recordings/normal-1/recording.json` with `recordings/my-normal/record
 
 `compare` refuses a recording with itself, with a renamed copy of itself, or with a recording whose agreement gate did not pass.
 
-`scripts/record-pilots.sh` makes the three committed recordings and the two committed comparisons again (it passes `--replace` on purpose) and then checks that nothing is left running. The recording time is part of each file, so after it the committed files differ from the ones in git even when every compared field is equal.
+`scripts/record-pilots.sh` makes the six committed recordings and the five committed comparisons again (it passes `--replace` on purpose) and then checks that nothing is left running. The recording time is part of each file, so after it the committed files differ from the ones in git even when every compared field is equal.
 
 ### 4. Check against a prediction (for counted experiments, once they exist)
 
@@ -204,7 +206,7 @@ python3 -m unittest discover -s recorder/tests -t .
 Expected last lines (the time varies):
 
 ```
-Ran 277 tests in 15.465s
+Ran 285 tests in 15.465s
 
 OK (skipped=5)
 ```
@@ -215,7 +217,7 @@ The unit tests need no virtual machine; they were also run with Python 3.12 on W
 LUX_VM_TESTS=1 python3 -m unittest discover -s recorder/tests -t .
 ```
 
-It boots the normal run twice (about twenty seconds in total), asserts that the agreement gate passed, that the two runs are equal on every compared field, that a fresh run equals the committed `normal-1`, and that no process is left running. Expected: `Ran 277 tests`, `OK`.
+It boots the normal run twice (about twenty seconds in total), asserts that the agreement gate passed, that the two runs are equal on every compared field, that a fresh run equals the committed `normal-1`, and that no process is left running. Expected: `Ran 285 tests`, `OK`.
 
 The content has its own check, which the unit tests also run:
 
@@ -226,7 +228,7 @@ python3 scripts/check_content.py
 Expected last lines:
 
 ```
-content check: 5 files, 28 screens, 322 claims, 81 claims uefi-required, 26 claims uefi-platform, 19 claims tcg-unread, 38 claims this-firmware, 143 claims recording, 15 claims general, 3 recordings, 59 glossary entries
+content check: 5 files, 28 screens, 322 claims, 81 claims uefi-required, 26 claims uefi-platform, 19 claims tcg-unread, 38 claims this-firmware, 143 claims recording, 15 claims general, 6 recordings, 59 glossary entries
 content check: passed, no problems
 ```
 
