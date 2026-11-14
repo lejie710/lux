@@ -1,8 +1,9 @@
 // The one door between the content files and the site. Components read words from here and write none of
 // their own: a statement, a claim or a definition that is not in content/ is not on the page.
 import storyA from "../../../content/story-a.json";
+import storyB from "../../../content/story-b.json";
+import storyC from "../../../content/story-c.json";
 import shared from "../../../content/sources.json";
-import { events as normal1Events } from "../../../recordings/normal-1/recording.json";
 import {
   BASES,
   PARTS,
@@ -20,11 +21,13 @@ import {
 
 export const FORMAT = "lux-content/2";
 
-const story = storyA as unknown as StoryFile;
-if (story.format !== FORMAT || shared.format !== FORMAT) throw new Error(`content: expected format ${FORMAT}`);
+const stories = [storyA, storyB, storyC] as unknown as StoryFile[];
+if ([...stories, shared].some((file) => file.format !== FORMAT)) throw new Error(`content: expected format ${FORMAT}`);
+if (!stories[0].opening) throw new Error("content: the first story file has no opening");
 
-export const OPENING: OpeningScreen = story.opening;
-export const STOPS: Stop[] = story.stops;
+export const OPENING: OpeningScreen = stories[0].opening;
+/** The seven stops, in order, from the three story files. */
+export const STOPS: Stop[] = stories.flatMap((story) => story.stops);
 export const BASIS_LABELS = shared.basis_labels as BasisLabel[];
 export const GLOSSARY = shared.glossary as unknown as GlossaryEntry[];
 export const FIRMWARE_SOURCES = shared.firmware_sources as FirmwareSource[];
@@ -35,10 +38,31 @@ export const DISCLAIMER: string = shared.disclaimer;
 /** How to read a page number, a type name or a register value. */
 export const READING_NOTES: Record<string, string> = shared.reading_notes;
 
-/** The events of each committed run the story quotes, by run name. */
-const EVENTS: Record<string, RecordedEvent[]> = { "normal-1": normal1Events };
+// The four fields of a committed recording that the story quotes, for every run on file. Only these fields
+// are taken into the page; the rest of a recording stays in its file.
+function byRun<T>(files: Record<string, T>): Record<string, T> {
+  return Object.fromEntries(Object.entries(files).map(([path, value]) => [path.split("/").at(-2) ?? path, value]));
+}
+const EVENTS = byRun(
+  import.meta.glob<RecordedEvent[]>("../../../recordings/*/recording.json", { eager: true, import: "events" }),
+);
+const CONSOLE = byRun(
+  import.meta.glob<string[]>("../../../recordings/*/recording.json", { eager: true, import: "console" }),
+);
+const LOADER_REPORT = byRun(
+  import.meta.glob<string[]>("../../../recordings/*/recording.json", { eager: true, import: "loader_report" }),
+);
+const PCRS = byRun(
+  import.meta.glob<Record<string, Record<string, string>>>("../../../recordings/*/recording.json", {
+    eager: true,
+    import: "pcrs",
+  }),
+);
 
-/** Every screen of the story file, the opening first, in reading order. */
+/** The runs that have a committed recording. */
+export const RUNS: string[] = Object.keys(EVENTS).sort();
+
+/** Every screen of the story, the opening first, in reading order. */
 export function allScreens(): Screen[] {
   return [OPENING, ...STOPS.flatMap((stop) => stop.screens)];
 }
@@ -83,8 +107,27 @@ export function recordedEvent(run: string, index: number): RecordedEvent {
   return found;
 }
 
+/** One line of a run's console or of its loader's report, by its place in that list, from 0. */
+export function recordedLine(run: string, list: "console" | "loader_report", position: number): string {
+  const found = (list === "console" ? CONSOLE : LOADER_REPORT)[run]?.[position];
+  if (found === undefined) throw new Error(`content: run ${run} has no ${list} line ${position}`);
+  return found;
+}
+
+/** A register's value in one hash bank, as read at the end of the run. */
+export function recordedRegister(run: string, bank: string, register: number): string {
+  const found = PCRS[run]?.[bank]?.[String(register)];
+  if (!found) throw new Error(`content: run ${run} has no register ${register} in bank ${bank}`);
+  return found;
+}
+
+/** A long hexadecimal value cut to its first and last digits, for a line that has no room for all of it. */
+export function shortened(value: string, keep = 8): string {
+  return value.length <= keep * 2 + 3 ? value : `${value.slice(0, keep)}...${value.slice(-keep)}`;
+}
+
 /**
- * The number printed on a claim: claims count from 1 through the story file in reading order, so a marker
+ * The number printed on a claim: claims count from 1 through the story in reading order, so a marker
  * beside a statement and the list behind "Open the evidence" show the same numbers.
  */
 export function claimNumbers(screenId: string): { first: number; last: number } {
@@ -132,6 +175,12 @@ export function screenProblems(screen: Screen): string[] {
         const event = recordedEvent(evidence.run, evidence.event_index ?? -1);
         if (event.summary !== evidence.text) throw new Error("the line is not the event's summary");
       });
+    } else {
+      const list = evidence.kind;
+      attempt("evidence", () => {
+        if (recordedLine(evidence.run, list, evidence.position) !== evidence.text)
+          throw new Error("the line is not the recorded one");
+      });
     }
   } else if (!evidence.label) problems.push("missing evidence has no label");
 
@@ -147,6 +196,12 @@ export function screenProblems(screen: Screen): string[] {
   for (const definition of screen.detail?.definitions ?? []) attempt("definition", () => define(definition));
   for (const group of screen.detail?.events ?? [])
     for (const index of group.indexes) attempt("detail event", () => recordedEvent(group.run, index));
+  for (const group of screen.detail?.console_lines ?? [])
+    for (const at of group.positions) attempt("detail console line", () => recordedLine(group.run, "console", at));
+  for (const group of screen.detail?.loader_report_lines ?? [])
+    for (const at of group.positions) attempt("detail report line", () => recordedLine(group.run, "loader_report", at));
+  for (const group of screen.detail?.pcrs ?? [])
+    for (const n of group.registers) attempt("detail register", () => recordedRegister(group.run, group.bank, n));
 
   const picture = screen.picture;
   if (!picture) problems.push("no picture");
@@ -155,6 +210,8 @@ export function screenProblems(screen: Screen): string[] {
     for (const part of [...picture.lit, ...picture.newly_lit])
       if (!PARTS.includes(part)) problems.push(`unknown part ${part}`);
     if (picture.newly_lit.some((part) => !picture.lit.includes(part))) problems.push("a newly lit part is not lit");
+    if (picture.attention?.some((part) => !picture.lit.includes(part)))
+      problems.push("attention is drawn to a part that is not lit");
   }
   return problems;
 }

@@ -1,6 +1,6 @@
 // What "Open the evidence" shows for one screen: the evidence line or the label that says there is none, the
-// records and fields behind it, the explanation, every claim with its basis and source, the terms, and what
-// the recording does not show. A dialog: focus moves in, Tab stays in, Escape closes.
+// explanation, the console lines, records and registers behind it, every claim with its basis and source,
+// the terms, and what the recording does not show. A dialog: focus moves in, Tab stays in, Escape closes.
 import { useEffect, useRef } from "react";
 import {
   READING_NOTES,
@@ -11,8 +11,11 @@ import {
   define,
   firmwareSource,
   recordedEvent,
+  recordedLine,
+  recordedRegister,
+  shortened,
 } from "../content/load";
-import type { Claim, Screen } from "../content/types";
+import { BASES, type Claim, type Detail, type Screen } from "../content/types";
 import { EvidencePill } from "./Stage";
 import { panelKey } from "./panel";
 
@@ -23,6 +26,9 @@ interface EvidencePanelProps {
   onClose: () => void;
 }
 
+/** What the panel's Tab loop goes through: its controls, its fold-outs and its scrolling lists. */
+const CONTROLS = "button, a[href], summary, [tabindex='0']";
+
 export function EvidencePanel({ screen, atClaims, onClose }: EvidencePanelProps) {
   const sheet = useRef<HTMLDivElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
@@ -32,6 +38,11 @@ export function EvidencePanel({ screen, atClaims, onClose }: EvidencePanelProps)
   const first = claimNumbers(screen.id).first;
   const notShown = [...(stop?.not_shown ?? []), ...(detail.not_shown ?? [])];
   const cited = screen.claims.some((claim) => claim.citation ?? claim.uefi_pointer);
+  // The labels to explain: the ones this screen's claims carry and the ones it asks for, in the content's order.
+  const labels = BASES.filter(
+    (basis) => screen.claims.some((claim) => claim.basis === basis) || detail.basis_labels?.includes(basis),
+  ).map(basisLabel);
+  const stageName = stop?.stage_name;
 
   // Focus moves into the panel when it opens: to the claims when a citation marker opened it.
   useEffect(() => {
@@ -47,7 +58,7 @@ export function EvidencePanel({ screen, atClaims, onClose }: EvidencePanelProps)
   close.current = onClose;
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
-      const controls = [...(sheet.current?.querySelectorAll<HTMLElement>("button, a[href]") ?? [])];
+      const controls = [...(sheet.current?.querySelectorAll<HTMLElement>(CONTROLS) ?? [])];
       const result = panelKey(e, controls.indexOf(document.activeElement as HTMLElement), controls.length);
       if (!result) return;
       e.preventDefault();
@@ -80,12 +91,18 @@ export function EvidencePanel({ screen, atClaims, onClose }: EvidencePanelProps)
         <h2 id="sheet-title" className="sheet-title">
           {screen.statement.text}
         </h2>
+        {screen.support && <p className="sheet-support">{screen.support}</p>}
+        {screen.pilot_label && <p className="sheet-pilot">{screen.pilot_label}</p>}
 
         <section>
           <h3>{evidence.recorded ? "The line from the recording" : "Nothing was recorded here"}</h3>
           <EvidencePill evidence={evidence} />
           {evidence.caption && <p className="sheet-caption">{evidence.caption}</p>}
-          {evidence.recorded && <p className="sheet-path">{evidence.field}</p>}
+          {evidence.recorded && (
+            <p className="sheet-path">
+              {evidence.file}: {evidence.field}
+            </p>
+          )}
         </section>
 
         <section>
@@ -93,26 +110,17 @@ export function EvidencePanel({ screen, atClaims, onClose }: EvidencePanelProps)
           <p className="sheet-prose">{detail.explanation}</p>
         </section>
 
-        {detail.events.length > 0 && (
+        <Lines detail={detail} />
+        <Records detail={detail} />
+        <Registers detail={detail} />
+
+        {detail.comparison && (
           <section>
-            <h3>Records of this boot</h3>
-            <ul className="sheet-rows">
-              {detail.events.flatMap((group) =>
-                group.indexes.map((index) => {
-                  const event = recordedEvent(group.run, index);
-                  return (
-                    <li key={`${group.run}-${index}`}>
-                      <p className="row-line">
-                        <span className="row-key">Record {event.index}</span> <span>PCR {event.pcr}</span>{" "}
-                        <span className="row-type">{event.type}</span>
-                      </p>
-                      <p className="row-value">{event.summary}</p>
-                      {group.note && <p className="row-why">{group.note}</p>}
-                    </li>
-                  );
-                }),
-              )}
-            </ul>
+            <h3>The two runs compared</h3>
+            <p className="sheet-prose">
+              Run {detail.comparison.changed} against run {detail.comparison.baseline}.
+            </p>
+            <p className="sheet-path">{detail.comparison.file}</p>
           </section>
         )}
 
@@ -138,6 +146,17 @@ export function EvidencePanel({ screen, atClaims, onClose }: EvidencePanelProps)
           <h3 ref={claimsHeading} tabIndex={-1}>
             Where each claim comes from
           </h3>
+          {/* The legend: what each label on this screen's claims means. */}
+          <dl className="sheet-legend" aria-label="What the labels mean">
+            {labels.map((label) => (
+              <div key={label.basis}>
+                <dt className="claim-basis" data-basis={label.basis}>
+                  {label.label}
+                </dt>
+                <dd>{label.meaning}</dd>
+              </div>
+            ))}
+          </dl>
           <ol className="sheet-claims" start={first}>
             {screen.claims.map((claim, n) => (
               <ClaimItem key={claim.id ?? n} claim={claim} number={first + n} />
@@ -149,6 +168,14 @@ export function EvidencePanel({ screen, atClaims, onClose }: EvidencePanelProps)
         <section>
           <h3>Terms</h3>
           <dl className="sheet-terms">
+            {stageName && (
+              <div>
+                <dt>
+                  {stageName.name} ({stageName.expansion})
+                </dt>
+                <dd>{stageName.attribution}</dd>
+              </div>
+            )}
             {detail.definitions.map(define).map((entry) => (
               <div key={entry.term}>
                 <dt>{entry.term}</dt>
@@ -170,6 +197,133 @@ export function EvidencePanel({ screen, atClaims, onClose }: EvidencePanelProps)
         )}
       </div>
     </>
+  );
+}
+
+/** A run is named wherever its lines or records are shown, so two runs on one screen cannot be confused. */
+function RunName({ run }: { run: string }) {
+  return <p className="sheet-run">Run {run}</p>;
+}
+
+/** The console lines and the lines of the loader's report that a screen names, as they were printed. */
+function Lines({ detail }: { detail: Detail }) {
+  const consoleLines = detail.console_lines ?? [];
+  const reportLines = detail.loader_report_lines ?? [];
+  if (consoleLines.length + reportLines.length === 0 && !detail.console_note) return null;
+  return (
+    <section>
+      <h3>What was printed</h3>
+      {consoleLines.map((group, n) => (
+        <div key={`console-${n}`} className="sheet-lines-group">
+          <RunName run={group.run} />
+          <ol className="sheet-lines">
+            {group.positions.map((at) => (
+              <li key={at}>
+                <span className="line-at">console[{at}]</span>
+                <span className="line-text">{recordedLine(group.run, "console", at)}</span>
+              </li>
+            ))}
+          </ol>
+          {group.note && <p className="row-why">{group.note}</p>}
+        </div>
+      ))}
+      {detail.console_note && <p className="sheet-caption">{detail.console_note}</p>}
+      {reportLines.map((group, n) => (
+        <div key={`report-${n}`} className="sheet-lines-group">
+          <RunName run={group.run} />
+          <p className="sheet-caption">
+            The loader&apos;s report, {group.positions.length} {group.positions.length === 1 ? "line" : "lines"}
+            {group.prefix ? `, each beginning ${group.prefix.trim()}` : ""}.
+          </p>
+          {/* A long list scrolls in its own box, which the keyboard can reach. */}
+          <ol
+            className="sheet-lines sheet-lines-long"
+            tabIndex={group.positions.length > 8 ? 0 : undefined}
+            aria-label={`Loader report of run ${group.run}`}
+          >
+            {group.positions.map((at) => (
+              <li key={at} data-marked={group.highlight?.includes(at) || undefined}>
+                <span className="line-at">loader_report[{at}]</span>
+                <span className="line-text">{recordedLine(group.run, "loader_report", at)}</span>
+              </li>
+            ))}
+          </ol>
+          {group.note && <p className="row-why">{group.note}</p>}
+        </div>
+      ))}
+    </section>
+  );
+}
+
+/** A long value, shown short, with the whole of it one press away. */
+function Digest({ label, value }: { label: string; value: string }) {
+  return (
+    <details className="digest">
+      <summary>
+        <span className="digest-label">{label}</span> {shortened(value)}
+      </summary>
+      <p>{value}</p>
+    </details>
+  );
+}
+
+/** The records of the log that a screen names: number, register, type, what it says, and its fingerprint. */
+function Records({ detail }: { detail: Detail }) {
+  if (detail.events.length === 0) return null;
+  return (
+    <section>
+      <h3>Records of the log</h3>
+      {detail.events.map((group, n) => (
+        <div key={n} className="sheet-lines-group">
+          <RunName run={group.run} />
+          {group.note && <p className="row-why row-why-first">{group.note}</p>}
+          <ul className="sheet-rows">
+            {group.indexes.map((index) => {
+              const event = recordedEvent(group.run, index);
+              return (
+                <li key={index}>
+                  <p className="row-line">
+                    <span className="row-key">Record {event.index}</span> <span>PCR {event.pcr}</span>{" "}
+                    <span className="row-type">{event.type}</span>
+                  </p>
+                  <p className="row-value">{event.summary}</p>
+                  <Digest label="sha256" value={event.digest_sha256} />
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ))}
+      {detail.pilot_note && <p className="sheet-caption">{detail.pilot_note}</p>}
+      <p className="sheet-caption">{READING_NOTES.event_type_names}</p>
+    </section>
+  );
+}
+
+/** The registers a screen names, with the value each held when the run ended. */
+function Registers({ detail }: { detail: Detail }) {
+  if (detail.pcrs.length === 0) return null;
+  return (
+    <section>
+      <h3>Registers at the end of the run</h3>
+      {detail.pcrs.map((group, n) => (
+        <div key={n} className="sheet-lines-group">
+          <RunName run={group.run} />
+          <ul className="sheet-rows">
+            {group.registers.map((register) => (
+              <li key={register}>
+                <p className="row-line">
+                  <span className="row-key">PCR {register}</span>
+                </p>
+                <Digest label={group.bank} value={recordedRegister(group.run, group.bank, register)} />
+              </li>
+            ))}
+          </ul>
+          {group.note && <p className="row-why">{group.note}</p>}
+        </div>
+      ))}
+      <p className="sheet-caption">{READING_NOTES.register_values}</p>
+    </section>
   );
 }
 

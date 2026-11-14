@@ -75,7 +75,20 @@ export type Evidence = RecordedEvidence | MissingEvidence;
 export type Definition = { glossary: string } | { term: string; definition: string };
 
 export interface Detail {
+  /** Lines of a run's console, by place in its `console` list, from 0. */
+  console_lines: { run: string; positions: number[]; note?: string }[];
+  /** Lines of the loader's report, by place in `loader_report`, from 0. `highlight` names places to mark. */
+  loader_report_lines: { run: string; positions: number[]; prefix?: string; highlight?: number[]; note?: string }[];
+  /** Records of a run's log, by their own index, from 1. */
   events: { run: string; indexes: number[]; note?: string }[];
+  /** Registers of one hash bank, as read at the end of the run. */
+  pcrs: { run: string; bank: string; registers: number[]; note?: string }[];
+  /** The comparison file a two-run screen rests on. */
+  comparison?: { file: string; baseline: string; changed: string };
+  console_note?: string;
+  pilot_note?: string;
+  /** Basis labels to explain on this screen, beside the ones its claims carry. */
+  basis_labels?: Basis[];
   other_fields?: { file: string; field: string; value?: string | number | boolean; why: string }[];
   explanation: string;
   definitions: Definition[];
@@ -86,6 +99,8 @@ export interface Picture {
   plate: "board" | "laptop";
   lit: Part[];
   newly_lit: Part[];
+  /** The lit parts the screen is about. Absent: the newly lit ones. */
+  attention?: Part[];
   screen: "none" | "dark" | "dawn";
   note: string;
 }
@@ -100,6 +115,13 @@ export interface Screen {
   detail: Detail;
   claims: Claim[];
   picture: Picture;
+  /** Which of the two protections the screen follows, where it follows one. */
+  thread?: "secure-boot" | "measured-boot";
+  /** A pilot screen: the sentence that says the run is shown and not counted. */
+  pilot_label?: string;
+  /** The closing screen: the note under its picture, and the link to the earlier site. */
+  picture_caption?: string;
+  handover?: { to: string; text: string; link_label: string; note: string };
 }
 
 export interface OpeningScreen extends Screen {
@@ -115,6 +137,10 @@ export interface Stop {
   of: number;
   id: string;
   label: string;
+  /** The name the firmware's source uses for this stage, where it has one. */
+  stage_name: { name: string; expansion: string; attribution: string } | null;
+  /** Where the label comes from, when the stop has no stage name. */
+  label_basis?: string;
   not_shown: string[];
   /** The id of the one screen whose statement stands for the stop. */
   headline: string;
@@ -123,7 +149,8 @@ export interface Stop {
 
 export interface StoryFile {
   format: string;
-  opening: OpeningScreen;
+  /** Only the first story file has the opening. */
+  opening?: OpeningScreen;
   stops: Stop[];
 }
 
@@ -154,4 +181,6 @@ export interface RecordedEvent {
   pcr: number;
   type: string;
   summary: string;
+  /** The record's fingerprint in the SHA-256 bank, 64 hexadecimal digits. */
+  digest_sha256: string;
 }

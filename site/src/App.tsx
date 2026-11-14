@@ -1,5 +1,5 @@
-// The page: the navigation bar, the first scene in one of its three modes, and the evidence panel.
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+// The page: the navigation bar, the story in one of its three modes, and the evidence panel.
+import { useEffect, useRef, useState } from "react";
 import { EvidencePanel } from "./components/EvidencePanel";
 import { Nav } from "./components/Nav";
 import { Stage, type OpenEvidence } from "./components/Stage";
@@ -44,13 +44,13 @@ export function App({ mode }: { mode: Mode }) {
         {mode.kind === "scroll" && <ScrollScene onOpen={open} />}
         {mode.kind === "still" &&
           STEPS.map((step, n) => (
-            <section key={step.id} className="still-step">
+            <section key={step.id} className="still-step" id={`step-${n}`}>
               <Stage current={n} solo onOpen={open} />
             </section>
           ))}
         {mode.kind === "frozen" && (
           <section className="frozen-step">
-            <Stage current={mode.step} solo onOpen={open} />
+            <Stage current={mode.step} solo anchors={false} onOpen={open} />
           </section>
         )}
       </main>
@@ -66,7 +66,7 @@ export function App({ mode }: { mode: Mode }) {
 }
 
 /**
- * The scene as the reader scrolls it: a tall section whose stage stays pinned while a track of invisible
+ * The story as the reader scrolls it: a tall section whose stage stays pinned while a track of invisible
  * markers, one per step, passes the middle of the window.
  */
 function ScrollScene({ onOpen }: { onOpen: OpenEvidence }) {
@@ -78,7 +78,7 @@ function ScrollScene({ onOpen }: { onOpen: OpenEvidence }) {
   const spoken = step.stop ? step.screen.statement.text : step.kind === "inside" ? step.screen.support : null;
 
   return (
-    <section className="scene" style={{ "--steps": STEP_COUNT } as CSSProperties}>
+    <section className="scene">
       <div className="pin">
         <Stage current={i} onOpen={onOpen} />
       </div>
@@ -87,6 +87,8 @@ function ScrollScene({ onOpen }: { onOpen: OpenEvidence }) {
           <div
             key={s.id}
             className="marker"
+            // A further screen of the same stop is a shorter stretch of scrolling than a new stop.
+            data-length={n === 0 ? "long" : s.screenAt > 1 ? "short" : "full"}
             id={`step-${n}`}
             data-index={n}
             ref={(el) => {

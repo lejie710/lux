@@ -1,4 +1,4 @@
-// The content, as the site reads it: every screen of the story file has what the scene needs.
+// The content, as the site reads it: every screen of the story has what the scene needs.
 import { describe, expect, it } from "vitest";
 import {
   BASIS_LABELS,
@@ -11,16 +11,36 @@ import {
   claimSource,
   define,
   headline,
+  RUNS,
   recordedEvent,
+  recordedLine,
+  recordedRegister,
   screenProblems,
+  shortened,
   stop,
 } from "./load";
 import { BASES, type Screen } from "./types";
 
-describe("the story file", () => {
-  it("holds the opening and stops 1 to 3", () => {
+describe("the story", () => {
+  it("holds the opening and stops 1 to 7, in order, from the three story files", () => {
     expect(OPENING.kind).toBe("opening");
-    expect(STOPS.map((s) => s.number)).toEqual([1, 2, 3]);
+    expect(STOPS.map((s) => s.number)).toEqual([1, 2, 3, 4, 5, 6, 7]);
+    expect(allScreens()).toHaveLength(1 + STOPS.reduce((sum, s) => sum + s.screens.length, 0));
+    expect(new Set(allScreens().map((screen) => screen.id)).size).toBe(allScreens().length);
+  });
+
+  it("ends on the one closing screen, which carries the way on to the earlier site", () => {
+    const last = allScreens().at(-1)!;
+    expect(last.kind).toBe("closing");
+    expect(last.handover?.text).toBeTruthy();
+    expect(last.handover?.link_label).toBeTruthy();
+    expect(allScreens().filter((screen) => screen.handover)).toHaveLength(1);
+  });
+
+  it("marks every pilot screen with the sentence that says it is not counted", () => {
+    const pilots = allScreens().filter((screen) => screen.kind === "pilot");
+    expect(pilots.length).toBeGreaterThan(0);
+    for (const pilot of pilots) expect(pilot.pilot_label).toMatch(/not counted/);
   });
 
   it.each(allScreens().map((screen) => [screen.id, screen] as const))("%s has what the scene needs", (_, screen) => {
@@ -47,6 +67,43 @@ describe("the story file", () => {
     const evidence = headline(stop(1)).evidence;
     expect(evidence.recorded).toBe(false);
     expect(!evidence.recorded && evidence.label).toMatch(/not recorded/);
+  });
+});
+
+describe("the recordings the story quotes", () => {
+  it("has the two runs the story names", () => {
+    expect(RUNS).toContain("normal-1");
+    expect(RUNS).toContain("e2");
+  });
+
+  it("reads a console line and a line of the loader's report by their place, from 0", () => {
+    expect(recordedLine("normal-1", "console", 0)).toMatch(/^BdsDxe: loading /);
+    expect(recordedLine("normal-1", "loader_report", 0)).toMatch(/^LUX CFG /);
+    expect(() => recordedLine("normal-1", "console", 999)).toThrow(/no console line 999/);
+    expect(() => recordedLine("no-such-run", "console", 0)).toThrow(/no-such-run/);
+  });
+
+  it("quotes every evidence line of the console letter for letter", () => {
+    for (const screen of allScreens()) {
+      const evidence = screen.evidence;
+      if (evidence.recorded && evidence.kind !== "event")
+        expect(recordedLine(evidence.run, evidence.kind, evidence.position)).toBe(evidence.text);
+    }
+  });
+
+  it("reads a register's value at the end of the run, in the bank that is asked for", () => {
+    expect(recordedRegister("normal-1", "sha256", 7)).toMatch(/^[0-9a-f]{64}$/i);
+    expect(recordedRegister("normal-1", "sha256", 7)).not.toBe(recordedRegister("e2", "sha256", 7));
+    expect(() => recordedRegister("normal-1", "sha256", 24)).toThrow(/no register 24/);
+  });
+
+  it("gives every record its fingerprint, whole", () => {
+    expect(recordedEvent("normal-1", 1).digest_sha256).toMatch(/^[0-9a-f]{64}$/);
+  });
+
+  it("shortens a long value to its two ends and leaves a short one alone", () => {
+    expect(shortened("0123456789abcdef0123456789abcdef")).toBe("01234567...89abcdef");
+    expect(shortened("abc")).toBe("abc");
   });
 });
 
