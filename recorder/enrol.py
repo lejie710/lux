@@ -12,8 +12,14 @@ prints ``LUX-SETVAR done`` and powers the machine off.
 
 No compiler is involved. The program is so small that its machine code is
 written out here byte by byte, each line with the instruction it encodes,
-and wrapped in a minimal PE32+ file. The output depends only on the input,
-so the same keys always give the same program.
+and wrapped in a minimal PE32+ file (the executable format UEFI uses). The
+output depends only on the input, so the same keys always give the same
+program. Why this is Python and not a second assembly source, and what that
+costs, is decision D5 in `docs/DESIGN.md`.
+
+The file is put together in three steps, one function each: the code and
+data are laid out (`_layout`), the headers are written for that layout
+(`_headers`), and the pieces are joined (`build_enrol_program`).
 
 Register use inside the program: `rsi` points at the data section, `rbx` at
 the UEFI system table that the firmware passes in `rdx`.
@@ -23,9 +29,27 @@ import uuid
 from dataclasses import dataclass
 
 DONE_LINE = "LUX-SETVAR done"
-_FILE_ALIGNMENT = 0x200
-_SECTION_ALIGNMENT = 0x1000
+
+# ---- PE32+ constants. Names follow the Microsoft PE format description.
+_FILE_ALIGNMENT = 0x200             # sections start on 512-byte boundaries in the file
+_SECTION_ALIGNMENT = 0x1000         # and on 4096-byte boundaries in memory
 _OPTIONAL_HEADER_SIZE = 240
+_DOS_HEADER_SIZE = 0x40             # the PE signature follows directly
+_MACHINE_X86_64 = 0x8664
+_SECTION_COUNT = 3                  # .text, .data, .reloc
+_FILE_IS_EXECUTABLE = 0x0002
+_FILE_HANDLES_LARGE_ADDRESSES = 0x0020
+_PE32_PLUS_MAGIC = 0x20B            # the 64-bit form of the optional header
+_PREFERRED_IMAGE_BASE = 0x400000    # a hint only; the firmware loads the image where it likes
+_SUBSYSTEM_EFI_APPLICATION = 10
+_DLL_NX_COMPATIBLE = 0x0100         # the image does not run code from its data
+_DIRECTORY_COUNT = 16
+_DIRECTORY_BASE_RELOCATION = 5
+_EMPTY_RELOCATION_BLOCK_SIZE = 12
+# Section flags: what the section holds, and what may be done with it.
+_SECTION_CODE = 0x00000020 | 0x20000000 | 0x40000000          # code, execute, read
+_SECTION_DATA = 0x00000040 | 0x40000000 | 0x80000000          # data, read, write
+_SECTION_RELOC = 0x00000040 | 0x02000000 | 0x40000000         # data, discardable, read
 
 
 @dataclass(frozen=True)
@@ -157,53 +181,106 @@ def _build_code(placed: list[_Placed], hex_digits: int, done: int) -> tuple[byte
     return code, fixup
 
 
-def _section_header(name: bytes, virtual_size: int, virtual_address: int,
-                    raw_size: int, raw_offset: int, characteristics: int) -> bytes:
-    return name.ljust(8, b"\0") + struct.pack(
-        "<IIIIIIHHI", virtual_size, virtual_address, raw_size, raw_offset, 0, 0, 0, 0, characteristics)
+@dataclass(frozen=True)
+class _Layout:
+    """Where each of the three sections lies, in memory and in the file."""
+
+    code: bytes
+    data: bytes
+    text_address: int       # addresses are relative to the start of the loaded image
+    data_address: int
+    reloc_address: int
+    image_size: int
+    text_raw: int           # "raw" sizes and offsets are positions in the file
+    data_raw: int
+    text_offset: int
+    data_offset: int
+    reloc_offset: int
 
 
-def build_enrol_program(writes: list[VariableWrite]) -> bytes:
-    """The complete PE32+ file of the enrolment program."""
+def _layout(writes: list[VariableWrite]) -> _Layout:
+    """Build code and data, decide where they go, and fill in the one address the code needs."""
     data, hex_digits, placed, done = _place_data(writes)
     code, fixup = _build_code(placed, hex_digits, done)
 
     text_address = _SECTION_ALIGNMENT
     data_address = text_address + _align(len(code), _SECTION_ALIGNMENT)
     reloc_address = data_address + _align(len(data.bytes), _SECTION_ALIGNMENT)
-    image_size = reloc_address + _SECTION_ALIGNMENT
+    # The code finds its data by distance from the instruction after the fixup.
     code[fixup:fixup + 4] = _rel32(data_address - (text_address + fixup + 4))
 
     text_raw = _align(len(code), _FILE_ALIGNMENT)
     data_raw = _align(len(data.bytes), _FILE_ALIGNMENT)
     text_offset = _FILE_ALIGNMENT
     data_offset = text_offset + text_raw
-    reloc_offset = data_offset + data_raw
-    # An empty relocation block; the firmware expects the table to exist.
-    relocations = struct.pack("<IIHH", 0, 12, 0, 0).ljust(_FILE_ALIGNMENT, b"\0")
+    return _Layout(
+        code=bytes(code), data=bytes(data.bytes),
+        text_address=text_address, data_address=data_address, reloc_address=reloc_address,
+        image_size=reloc_address + _SECTION_ALIGNMENT,
+        text_raw=text_raw, data_raw=data_raw,
+        text_offset=text_offset, data_offset=data_offset, reloc_offset=data_offset + data_raw,
+    )
 
-    dos_header = bytearray(0x40)
-    dos_header[0:2] = b"MZ"
-    struct.pack_into("<I", dos_header, 0x3C, 0x40)
-    coff_header = struct.pack("<HHIIIHH", 0x8664, 3, 0, 0, 0, _OPTIONAL_HEADER_SIZE, 0x0022)
-    optional = struct.pack("<HBBIIIII", 0x20B, 0, 0, text_raw, data_raw + _FILE_ALIGNMENT,
-                           0, text_address, text_address)
-    optional += struct.pack("<QII", 0x400000, _SECTION_ALIGNMENT, _FILE_ALIGNMENT)
-    optional += struct.pack("<HHHHHH", 0, 0, 0, 0, 0, 0)
-    optional += struct.pack("<IIII", 0, image_size, _FILE_ALIGNMENT, 0)
-    optional += struct.pack("<HH", 10, 0x0100)            # subsystem 10: UEFI application
-    optional += struct.pack("<QQQQ", 0, 0, 0, 0)
-    optional += struct.pack("<II", 0, 16)
-    directories = [(0, 0)] * 16
-    directories[5] = (reloc_address, 12)                   # base relocation table
+
+def _optional_header(layout: _Layout) -> bytes:
+    """The "optional" header: entry point, sizes, alignments and the directory table."""
+    header = struct.pack("<HBBIIIII", _PE32_PLUS_MAGIC, 0, 0, layout.text_raw,
+                         layout.data_raw + _FILE_ALIGNMENT, 0,
+                         layout.text_address,      # entry point: the first byte of the code
+                         layout.text_address)      # base of code
+    header += struct.pack("<QII", _PREFERRED_IMAGE_BASE, _SECTION_ALIGNMENT, _FILE_ALIGNMENT)
+    header += struct.pack("<HHHHHH", 0, 0, 0, 0, 0, 0)                 # version fields, unused
+    header += struct.pack("<IIII", 0, layout.image_size, _FILE_ALIGNMENT, 0)   # headers fit one block
+    header += struct.pack("<HH", _SUBSYSTEM_EFI_APPLICATION, _DLL_NX_COMPATIBLE)
+    header += struct.pack("<QQQQ", 0, 0, 0, 0)                         # stack and heap sizes, unused
+    header += struct.pack("<II", 0, _DIRECTORY_COUNT)
+    directories = [(0, 0)] * _DIRECTORY_COUNT
+    directories[_DIRECTORY_BASE_RELOCATION] = (layout.reloc_address, _EMPTY_RELOCATION_BLOCK_SIZE)
     for address, size in directories:
-        optional += struct.pack("<II", address, size)
-    if len(optional) != _OPTIONAL_HEADER_SIZE:
+        header += struct.pack("<II", address, size)
+    if len(header) != _OPTIONAL_HEADER_SIZE:
         raise AssertionError("optional header has the wrong size")
+    return header
 
-    sections = _section_header(b".text", len(code), text_address, text_raw, text_offset, 0x60000020)
-    sections += _section_header(b".data", len(data.bytes), data_address, data_raw, data_offset, 0xC0000040)
-    sections += _section_header(b".reloc", 12, reloc_address, _FILE_ALIGNMENT, reloc_offset, 0x42000040)
-    headers = bytes(dos_header) + b"PE\0\0" + coff_header + optional + sections
-    return (headers.ljust(_FILE_ALIGNMENT, b"\0") + bytes(code).ljust(text_raw, b"\xCC")
-            + bytes(data.bytes).ljust(data_raw, b"\0") + relocations)
+
+def _section_header(name: bytes, virtual_size: int, virtual_address: int,
+                    raw_size: int, raw_offset: int, characteristics: int) -> bytes:
+    return name.ljust(8, b"\0") + struct.pack(
+        "<IIIIIIHHI", virtual_size, virtual_address, raw_size, raw_offset, 0, 0, 0, 0, characteristics)
+
+
+def _section_table(layout: _Layout) -> bytes:
+    """One 40-byte entry per section."""
+    return (
+        _section_header(b".text", len(layout.code), layout.text_address,
+                        layout.text_raw, layout.text_offset, _SECTION_CODE)
+        + _section_header(b".data", len(layout.data), layout.data_address,
+                          layout.data_raw, layout.data_offset, _SECTION_DATA)
+        + _section_header(b".reloc", _EMPTY_RELOCATION_BLOCK_SIZE, layout.reloc_address,
+                          _FILE_ALIGNMENT, layout.reloc_offset, _SECTION_RELOC)
+    )
+
+
+def _headers(layout: _Layout) -> bytes:
+    """Everything before the first section: DOS stub, PE signature, both headers, section table."""
+    dos_header = bytearray(_DOS_HEADER_SIZE)
+    dos_header[0:2] = b"MZ"
+    struct.pack_into("<I", dos_header, 0x3C, _DOS_HEADER_SIZE)        # where the PE signature is
+    coff_header = struct.pack("<HHIIIHH", _MACHINE_X86_64, _SECTION_COUNT, 0, 0, 0,
+                              _OPTIONAL_HEADER_SIZE,
+                              _FILE_IS_EXECUTABLE | _FILE_HANDLES_LARGE_ADDRESSES)
+    return (bytes(dos_header) + b"PE\0\0" + coff_header
+            + _optional_header(layout) + _section_table(layout))
+
+
+def build_enrol_program(writes: list[VariableWrite]) -> bytes:
+    """The complete PE32+ file of the enrolment program."""
+    layout = _layout(writes)
+    # An empty relocation block; the firmware expects the table to exist.
+    relocations = struct.pack("<IIHH", 0, _EMPTY_RELOCATION_BLOCK_SIZE, 0, 0)
+    return (
+        _headers(layout).ljust(_FILE_ALIGNMENT, b"\0")
+        + layout.code.ljust(layout.text_raw, b"\xCC")          # padding: breakpoint instructions
+        + layout.data.ljust(layout.data_raw, b"\0")
+        + relocations.ljust(_FILE_ALIGNMENT, b"\0")
+    )
