@@ -347,6 +347,13 @@ describe("stops 2 to 7 on the stage", () => {
     expect(panelOf(last.id)).toContain(esc(handover.note));
   });
 
+  it("links the way on to the earlier site's public address", () => {
+    const last = STEPS.at(-1)!;
+    expect(last.screen.handover!.url).toBe("https://lejie710.github.io/nox/");
+    expect(stage(last.id)).toContain('<a href="https://lejie710.github.io/nox/">Continue in Nox</a>');
+    expect(stage(last.id)).not.toContain("handover-pending");
+  });
+
   it("lights the whole board once the display cable is lit", () => {
     expect(stage("s7-exit-call")).toMatch(/class="lit" data-part="whole" data-on="true"/);
     expect(stage("s7-tables")).not.toContain('data-part="whole"');
