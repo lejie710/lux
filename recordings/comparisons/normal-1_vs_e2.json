@@ -1,0 +1,199 @@
+{
+  "baseline": {
+    "recording_sha256": "9fad736004ede561e1eb347dd9300eb8e1908acb24bcfb92ed6aa3e8939d056b",
+    "run": "normal-1"
+  },
+  "changed": {
+    "recording_sha256": "fe25d405faf08a1538d916fe655c0591a118a2db9c8d7dfc5f73752e88ed5e66",
+    "run": "e2"
+  },
+  "console_first_differing_line": 2,
+  "events_only_in_baseline": [
+    {
+      "digest_sha256": "3af949760de8f2194b4046474edc565c6361dd881b99dfc2b744908e75c19ece",
+      "index": 25,
+      "pcr": 7,
+      "type": "EV_EFI_VARIABLE_AUTHORITY"
+    },
+    {
+      "digest_sha256": "00c5018d3157edb92f96a08ba685a1c5913c5dd5fa2228b021dd9d4970eee50f",
+      "index": 26,
+      "pcr": 4,
+      "type": "EV_EFI_BOOT_SERVICES_APPLICATION"
+    },
+    {
+      "digest_sha256": "d8043d6b7b85ad358eb3b6ae6a873ab7ef23a26352c5dc4faa5aeedacf5eb41b",
+      "index": 27,
+      "pcr": 5,
+      "type": "EV_EFI_ACTION"
+    },
+    {
+      "digest_sha256": "b54f7542cbd872a81a9d9dea839b2b8d747c7ebd5ea6615c40f42f44a6dbeba0",
+      "index": 28,
+      "pcr": 5,
+      "type": "EV_EFI_ACTION"
+    }
+  ],
+  "events_only_in_changed": [
+    {
+      "digest_sha256": "7044f06303e54fa96c3fcd1a0f11047c03d209074470b1fd60460c9f007e28a6",
+      "index": 25,
+      "pcr": 4,
+      "type": "EV_EFI_ACTION"
+    },
+    {
+      "digest_sha256": "3d6772b4f84ed47595d72a2c4c5ffd15f5bb72c7507fe26f2aaee2c69d5633ba",
+      "index": 26,
+      "pcr": 4,
+      "type": "EV_EFI_ACTION"
+    }
+  ],
+  "first_differing_event": {
+    "baseline": {
+      "digest_sha256": "3af949760de8f2194b4046474edc565c6361dd881b99dfc2b744908e75c19ece",
+      "pcr": 7,
+      "type": "EV_EFI_VARIABLE_AUTHORITY"
+    },
+    "changed": {
+      "digest_sha256": "7044f06303e54fa96c3fcd1a0f11047c03d209074470b1fd60460c9f007e28a6",
+      "pcr": 4,
+      "type": "EV_EFI_ACTION"
+    },
+    "index": 25,
+    "stop": 6
+  },
+  "format": "lux-comparison/1",
+  "identical": false,
+  "other_fields_differing": [
+    "event_log.bytes",
+    "event_log.events",
+    "event_log.sha256",
+    "gate.checks.content_digests_recomputed",
+    "outcome.trigger",
+    "provenance.loader.authenticode_sha256",
+    "provenance.loader.file_sha256",
+    "run.change",
+    "run.experiment",
+    "run.kind"
+  ],
+  "outcome": {
+    "baseline": "accepted",
+    "changed": "refused"
+  },
+  "pcrs_differing": {
+    "sha1": [
+      4,
+      5,
+      7
+    ],
+    "sha256": [
+      4,
+      5,
+      7
+    ],
+    "sha384": [
+      4,
+      5,
+      7
+    ],
+    "sha512": [
+      4,
+      5,
+      7
+    ]
+  },
+  "pcrs_same": {
+    "sha1": [
+      0,
+      1,
+      2,
+      3,
+      6,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23
+    ],
+    "sha256": [
+      0,
+      1,
+      2,
+      3,
+      6,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23
+    ],
+    "sha384": [
+      0,
+      1,
+      2,
+      3,
+      6,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23
+    ],
+    "sha512": [
+      0,
+      1,
+      2,
+      3,
+      6,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23
+    ]
+  }
+}

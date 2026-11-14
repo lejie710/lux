@@ -1,0 +1,450 @@
+{
+  "console": [
+    "BdsDxe: loading Boot0001 \"UEFI QEMU HARDDISK QM00001 \" from PciRoot(0x0)/Pci(0x1F,0x2)/Sata(0x0,0xFFFF,0x0)",
+    "BdsDxe: failed to load Boot0001 \"UEFI QEMU HARDDISK QM00001 \" from PciRoot(0x0)/Pci(0x1F,0x2)/Sata(0x0,0xFFFF,0x0): Access Denied",
+    "BdsDxe: No bootable option or device was found.",
+    "BdsDxe: Press any key to enter the Boot Manager Menu."
+  ],
+  "event_log": {
+    "bytes": 8394,
+    "events": 26,
+    "sha256": "59b6ac5534f7e2490abbf3da939d3f5c16acf048dad6b96ff46d585991aeb686"
+  },
+  "events": [
+    {
+      "digest_sha256": "d60c3bd4dfdf42a8f4f54c44a8d9f2ddb835990b97a836d8e9b77f317d2f40ea",
+      "index": 1,
+      "pcr": 0,
+      "stop": 3,
+      "stop_rule": "pcr0-firmware",
+      "summary": "firmware version string 2024.02-2ubuntu0.10",
+      "type": "EV_S_CRTM_VERSION",
+      "type_code": "0x00000008"
+    },
+    {
+      "digest_sha256": "3e2303c0397056625397557b3a45e610a407df7437e26cf7243b2d2bcc419b34",
+      "index": 2,
+      "pcr": 0,
+      "stop": 3,
+      "stop_rule": "pcr0-firmware",
+      "summary": "firmware blob at 0x820000, length 0xe0000",
+      "type": "EV_EFI_PLATFORM_FIRMWARE_BLOB",
+      "type_code": "0x80000008"
+    },
+    {
+      "digest_sha256": "90c4d10feafa691566f549a40e6e9f353515c6aded2f8f5c727dd571cf2e3996",
+      "index": 3,
+      "pcr": 0,
+      "stop": 3,
+      "stop_rule": "pcr0-firmware",
+      "summary": "firmware blob at 0x900000, length 0xe80000",
+      "type": "EV_EFI_PLATFORM_FIRMWARE_BLOB",
+      "type_code": "0x80000008"
+    },
+    {
+      "digest_sha256": "ccfc4bb32888a345bc8aeadaba552b627d99348c767681ab3141f5b01e40a40e",
+      "index": 4,
+      "pcr": 7,
+      "stop": 4,
+      "stop_rule": "pcr7-policy",
+      "summary": "variable SecureBoot, 1 data bytes",
+      "type": "EV_EFI_VARIABLE_DRIVER_CONFIG",
+      "type_code": "0x80000001"
+    },
+    {
+      "digest_sha256": "ae2c3e8dd6a5154aa4f674ccc18db1052e37e8984fab5e02614a9ddba54e27be",
+      "index": 5,
+      "pcr": 7,
+      "stop": 4,
+      "stop_rule": "pcr7-policy",
+      "summary": "variable PK, 879 data bytes",
+      "type": "EV_EFI_VARIABLE_DRIVER_CONFIG",
+      "type_code": "0x80000001"
+    },
+    {
+      "digest_sha256": "783fe298e6b204aa35c84b42bf6897e76c3fd2ec3b98db6c4569c5a039b685f6",
+      "index": 6,
+      "pcr": 7,
+      "stop": 4,
+      "stop_rule": "pcr7-policy",
+      "summary": "variable KEK, 881 data bytes",
+      "type": "EV_EFI_VARIABLE_DRIVER_CONFIG",
+      "type_code": "0x80000001"
+    },
+    {
+      "digest_sha256": "82d5515fff6ee2d013a1fd51a2cb925b4ccc5b98ddd2f54c9eef497565b2785e",
+      "index": 7,
+      "pcr": 7,
+      "stop": 4,
+      "stop_rule": "pcr7-policy",
+      "summary": "variable db, 879 data bytes",
+      "type": "EV_EFI_VARIABLE_DRIVER_CONFIG",
+      "type_code": "0x80000001"
+    },
+    {
+      "digest_sha256": "9f75b6823bff6af1024a4e2036719cdd548d3cbc2bf1de8e7ef4d0ed01f94bf9",
+      "index": 8,
+      "pcr": 7,
+      "stop": 4,
+      "stop_rule": "pcr7-policy",
+      "summary": "variable dbx, 0 data bytes",
+      "type": "EV_EFI_VARIABLE_DRIVER_CONFIG",
+      "type_code": "0x80000001"
+    },
+    {
+      "digest_sha256": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119",
+      "index": 9,
+      "pcr": 7,
+      "stop": 4,
+      "stop_rule": "pcr7-policy",
+      "summary": "separator, data 00000000",
+      "type": "EV_SEPARATOR",
+      "type_code": "0x00000004"
+    },
+    {
+      "digest_sha256": "75af30188bbbe00a1d4aa38888b66c4dabad052ca546da50d19236b103787597",
+      "index": 10,
+      "pcr": 1,
+      "stop": 5,
+      "stop_rule": "pcr1-config",
+      "summary": "platform configuration: ACPI DATA",
+      "type": "EV_PLATFORM_CONFIG_FLAGS",
+      "type_code": "0x0000000a"
+    },
+    {
+      "digest_sha256": "0c315db43559b7cb6dd24175a4202765caf56506bd21db4abc273222056a9e8f",
+      "index": 11,
+      "pcr": 1,
+      "stop": 5,
+      "stop_rule": "pcr1-config",
+      "summary": "platform configuration: ACPI DATA",
+      "type": "EV_PLATFORM_CONFIG_FLAGS",
+      "type_code": "0x0000000a"
+    },
+    {
+      "digest_sha256": "de2f256064a0af797747c2b97505dc0b9f3df0de4f489eac731c23ae9ca9cc31",
+      "index": 12,
+      "pcr": 1,
+      "stop": 5,
+      "stop_rule": "pcr1-config",
+      "summary": "platform configuration: ACPI DATA",
+      "type": "EV_PLATFORM_CONFIG_FLAGS",
+      "type_code": "0x0000000a"
+    },
+    {
+      "digest_sha256": "f62f7c9d3f695b3053d263cc3023625f47fd3105b41c091c5b72b3905eca6a68",
+      "index": 13,
+      "pcr": 1,
+      "stop": 5,
+      "stop_rule": "pcr1-config",
+      "summary": "platform configuration: ACPI DATA",
+      "type": "EV_PLATFORM_CONFIG_FLAGS",
+      "type_code": "0x0000000a"
+    },
+    {
+      "digest_sha256": "6b1e73a0094b7b812d3b9e22cffb4f8239319847522c4fa103753b6950020f93",
+      "index": 14,
+      "pcr": 1,
+      "stop": 5,
+      "stop_rule": "pcr1-config",
+      "summary": "variable BootOrder, 4 data bytes",
+      "type": "EV_EFI_VARIABLE_BOOT",
+      "type_code": "0x80000002"
+    },
+    {
+      "digest_sha256": "3197be1e300fa1600d1884c3a4bd4a90a15405bfb546cf2e6cf6095f8c362a93",
+      "index": 15,
+      "pcr": 1,
+      "stop": 5,
+      "stop_rule": "pcr1-config",
+      "summary": "variable Boot0000, 62 data bytes",
+      "type": "EV_EFI_VARIABLE_BOOT",
+      "type_code": "0x80000002"
+    },
+    {
+      "digest_sha256": "7d43f8316be25778fc1cfa35769a15003d8db992065df9f8bb3ac043ff4fafe2",
+      "index": 16,
+      "pcr": 1,
+      "stop": 5,
+      "stop_rule": "pcr1-config",
+      "summary": "variable Boot0001, 110 data bytes",
+      "type": "EV_EFI_VARIABLE_BOOT",
+      "type_code": "0x80000002"
+    },
+    {
+      "digest_sha256": "3d6772b4f84ed47595d72a2c4c5ffd15f5bb72c7507fe26f2aaee2c69d5633ba",
+      "index": 17,
+      "pcr": 4,
+      "stop": 5,
+      "stop_rule": "boot-attempt",
+      "summary": "action: Calling EFI Application from Boot Option",
+      "type": "EV_EFI_ACTION",
+      "type_code": "0x80000007"
+    },
+    {
+      "digest_sha256": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119",
+      "index": 18,
+      "pcr": 0,
+      "stop": 5,
+      "stop_rule": "boot-attempt",
+      "summary": "separator, data 00000000",
+      "type": "EV_SEPARATOR",
+      "type_code": "0x00000004"
+    },
+    {
+      "digest_sha256": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119",
+      "index": 19,
+      "pcr": 1,
+      "stop": 5,
+      "stop_rule": "boot-attempt",
+      "summary": "separator, data 00000000",
+      "type": "EV_SEPARATOR",
+      "type_code": "0x00000004"
+    },
+    {
+      "digest_sha256": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119",
+      "index": 20,
+      "pcr": 2,
+      "stop": 5,
+      "stop_rule": "boot-attempt",
+      "summary": "separator, data 00000000",
+      "type": "EV_SEPARATOR",
+      "type_code": "0x00000004"
+    },
+    {
+      "digest_sha256": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119",
+      "index": 21,
+      "pcr": 3,
+      "stop": 5,
+      "stop_rule": "boot-attempt",
+      "summary": "separator, data 00000000",
+      "type": "EV_SEPARATOR",
+      "type_code": "0x00000004"
+    },
+    {
+      "digest_sha256": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119",
+      "index": 22,
+      "pcr": 4,
+      "stop": 5,
+      "stop_rule": "boot-attempt",
+      "summary": "separator, data 00000000",
+      "type": "EV_SEPARATOR",
+      "type_code": "0x00000004"
+    },
+    {
+      "digest_sha256": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119",
+      "index": 23,
+      "pcr": 5,
+      "stop": 5,
+      "stop_rule": "boot-attempt",
+      "summary": "separator, data 00000000",
+      "type": "EV_SEPARATOR",
+      "type_code": "0x00000004"
+    },
+    {
+      "digest_sha256": "df3f619804a92fdb4057192dc43dd748ea778adc52bc498ce80524c014b81119",
+      "index": 24,
+      "pcr": 6,
+      "stop": 5,
+      "stop_rule": "boot-attempt",
+      "summary": "separator, data 00000000",
+      "type": "EV_SEPARATOR",
+      "type_code": "0x00000004"
+    },
+    {
+      "digest_sha256": "7044f06303e54fa96c3fcd1a0f11047c03d209074470b1fd60460c9f007e28a6",
+      "index": 25,
+      "pcr": 4,
+      "stop": 6,
+      "stop_rule": "authorise",
+      "summary": "action: Returning from EFI Application from Boot Option",
+      "type": "EV_EFI_ACTION",
+      "type_code": "0x80000007"
+    },
+    {
+      "digest_sha256": "3d6772b4f84ed47595d72a2c4c5ffd15f5bb72c7507fe26f2aaee2c69d5633ba",
+      "index": 26,
+      "pcr": 4,
+      "stop": 5,
+      "stop_rule": "boot-attempt",
+      "summary": "action: Calling EFI Application from Boot Option",
+      "type": "EV_EFI_ACTION",
+      "type_code": "0x80000007"
+    }
+  ],
+  "format": "lux-recording/1",
+  "gate": {
+    "banks": 4,
+    "checks": {
+      "all_extends_answered_ok": true,
+      "content_digests_match": true,
+      "content_digests_recomputed": 20,
+      "event_log_replay_equals_live": true,
+      "event_sequence_equals_extend_sequence": true,
+      "extend_list_replay_equals_live": true,
+      "log_candidates_parsed": 1
+    },
+    "passed": true,
+    "pcrs_per_bank": 24
+  },
+  "may_vary": [
+    "provenance.recorded_at",
+    "run.name",
+    "timing.seconds_to_pause",
+    "timing.seconds_to_trigger"
+  ],
+  "outcome": {
+    "ending": "paused-then-killed",
+    "result": "refused",
+    "settle_rule": "no growth of the console file or the TPM log for 3.0 s (at most 30 s)",
+    "trigger": "refusal-line"
+  },
+  "pcrs": {
+    "sha1": {
+      "0": "381a9846881c10f58383d201b06b869e411ebdfb",
+      "1": "5ad26f22324eb2f297cc5518bac155b0ffba8333",
+      "10": "0000000000000000000000000000000000000000",
+      "11": "0000000000000000000000000000000000000000",
+      "12": "0000000000000000000000000000000000000000",
+      "13": "0000000000000000000000000000000000000000",
+      "14": "0000000000000000000000000000000000000000",
+      "15": "0000000000000000000000000000000000000000",
+      "16": "0000000000000000000000000000000000000000",
+      "17": "ffffffffffffffffffffffffffffffffffffffff",
+      "18": "ffffffffffffffffffffffffffffffffffffffff",
+      "19": "ffffffffffffffffffffffffffffffffffffffff",
+      "2": "b2a83b0ebf2f8374299a5b2bdfc31ea955ad7236",
+      "20": "ffffffffffffffffffffffffffffffffffffffff",
+      "21": "ffffffffffffffffffffffffffffffffffffffff",
+      "22": "ffffffffffffffffffffffffffffffffffffffff",
+      "23": "0000000000000000000000000000000000000000",
+      "3": "b2a83b0ebf2f8374299a5b2bdfc31ea955ad7236",
+      "4": "71f1b45820ddde643922b992a54dfb9d834fd88c",
+      "5": "b2a83b0ebf2f8374299a5b2bdfc31ea955ad7236",
+      "6": "b2a83b0ebf2f8374299a5b2bdfc31ea955ad7236",
+      "7": "6bd09549d11fb06bd62e23c43276c6159c72e04a",
+      "8": "0000000000000000000000000000000000000000",
+      "9": "0000000000000000000000000000000000000000"
+    },
+    "sha256": {
+      "0": "863f1067733a1264040fb71493bb0ebdcb55b563556b327681ee2b544c9634c8",
+      "1": "eaa7e3dabe3551ff7dc0bd6c291c669dedd5551682bd276f247faa6db6398e49",
+      "10": "0000000000000000000000000000000000000000000000000000000000000000",
+      "11": "0000000000000000000000000000000000000000000000000000000000000000",
+      "12": "0000000000000000000000000000000000000000000000000000000000000000",
+      "13": "0000000000000000000000000000000000000000000000000000000000000000",
+      "14": "0000000000000000000000000000000000000000000000000000000000000000",
+      "15": "0000000000000000000000000000000000000000000000000000000000000000",
+      "16": "0000000000000000000000000000000000000000000000000000000000000000",
+      "17": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "18": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "19": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "2": "3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969",
+      "20": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "21": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "22": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "23": "0000000000000000000000000000000000000000000000000000000000000000",
+      "3": "3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969",
+      "4": "21dbf976ed3f5117e4f7713285f4be3492d6af568d8e4b25744f5c760496f09b",
+      "5": "3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969",
+      "6": "3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969",
+      "7": "d08f3531a551357cf76be8bb649ed2209a9be9610f2f9b432d4fab37fc124a79",
+      "8": "0000000000000000000000000000000000000000000000000000000000000000",
+      "9": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "sha384": {
+      "0": "f51f0bd37ebcc78b81d0e3857b6764aae7d3b61dd8dafe0174acdbc350d496412bbdb565d8ee7c0f4918d62f7211f0ff",
+      "1": "7ad45032c49be6ceecd378afbe80282976fe0315b2d2b8c77843346dc86fc5603876054ebbbfa706084a03def4eadc45",
+      "10": "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "11": "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "12": "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "13": "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "14": "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "15": "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "16": "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "17": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "18": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "19": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "2": "518923b0f955d08da077c96aaba522b9decede61c599cea6c41889cfbea4ae4d50529d96fe4d1afdafb65e7f95bf23c4",
+      "20": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "21": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "22": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "23": "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "3": "518923b0f955d08da077c96aaba522b9decede61c599cea6c41889cfbea4ae4d50529d96fe4d1afdafb65e7f95bf23c4",
+      "4": "f182d4c3f74f505c23749b17e610212f7aeb94ad0be5339c71b110856007fb087f2f8fe0e6095402358f28ab598a3f56",
+      "5": "518923b0f955d08da077c96aaba522b9decede61c599cea6c41889cfbea4ae4d50529d96fe4d1afdafb65e7f95bf23c4",
+      "6": "518923b0f955d08da077c96aaba522b9decede61c599cea6c41889cfbea4ae4d50529d96fe4d1afdafb65e7f95bf23c4",
+      "7": "6ca1be2855c4b52904c3f77a5e9b1fb3d0a160ad4a023381b01c06c2a251b9e007bb9ff9c0b1312a8bc336d54e7f5848",
+      "8": "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "9": "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "sha512": {
+      "0": "65855815a3c3ec670f1bfd0ab3b169e976267f100a1124fe8d5aa3426f1df190f215056c12eb6a02c06fc1211d9b0e246a9e1b6036a98d5de12312ca2a1be96d",
+      "1": "ae3ead2de665390fe043833777c0b9a197817659d952f7fa0d1ace9ec8b21a167913a3e8117a5a59b3e451a67ff75670eed5ecb2de59882ab11c871c2e7c1acc",
+      "10": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "11": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "12": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "13": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "14": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "15": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "16": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "17": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "18": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "19": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "2": "27ec091533c4b9eea38dd14c3a3ecdef0a99c1e564cbe66dfe008250154e7839b0b75228fe8debcc4ca330e6aebc1abc74070bc9c9c1e26b939c9d916e45e13c",
+      "20": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "21": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "22": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "23": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "3": "27ec091533c4b9eea38dd14c3a3ecdef0a99c1e564cbe66dfe008250154e7839b0b75228fe8debcc4ca330e6aebc1abc74070bc9c9c1e26b939c9d916e45e13c",
+      "4": "7e6c1d5fb738a7b1f2a7649784a66c9d8580168a83cf2c63c157010f6dd7648e6e8eee2696053ea52efdfab2de6777e046959d899defcd66a28822d4f203dbbe",
+      "5": "27ec091533c4b9eea38dd14c3a3ecdef0a99c1e564cbe66dfe008250154e7839b0b75228fe8debcc4ca330e6aebc1abc74070bc9c9c1e26b939c9d916e45e13c",
+      "6": "27ec091533c4b9eea38dd14c3a3ecdef0a99c1e564cbe66dfe008250154e7839b0b75228fe8debcc4ca330e6aebc1abc74070bc9c9c1e26b939c9d916e45e13c",
+      "7": "ee4e37f86df9271a3dcde9f008214ac94007d0a0eade4f53e3971ff875cec898c4acc80ad91f7cf93c6674a2e8f627408932dbdf06a0cd453279220e87ece358",
+      "8": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
+      "9": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+    }
+  },
+  "provenance": {
+    "firmware": {
+      "file": "OVMF_CODE_4M.secboot.fd",
+      "sha256": "1286f2a3217d09b374d05951355d7a561c8bacecd74845c8a1fbb71a48c0de8d"
+    },
+    "host_os": "Ubuntu 24.04.5 LTS",
+    "keys": {
+      "KEK": "575b0a09527e0a96ce5b3722be29bdd8ccc5450f34a40510f87e4fd846f8c464",
+      "PK": "5f72bbe6f9f5bf7b0f88b0e7bfdc4bfeee120880a2f2800968a451b369d3f048",
+      "db": "24b4e16f1c5fc2a4d9921e915c0988ca347d7ffb3280ec9732c2722efc2181f4"
+    },
+    "loader": {
+      "authenticode_sha256": "cef0a97471078a2922c8a96d3ce30512b368882b041d2d148bb9c26704891432",
+      "file_sha256": "65a0b626a6ed160de50d2f61359a306095eb92396b7fd4df0c64e8bc668e5320"
+    },
+    "prediction": null,
+    "qemu_command_line": "timeout -s KILL 300 qemu-system-x86_64 -machine pc-q35-8.2,smm=on,accel=tcg -cpu qemu64 -smp 1 -m 512 -rtc base=2026-01-01T00:00:00,clock=vm -display none -vga std -net none -no-reboot -monitor none -global driver=cfi.pflash01,property=secure,value=on -drive if=pflash,format=raw,unit=0,readonly=on,file=/usr/share/OVMF/OVMF_CODE_4M.secboot.fd -drive if=pflash,format=raw,unit=1,file=<run-dir>/vars.fd -chardev socket,id=chrtpm,path=<run-dir>/swtpm.sock -tpmdev emulator,id=tpm0,chardev=chrtpm -device tpm-tis,tpmdev=tpm0 -drive format=raw,file=fat:rw:<run-dir>/esp -qmp unix:<run-dir>/qmp.sock,server=on,wait=off -pidfile <run-dir>/qemu.pid -serial file:<run-dir>/serial.log",
+    "recorded_at": "2026-11-14T10:43:16Z",
+    "swtpm_command_line": "swtpm socket --tpm2 --tpmstate dir=<run-dir>/tpm --ctrl type=unixio,path=<run-dir>/swtpm.sock --log file=<run-dir>/swtpm.log,level=20",
+    "tools": {
+      "binutils": "2.42-4ubuntu2.10",
+      "efitools": "1.9.2-3ubuntu3",
+      "ovmf": "2024.02-2ubuntu0.10",
+      "python": "3.12.3",
+      "qemu": "1:8.2.2+ds-0ubuntu1.18",
+      "sbsigntool": "0.9.4-3.1ubuntu7",
+      "swtpm": "0.7.3-0ubuntu5.24.04.1",
+      "tpm2-tools": "5.6-1build4"
+    },
+    "vars_template_sha256": "57ec06981b573029dd48cd399a5546ad8e57dece61dac9cdeeb894e79e88cebf"
+  },
+  "run": {
+    "change": "one byte of the loader's content changed, Secure Boot on",
+    "experiment": "e2",
+    "kind": "pilot",
+    "name": "e2"
+  },
+  "timing": {
+    "seconds_to_pause": 9.3,
+    "seconds_to_trigger": 5.6
+  },
+  "vars_after_sha256": "74c3b350ff3db0191a3250724412096508659a3dbe3298afb3baf454c50bac74"
+}
