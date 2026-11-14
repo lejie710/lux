@@ -4,7 +4,7 @@
 
 Lux records one boot of open-source UEFI firmware in a virtual machine, from reset to the moment firmware hands the machine to the operating system. Then it changes one thing and boots again, and puts the normal run and the changed run side by side.
 
-This repository is at its first stage: **the recorder**. It boots the machine, captures what the boot left behind, refuses any run whose readings disagree, and writes one JSON recording per boot. The site that will tell the story from these recordings does not exist yet.
+This repository is at its first stages: **the recorder** and **the content**. The recorder boots the machine, captures what the boot left behind, refuses any run whose readings disagree, and writes one JSON recording per boot. The content is the words of the site as data, each claim labelled with where it comes from and each evidence line copied from a recording. The site that will show them does not exist yet.
 
 ## What exists so far
 
@@ -14,6 +14,8 @@ This repository is at its first stage: **the recorder**. It boots the machine, c
 | `recordings/normal-1`, `normal-2` | The normal run, recorded twice. The two are identical on every compared field |
 | `recordings/e2` | A **pilot**: one content byte of the loader changed, Secure Boot on. The firmware refused it. It differs from the normal run in TPM registers 4, 5 and 7 and in no other register |
 | `recordings/comparisons/` | The two comparison files those statements come from |
+| `content/` | The site's words as five JSON files in one shape: seven stops, the experiments section, the sources and the glossary. `content/README.md` describes the shape |
+| `scripts/check_content.py` | Checks the content against the committed recordings and the rules in `content/README.md`. Standard library only |
 | `predictions/` | Empty. No prediction has been committed, so no counted experiment has been run |
 | `docs/DESIGN.md` | Module boundaries, the four file formats (recording, comparison, prediction, score), the decisions and their costs |
 | `docs/MUTATION_CHECKS.md` | Four rules broken on purpose, and the tests that failed |
@@ -182,7 +184,7 @@ python3 -m unittest discover -s recorder/tests -t .
 Expected last lines (the time varies):
 
 ```
-Ran 231 tests in 11.677s
+Ran 277 tests in 15.465s
 
 OK (skipped=5)
 ```
@@ -193,7 +195,22 @@ The unit tests need no virtual machine; they were also run with Python 3.12 on W
 LUX_VM_TESTS=1 python3 -m unittest discover -s recorder/tests -t .
 ```
 
-It boots the normal run twice (about twenty seconds in total), asserts that the agreement gate passed, that the two runs are equal on every compared field, that a fresh run equals the committed `normal-1`, and that no process is left running. Expected: `Ran 231 tests`, `OK`.
+It boots the normal run twice (about twenty seconds in total), asserts that the agreement gate passed, that the two runs are equal on every compared field, that a fresh run equals the committed `normal-1`, and that no process is left running. Expected: `Ran 277 tests`, `OK`.
+
+The content has its own check, which the unit tests also run:
+
+```
+python3 scripts/check_content.py
+```
+
+Expected last lines:
+
+```
+content check: 5 files, 28 screens, 322 claims, 81 claims uefi-required, 26 claims uefi-platform, 19 claims tcg-unread, 38 claims this-firmware, 143 claims recording, 15 claims general, 3 recordings, 59 glossary entries
+content check: passed, no problems
+```
+
+It fails if a claim has no basis, a UEFI basis has no full citation, an evidence line is not found letter for letter in the recording it names, a statement has more than 14 words, wording such as "the specification says" sits on a claim about measured boot or about this firmware, or one of the seven stops is missing. `content/README.md` lists every rule.
 
 ## Reading a recording
 
