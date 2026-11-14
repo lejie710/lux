@@ -1,0 +1,42 @@
+# The offline checks, on every push and every pull request. Nothing here boots a virtual machine,
+# records a run or publishes anything: the recordings are committed evidence and are never made again by a runner.
+name: Check
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  recorder:
+    name: Recorder unit tests and content check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      # Standard library only: nothing is installed. The six tests that boot a virtual machine are skipped,
+      # because LUX_VM_TESTS is not set.
+      - run: python3 -m unittest discover -s recorder/tests -t .
+      - run: python3 scripts/check_content.py
+
+  site:
+    name: Site build, tests and format
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: site
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm run build
+      - run: npm test
