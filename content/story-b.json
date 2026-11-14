@@ -55,15 +55,10 @@
           },
           "support": "The firmware's own source names this stage DXE, and this recording holds none of its drivers, only what it left in the TPM log.",
           "evidence": {
-            "recorded": true,
-            "kind": "event",
-            "run": "normal-1",
-            "file": "recordings/normal-1/recording.json",
-            "field": "events[3].summary",
-            "position": 3,
-            "text": "variable SecureBoot, 1 data bytes",
-            "event_index": 4,
-            "caption": "The first record this project places at stop 4."
+            "recorded": false,
+            "kind": "not-recorded",
+            "label": "Not recorded: the recording holds no list of the drivers that built these services.",
+            "caption": "What the recording has for this stop is six records about Secure Boot policy. The first this project places here is record 4, below."
           },
           "detail": {
             "console_lines": [],

@@ -346,6 +346,12 @@ class Checker:
         else:
             self.check_evidence(where, screen.get("evidence"), must_be_recorded=False)
         self.check_detail(where, screen.get("detail"))
+        # The way on from the last screen: an address, or null until there is one. Never a dead link.
+        handover = screen.get("handover")
+        if handover is not None:
+            url = handover.get("url", "") if isinstance(handover, dict) else ""
+            if url is not None and not (isinstance(url, str) and url.startswith("https://")):
+                self.fail("format", where, "handover.url must be null or an address that begins https://")
         claims = screen.get("claims")
         if not isinstance(claims, list) or not claims:
             self.fail("claim", where, "a screen needs at least one claim")

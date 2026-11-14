@@ -340,17 +340,12 @@
             "text": "The earliest firmware code runs, and this recording cannot see it.",
             "emphasis": "cannot see it"
           },
-          "support": "The packaged firmware prints no early log, so the first record of the whole boot, shown here, is one this project places at the next stop.",
+          "support": "The packaged firmware prints no early log, and the first record of the whole boot is one this project places at the next stop.",
           "evidence": {
-            "recorded": true,
-            "kind": "event",
-            "run": "normal-1",
-            "file": "recordings/normal-1/recording.json",
-            "field": "events[0].summary",
-            "position": 0,
-            "text": "firmware version string 2024.02-2ubuntu0.10",
-            "event_index": 1,
-            "caption": "Record 1 of 28, the first thing the recording holds. Its own stop field is 3, not 2."
+            "recorded": false,
+            "kind": "not-recorded",
+            "label": "Not recorded: the packaged firmware prints no early log.",
+            "caption": "The first thing the recording holds is record 1 of 28, a firmware version string. Its own stop field is 3, not 2. It is among the records below."
           },
           "detail": {
             "console_lines": [

@@ -39,12 +39,14 @@
           "support": "The loader is the small program that would start an operating system; here it is a stand-in written for this project.",
           "evidence": {
             "recorded": true,
-            "kind": "console",
+            "kind": "event",
             "run": "normal-1",
             "file": "recordings/normal-1/recording.json",
-            "field": "console[0]",
-            "position": 0,
-            "text": "BdsDxe: loading Boot0001 \"UEFI QEMU HARDDISK QM00001 \" from PciRoot(0x0)/Pci(0x1F,0x2)/Sata(0x0,0xFFFF,0x0)"
+            "field": "events[25].summary",
+            "position": 25,
+            "text": "image loaded at 0x1cde4018, length 0x9d70",
+            "event_index": 26,
+            "caption": "Record 26 of 28, in the recording's own words: an image loaded at a place in memory, and its length. The console line that names the disk is below."
           },
           "detail": {
             "console_lines": [
@@ -56,9 +58,16 @@
               }
             ],
             "loader_report_lines": [],
-            "events": [],
+            "events": [
+              {
+                "run": "normal-1",
+                "indexes": [
+                  26
+                ]
+              }
+            ],
             "pcrs": [],
-            "explanation": "The boot manager picked the option named Boot0001 at the stop before. Now it asks the firmware's image loader to copy that file into memory. Loading is not running: the loader has not executed one instruction yet. The line shown is the firmware's own message on the serial console.",
+            "explanation": "The boot manager picked the option named Boot0001 at the stop before. Now it asks the firmware's image loader to copy that file into memory. Loading is not running: the loader has not executed one instruction yet. The record shown is the log's note of the loaded image, and the firmware's own console line, which names the disk, is below.",
             "definitions": [
               {
                 "glossary": "loader"
@@ -112,6 +121,12 @@
               "basis": "recording",
               "run": "normal-1",
               "field": "console[0]"
+            },
+            {
+              "text": "Record 26 of the normal run is summarised as an image loaded at an address, with a length.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "events[25] (index 26): summary"
             },
             {
               "text": "The wording of that line is this firmware's own.",
@@ -184,6 +199,13 @@
                   8,
                   25
                 ]
+              },
+              {
+                "run": "e5",
+                "indexes": [
+                  25
+                ],
+                "note": "The same kind of record in the pilot e5, where the loader was refused."
               }
             ],
             "pcrs": [
@@ -195,7 +217,7 @@
                 "bank": "sha256"
               }
             ],
-            "explanation": "Secure Boot is the check: the loader file carries a signature, and the firmware holds a list of what it accepts, called db, and a list of what it rejects, called dbx. UEFI 2.11 says the lists are consulted when the boot manager is about to start an image. In this recording a new record about db sits in register 7 directly before the loader's fingerprint in the log's order, and it is missing in the pilot run where the loader was refused. What that record must contain would be defined by a Trusted Computing Group document that has not been read for this project.",
+            "explanation": "Secure Boot is the check: the loader file carries a signature, and the firmware holds a list of what it accepts, called db, and a list of what it rejects, called dbx. UEFI 2.11 says the lists are consulted when the boot manager is about to start an image. In this recording a new record about db sits in register 7 directly before the loader's fingerprint in the log's order; it is absent in the refused pilot e2 and present in the refused pilot e5, and the recordings do not say why. What that record must contain would be defined by a Trusted Computing Group document that has not been read for this project.",
             "definitions": [
               {
                 "glossary": "signature"
@@ -290,9 +312,9 @@
               "field": "events[24] (index 25): pcr, type, summary"
             },
             {
-              "text": "This firmware logged that record when it accepted the loader and did not log it when it refused the changed loader of the pilot run.",
+              "text": "This firmware logged that record in the normal run. Of the two refused pilots, e2 has no such record and e5 has one, as its record 25. The recordings do not say why.",
               "basis": "this-firmware",
-              "source": "observed in recording normal-1 event 25; absent in recording e2 (comparisons/normal-1_vs_e2.json, events_only_in_baseline)"
+              "source": "observed in recording normal-1 event 25; absent in recording e2 (comparisons/normal-1_vs_e2.json, events_only_in_baseline); present in recording e5 event 25"
             },
             {
               "text": "What this record means, when it must be logged and why it goes to register 7 are measured-boot rules. UEFI 2.11 has no sentence on them. The Trusted Computing Group document that would define them has not been read for this project.",
@@ -1735,7 +1757,8 @@
             "to": "nox",
             "text": "What happens once the operating system is running, through one night of sleep and waking, is the subject of Nox.",
             "link_label": "Continue in Nox",
-            "note": "Nox is the earlier site. The tables this loader found at the handoff are the kind Nox's last chapter reads."
+            "note": "Nox is the earlier site. The tables this loader found at the handoff are the kind Nox's last chapter reads.",
+            "url": null
           },
           "detail": {
             "console_lines": [

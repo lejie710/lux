@@ -67,7 +67,7 @@ Fields that only some kinds have:
 | `opening` | `eyebrow`, `title` (`{text, emphasis}`), `invitation` (`label`, `line`), `scope_note` |
 | `stop` | `thread`, `thread_first_appearance`, optional |
 | `pilot` | `pilot_label`: the sentence that says this run was made before any prediction and is not counted |
-| `closing` | `picture_caption`, `handover` (the link to the earlier site) |
+| `closing` | `picture_caption`, `handover` (the way on to the earlier site: `to`, `text`, `link_label`, `note`, and `url`, which is null until that site has a public address and then begins `https://`; the label is a link only when `url` is set) |
 | `intro` | `eyebrow`, `question`, `measure` (list of text), `score` (`claimed` is false until a counted experiment has run) |
 | `side-by-side` | `eyebrow`, `experiment`, `status` (`label`, `text`, `counted`), `change` (`text`, `file`, `field`), `sides`: exactly two, each `{id, run, label, statement, outcome, picture, evidence}` with a statement of at most 14 words and a recorded evidence line |
 | `cards` | `eyebrow`, `status_source`, `cards`: each `{id, label, title, status, counted, result, claims}`, plus `change`, `result_note`, `specification_note` on pilots. `result` is null until the run is recorded, and then names the run and its comparison file (`{run, comparison}`); what the run showed is read from those files, not repeated here |
@@ -190,7 +190,7 @@ Light never goes out along the story: each story screen's `lit` contains the `li
 
 | Code | It fails when |
 |---|---|
-| `format` | A file has another format string, language or file name, or a screen has an unknown kind |
+| `format` | A file has another format string, language or file name, a screen has an unknown kind, or a `handover.url` is neither null nor an `https://` address |
 | `character` | An em-dash, en dash, horizontal bar, minus sign, replacement character or control character appears anywhere, this file included |
 | `statement` | A statement is missing, has more than 14 words, or its emphasis is not a phrase of it |
 | `support` | A supporting sentence has more than 30 words or is not exactly one sentence |

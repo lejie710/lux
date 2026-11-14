@@ -588,9 +588,9 @@
           "source": "observed in recording e2 events 1 to 26"
         },
         {
-          "text": "This firmware logged the authorising record only when the loader was accepted.",
+          "text": "Of these two runs, this firmware logged the authorising record in the one where the loader was accepted. That is not a rule: the refused pilot e5 has such a record, as its record 25, and the recordings do not say why.",
           "basis": "this-firmware",
-          "source": "observed in recording normal-1 event 25; absent from recording e2"
+          "source": "observed in recording normal-1 event 25; absent from recording e2; present in recording e5 event 25"
         },
         {
           "text": "After the return record, this firmware logged the calling action a second time. It also printed that no bootable option was found.",

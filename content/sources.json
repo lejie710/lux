@@ -199,7 +199,7 @@
       "paragraphs": [
         "Lux follows one PC boot from the reset to the moment firmware hands the machine to an operating system loader. The boot is real, but the machine is not: open-source firmware runs in a virtual machine with a software TPM.",
         "After the normal boot, one thing is changed and the machine boots again. The two recordings are put side by side.",
-        "The project's measure is a prediction committed before a run. The changed run shown here was made before any prediction existed, so it is a pilot: shown, not counted. The counted experiments have not yet been run.",
+        "The project's measure is a prediction committed before a run. The pilots shown here were made before any prediction existed, so they are shown and not counted. Four counted experiments were each run once, after their prediction was committed, and the experiments page shows their scores.",
         "Every statement carries a label that says where it comes from. Where the specification that was read is silent, the site says so and does not fill the gap from memory.",
         "The story ends where the earlier project, Nox, picks up: with an operating system in charge of the machine."
       ],
@@ -229,7 +229,7 @@
         "loader_report_lines": [],
         "events": [],
         "pcrs": [],
-        "explanation": "The normal run ends with a line from the project's own loader, printed after it asked firmware to end its boot services. The changed run shown on this site, a pilot, ends with the firmware's own lines saying it found nothing it would boot. Two recordings of the normal run were compared first and are identical on every compared field. No experiment with a prediction committed in advance has been run, so there is no result to report yet.",
+        "explanation": "The normal run ends with a line from the project's own loader, printed after it asked firmware to end its boot services. The pilot shown beside it ends with the firmware's own lines saying it found nothing it would boot. Two recordings of the normal run were compared first and are identical on every compared field. Four experiments with a prediction committed in advance have been run, once each, and scored.",
         "definitions": [
           {
             "glossary": "loader"
@@ -281,6 +281,12 @@
           "basis": "recording",
           "run": "normal-1, e2",
           "field": "provenance.prediction"
+        },
+        {
+          "text": "Four recordings are marked as counted, and each names the prediction it was made against.",
+          "basis": "recording",
+          "run": "boot-order-different-1, boot-order-same-1, signature-byte-1, signature-byte-off-1",
+          "field": "run.kind, provenance.prediction"
         }
       ],
       "picture": null
@@ -794,12 +800,18 @@
     {
       "id": "pilots",
       "title": "Pilots, not results",
-      "text": "The changed run shown here was made before any prediction was committed. It is a pilot: shown, never counted. No score is claimed. The counted experiments are not yet run.",
+      "text": "The pilots shown here were made before any prediction was committed. They are shown and never counted. Only the counted experiments, each run once after its prediction was committed, are scored.",
       "claims": [
         {
-          "text": "The changed run is marked as a pilot in its own recording and carries no prediction.",
+          "text": "Each pilot is marked as a pilot in its own recording and carries no prediction.",
           "basis": "recording",
-          "run": "e2",
+          "run": "e1, e2, e4, e5",
+          "field": "run.kind and provenance.prediction"
+        },
+        {
+          "text": "Each counted run is marked as counted in its own recording and names its prediction.",
+          "basis": "recording",
+          "run": "boot-order-different-1, boot-order-same-1, signature-byte-1, signature-byte-off-1",
           "field": "run.kind and provenance.prediction"
         }
       ]
@@ -1228,7 +1240,7 @@
         "forbidden list",
         "revocation list"
       ],
-      "definition": "The list of certificates and hashes that Secure Boot refuses. A match here overrides a match in the allowed list. In the recordings it is empty.",
+      "definition": "The list of certificates and hashes that Secure Boot refuses. A match here overrides a match in the allowed list. It is empty in every committed recording except the pilot e5, where its record holds 76 data bytes.",
       "basis": "uefi-required",
       "citation": {
         "document": "UEFI Specification",
@@ -1238,7 +1250,7 @@
         "pdf_page": 1638
       },
       "evidence": {
-        "run": "normal-1",
+        "run": "normal-1, e5",
         "field": "events[7].summary (index 8)"
       }
     },
@@ -1373,9 +1385,9 @@
       "id": "authority-record",
       "term": "Authority record",
       "also": [],
-      "definition": "An event this firmware logged against register 7 in the run where it accepted the loader. Its summary names the allowed list, db. It is in the normal run and absent from the refused pilot.",
+      "definition": "An event this firmware logged against register 7. Its summary names the allowed list, db. It is in the normal run, absent from the refused pilot e2 and present in the refused pilot e5.",
       "basis": "this-firmware",
-      "source": "observed in recording normal-1 event 25; absent in recording e2"
+      "source": "observed in recording normal-1 event 25; absent in recording e2; present in recording e5 event 25"
     },
     {
       "id": "boot-services",
@@ -1540,17 +1552,17 @@
       "also": [],
       "definition": "A changed run made before any prediction was committed. It is shown and never counted.",
       "basis": "recording",
-      "run": "e2",
+      "run": "e1, e2, e4, e5",
       "field": "run.kind"
     },
     {
       "id": "counted-experiment",
       "term": "Counted experiment",
       "also": [],
-      "definition": "A changed run whose prediction was committed before it ran. None has been run yet.",
+      "definition": "A changed run whose prediction was committed before it ran. Four are on file, each run once.",
       "basis": "recording",
-      "run": "normal-1, e2",
-      "field": "provenance.prediction (empty in every committed recording)"
+      "run": "boot-order-different-1, boot-order-same-1, signature-byte-1, signature-byte-off-1",
+      "field": "run.kind, provenance.prediction"
     },
     {
       "id": "prediction",
@@ -1558,8 +1570,8 @@
       "also": [],
       "definition": "A dated list, committed before a run, of what the changed boot is expected to do. Each line carries one of the basis labels.",
       "basis": "recording",
-      "run": "normal-1, e2",
-      "field": "provenance.prediction (empty in every committed recording)"
+      "run": "boot-order-different-1, boot-order-same-1, signature-byte-1, signature-byte-off-1",
+      "field": "provenance.prediction (the path, the hash and the commit of the prediction the run was made against)"
     },
     {
       "id": "basis",
