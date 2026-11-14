@@ -13,11 +13,16 @@ repository. This script turns them into what the site ships:
   src/assets/parts.json          where each part lies on the board, as fractions of the plate
   public/og.jpg                  the picture a link to the site is previewed with, 1200 x 630
 
-The two pictures of the machine before power are lifted on the way: their
-midtones and lit edges are raised so the machine reads as an object on an
-ordinary screen in a lit room, while the background stays black and nothing
-looks switched on. The script prints the mean brightness of the machine
-before and after.
+Four pictures are lifted on the way: the laptop and the board before power,
+the laptop with its inside awake, and the body (not the screen) of the laptop
+with its screen lit. Their midtones and lit edges are raised
+so the machine reads as an object on an ordinary screen in a lit room, while
+the background stays black and the machine before power does not look switched
+on. The lid of the two laptops with a dark screen gets a second, local lift:
+its thin rim is made a few pixels wider and brighter, and the glass gets a
+faint cool sheen, so the lid reads as a surface and not as a hole. The script
+prints the mean brightness of each machine, and of its palm rest, rim and
+glass, before and after.
 
 A stop's picture is not a file. The page stacks board-awake over board-dark
 once per part, each copy cut out by that part's mask, and fades the copies in.
@@ -42,6 +47,9 @@ BOARD_OUT = (1920, 1200)
 # The laptop with a margin, in source pixels: left, top, right, bottom.
 LAPTOP_BOX = (400, 250, 2000, 1450)
 LAPTOP_OUT = (1280, 960)
+# How far in from each edge the laptop pictures melt into black, in output pixels. The lid's top rim lies 40
+# pixels in, so the melt ends before it: a wider one dimmed the rim to a third.
+EDGE_FADE = 18
 MASK_OUT = (600, 375)
 FEATHER = 70  # in source pixels
 WHOLE_FEATHER = 160
@@ -53,8 +61,39 @@ WHOLE = [(0, 660), (2400, 660), (2400, 1500), (0, 1500)]
 # stays black. `box` is where the machine lies in the source picture, for the measurement.
 LIFT = {
     "laptop-dark": {"gamma": 0.55, "gain": 1.05, "black": 4, "full": 14, "box": (480, 290, 1910, 1380)},
+    "laptop-inside-awake": {
+        "gamma": 0.55,
+        "gain": 1.05,
+        "black": 4,
+        "full": 14,
+        "keep_colour": True,
+        "box": (480, 290, 1910, 1380),
+    },
     "board-dark": {"gamma": 0.62, "gain": 1.0, "black": 1.5, "full": 7, "box": (0, 660, 2400, 1500)},
+    # The laptop with its screen lit: only the body under the hinge is lifted, and less, so that it is as
+    # bright as the same body in the picture before it. The lit screen is left as it is.
+    "laptop-awake": {
+        "gamma": 0.75,
+        "gain": 1.05,
+        "black": 4,
+        "full": 14,
+        "keep_colour": True,
+        "below": 992,
+        "box": (480, 290, 1910, 1380),
+    },
 }
+
+# The lid of the laptop, in source pixels: the box its rim lies in, and the glass inside the rim.
+LID_BOX = (570, 296, 1830, 986)
+GLASS = [(610, 334), (1790, 334), (1768, 972), (632, 972)]
+RIM_WIDEN = 7  # the rim grows by half of this on each side
+RIM_GAIN = 1.3
+RIM_CAP = 140  # the widened rim is no brighter than this; pixels that were brighter keep their own value
+# The sheen on the glass: a cool grey, strongest at the top left corner and falling away to the bottom right.
+SHEEN = ((14, 17, 23), (2, 2, 3))
+# Parts of the laptop that are measured, in source pixels.
+PALM_REST = (700, 1230, 1100, 1330)
+RIM_TOP = (700, 300, 1700, 330)
 
 # The parts of the board, as polygons in source pixels.
 REGIONS = {
@@ -78,15 +117,35 @@ def on_black(path: Path) -> Image.Image:
     return Image.alpha_composite(black, plate).convert("RGB")
 
 
-def lift(picture: Image.Image, gamma: float, gain: float, black: float, full: float) -> Image.Image:
-    """Raise midtones and lit edges, level by level, and leave what is black as it is."""
+def lift(
+    picture: Image.Image,
+    gamma: float,
+    gain: float,
+    black: float,
+    full: float,
+    keep_colour: bool = False,
+    below: int | None = None,
+) -> Image.Image:
+    """
+    Raise midtones and lit edges, level by level, and leave what is black as it is. With `keep_colour` only
+    the brightness is raised: hue and saturation stay as they were, so a warm light stays as warm. With
+    `below`, only the part of the picture under that row is changed, with a soft edge.
+    """
     curve = []
     for level in range(256):
         t = min(1.0, max(0.0, (level - black) / (full - black)))
         t = t * t * (3 - 2 * t)
         raised = min(255.0, 255 * gain * (level / 255) ** gamma)
         curve.append(round(level + (raised - level) * t))
-    return picture.point(curve * 3)
+    raised = picture.point(curve * 3)
+    if keep_colour:
+        hue, saturation, _ = picture.convert("HSV").split()
+        raised = Image.merge("HSV", (hue, saturation, raised.convert("HSV").getchannel("V"))).convert("RGB")
+    if below is None:
+        return raised
+    under = Image.new("L", picture.size, 0)
+    ImageDraw.Draw(under).rectangle((0, below, picture.size[0], picture.size[1]), fill=255)
+    return Image.composite(raised, picture, under.filter(ImageFilter.GaussianBlur(10)))
 
 
 def brightness(picture: Image.Image, box: tuple[int, int, int, int]) -> float:
@@ -94,16 +153,56 @@ def brightness(picture: Image.Image, box: tuple[int, int, int, int]) -> float:
     return ImageStat.Stat(picture.crop(box).convert("L")).mean[0]
 
 
-def lifted(plates: Path, name: str) -> Image.Image:
-    """A picture of the machine before power, lifted, with its measurement printed."""
+def lid_lift(picture: Image.Image) -> Image.Image:
+    """Widen and brighten the rim of the lid, and lay a faint cool sheen on its glass. Nothing else changes."""
+    lid = picture.crop(LID_BOX)
+    # The rim: every pixel takes the brightest value near it, so a line two pixels wide survives being made small.
+    wide = lid.filter(ImageFilter.MaxFilter(RIM_WIDEN)).filter(ImageFilter.GaussianBlur(0.8))
+    wide = wide.point([min(RIM_CAP, round(level * RIM_GAIN)) for level in range(256)] * 3)
+    # Only the rim is widened: the glass inside it and the hinge under it keep their own pixels.
+    glass = Image.new("L", PLATE, 0)
+    ImageDraw.Draw(glass).polygon(GLASS, fill=255)
+    keep = ImageChops.invert(glass.filter(ImageFilter.MaxFilter(21))).crop(LID_BOX)
+    rim = Image.composite(wide, lid, keep)
+    out = picture.copy()
+    out.paste(ImageChops.lighter(lid, rim), LID_BOX[:2])
+    # The sheen: a diagonal fall of a cool grey, inside the glass only, added to what is there.
+    near, far = SHEEN
+    left, top = min(x for x, _ in GLASS), min(y for _, y in GLASS)
+    right, bottom = max(x for x, _ in GLASS), max(y for _, y in GLASS)
+    down = Image.linear_gradient("L")
+    ramp = ImageChops.invert(ImageChops.add(down, down.transpose(Image.TRANSPOSE), scale=2))
+    ramp = ramp.resize((right - left, bottom - top), Image.BICUBIC)
+    fall = Image.new("L", PLATE, 0)
+    fall.paste(ramp, (left, top))
+    channels = [fall.point([round(f + (n - f) * level / 255) for level in range(256)]) for n, f in zip(near, far)]
+    sheen = Image.merge("RGB", channels)
+    soft = glass.filter(ImageFilter.GaussianBlur(5))
+    return Image.composite(ImageChops.add(out, sheen), out, soft)
+
+
+def lifted(plates: Path, name: str, lid: bool = False) -> Image.Image:
+    """A picture lifted, with its measurements printed. With `lid`, the laptop's lid gets its own lift as well."""
     setting = dict(LIFT[name])
     box = setting.pop("box")
     before = on_black(plates / f"lux-{name}.png")
     after = lift(before, **setting)
+    if lid:
+        after = lid_lift(after)
     print(
         f"{name}: mean brightness of the machine {brightness(before, box):.1f} -> {brightness(after, box):.1f}, "
         f"background corner {brightness(before, (0, 0, 300, 150)):.2f} -> {brightness(after, (0, 0, 300, 150)):.2f}"
     )
+    if not lid and name.startswith("laptop"):
+        print(f"  palm rest {brightness(before, PALM_REST):.1f} -> {brightness(after, PALM_REST):.1f}")
+    if lid:
+        glass = (GLASS[0][0] + 20, GLASS[0][1] + 20, GLASS[2][0] - 20, GLASS[2][1] - 20)
+        print(
+            f"  palm rest {brightness(before, PALM_REST):.1f} -> {brightness(after, PALM_REST):.1f}, "
+            f"glass {brightness(before, glass):.1f} -> {brightness(after, glass):.1f}, "
+            f"brightest of the top rim {before.crop(RIM_TOP).convert('L').getextrema()[1]} -> "
+            f"{after.crop(RIM_TOP).convert('L').getextrema()[1]}"
+        )
     return after
 
 
@@ -144,8 +243,9 @@ def preview(plates: Path, dark: Image.Image) -> Image.Image:
     picture = Image.new("RGB", PREVIEW, (0, 0, 0))
     height = 470
     size = (round(height * LAPTOP_OUT[0] / LAPTOP_OUT[1]), height)
-    fade = edge_fade(LAPTOP_OUT, 56).convert("RGB")
-    awake = on_black(plates / "lux-laptop-awake.png")
+    fade = edge_fade(LAPTOP_OUT, EDGE_FADE).convert("RGB")
+    setting = {key: value for key, value in LIFT["laptop-awake"].items() if key != "box"}
+    awake = lift(on_black(plates / "lux-laptop-awake.png"), **setting)
     for laptop, left in ((dark, -8), (awake, PREVIEW[0] - size[0] + 8)):
         cut = ImageChops.multiply(laptop.crop(LAPTOP_BOX).resize(LAPTOP_OUT, Image.LANCZOS), fade)
         # Lighter of the two where they overlap, so neither laptop's black margin covers the other.
@@ -170,7 +270,7 @@ def main() -> None:
         raise SystemExit(__doc__)
     plates = Path(arguments[0])
     if "--preview-only" in sys.argv:
-        preview(plates, lifted(plates, "laptop-dark")).save("public/og.jpg", quality=88, optimize=True)
+        preview(plates, lifted(plates, "laptop-dark", lid=True)).save("public/og.jpg", quality=88, optimize=True)
         print(f"public/og.jpg  {PREVIEW}  {Path('public/og.jpg').stat().st_size} bytes")
         return
     out = Path("src/assets")
@@ -182,11 +282,11 @@ def main() -> None:
 
     # Three pictures of one laptop from one view, cut alike, so that one can fade into the next.
     laptops = {
-        "laptop-dark": lifted(plates, "laptop-dark"),
-        "laptop-inside": on_black(plates / "lux-laptop-inside-awake.png"),
-        "laptop-awake": on_black(plates / "lux-laptop-awake.png"),
+        "laptop-dark": lifted(plates, "laptop-dark", lid=True),
+        "laptop-inside": lifted(plates, "laptop-inside-awake", lid=True),
+        "laptop-awake": lifted(plates, "laptop-awake"),
     }
-    fade = edge_fade(LAPTOP_OUT, 56).convert("RGB")
+    fade = edge_fade(LAPTOP_OUT, EDGE_FADE).convert("RGB")
     for name, laptop in laptops.items():
         cut = laptop.crop(LAPTOP_BOX).resize(LAPTOP_OUT, Image.LANCZOS)
         ImageChops.multiply(cut, fade).save(out / f"{name}.webp", quality=86, method=6)
