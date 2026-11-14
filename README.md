@@ -1,46 +1,101 @@
 # Lux
 
+_What your laptop does before it wakes: one recorded boot of open-source UEFI firmware, from reset to the moment firmware hands the machine over, and what happens when one thing in that chain is changed._
+
+![The opening screen of the site: a laptop before power, dark, with the words "Lux. Before light. What your laptop does before it wakes." and an invitation to scroll.](docs/images/opening.png)
+
+## The question
+
 **When one thing in a PC's boot chain is changed, what does the specification require, what does it leave open, and what does this firmware actually do?**
 
-Lux records one boot of open-source UEFI firmware in a virtual machine, from reset to the moment firmware hands the machine to the operating system. Then it changes one thing and boots again, and puts the normal run and the changed run side by side.
+Lux records one boot of open-source UEFI firmware in a virtual machine, from reset to the moment firmware hands the machine to the operating system. Then it changes one thing and boots again, and puts the normal run and the changed run side by side. Before each counted experiment, a prediction was committed, and every row of it says where it comes from: required by the UEFI specification, left to the platform by that specification, belonging to a Trusted Computing Group document that was not read, or this firmware's own behaviour.
 
-This repository holds three parts: **the recorder**, **the content**, and **the site**. The recorder boots the machine, captures what the boot left behind, refuses any run whose readings disagree, and writes one JSON recording per boot. The content is the words of the site as data, each claim labelled with where it comes from and each evidence line copied from a recording. The site shows them as a scroll story of seven stops, from the dark machine to the moment firmware steps back.
+## What the evidence shows
 
-## What exists so far
+**In four counted experiments, each booted once after its prediction was committed, this firmware met 6 of 6 specification-required rows and 72 of 72 open rows were predicted correctly, with no mismatch. Those are counts of rows, not of independent findings: the 6 required rows cover 4 behaviours, and most of the 72 open rows predicted that this firmware would repeat what a normal run or a pilot had already shown.** So the larger number shows that this firmware is consistent with itself across these changes more than it shows foresight.
 
-| Part | State |
-|---|---|
-| `recorder/` | A Python package (standard library only) that prepares keys, loader and variable store, records a named run, compares two recordings, and scores a comparison against a prediction into a result file |
-| `recordings/normal-1`, `normal-2` | The normal run, recorded twice. The two are identical on every compared field |
-| `recordings/e2` | A **pilot**: one content byte of the loader changed, Secure Boot on. The firmware refused it. It differs from the normal run in TPM registers 4, 5 and 7 and in no other register |
-| `recordings/e1`, `e4`, `e5` | The three other **pilots**, described under "Pilots and counted experiments" and in `docs/PILOTS.md` |
-| `recordings/normal-two-same-1`, `-2`, `recordings/normal-two-different-1`, `-2` | The normal runs of the boot order experiments: two boot entries added, in the original order, each form recorded twice. Each pair is identical on every compared field. They differ from `normal-1` in register 1 and in no other register |
-| `recordings/boot-order-same-1`, `boot-order-different-1`, `signature-byte-1`, `signature-byte-off-1` | The four **counted** runs, each booted once after its prediction was committed |
-| `recordings/comparisons/` | The eleven comparison files those statements come from: each normal run against its repeat, and each pilot and each counted run against its normal run |
-| `recordings/scores/` | One score file per counted run, format `lux-score/1`: every row of the prediction, held or not, and the two numbers |
-| `content/` | The site's words as five JSON files in one shape: seven stops, the experiments section, the sources and the glossary. `content/README.md` describes the shape |
-| `scripts/check_content.py` | Checks the content against the committed recordings and the rules in `content/README.md`. Standard library only |
-| `site/` | The site: React, TypeScript and Vite, no other runtime package. Three pages: the story (the opening, the move inside the machine, all seven stops with one step per screen of the content, the ending, and a strip of the seven stops after it), the experiments, and the sources, each screen with its evidence panel. It reads its words from `content/` and writes none of its own; what has been run, compared and scored it reads from `recordings/`, `predictions/` and the score files. `site/ASSETS.md` says how each picture was made |
-| `predictions/` | Four predictions, committed before any of their experiments was run: the boot order in two forms, and one byte of the loader's signature with Secure Boot on and off. Each has since been run once; the files are unchanged since their runs |
-| `docs/DESIGN.md` | Module boundaries, the four file formats (recording, comparison, prediction, score), the decisions and their costs |
-| `docs/COUNTED.md` | How each counted experiment is staged, what was booted to prepare them (normal runs and preparation boots only), and how each is run, once. Written before the runs |
-| `docs/RESULTS.md` | The result: every row of every counted run with what was expected and what was observed, the two numbers, the pilots apart, and the limits |
-| `docs/MUTATION_CHECKS.md` | Seven rules broken on purpose, and the tests that failed |
+Read the numbers with these beside them:
 
-## The result so far
+- **Four further experiments are pilots.** They were tried before any prediction existed, so they are shown and never counted: they have no prediction and no score, and they are in none of the numbers.
+- **One of the four counted experiments is secondary.** `signature-byte-off` changes two things against its normal run. Without it the numbers are 5 of 5 and 54 of 54.
+- **Three boot order rows were not written without any earlier observation.** An early test on another configuration had already shown this firmware trying the option listed first.
+- **One firmware build, one virtual machine, a software TPM, one run each.** Nothing here shows what any vendor's firmware does on real hardware, or how often a changed run repeats.
+- **"Required" means a sentence found in a reading of UEFI 2.11**, cited by section title and PDF page. It is this project's reading of four behaviours, not a conformance test. The chapters the story needs were read page by page and the rest was searched by keyword; some chapters were not read.
+- **No row says what a Trusted Computing Group document requires, and no stop says what the Platform Initialization specification requires.** Neither was read. Every statement about a TPM register or a logged event is an observation of this firmware, and the phase names SEC, PEI, DXE and BDS are taken from the firmware's own source.
 
-Four counted experiments were each booted once, after their prediction was committed. **This firmware met 6 of 6 specification-required behaviours, and 72 of 72 open behaviours were predicted correctly. There was no mismatch.**
+| Counted experiment | The one thing changed | Specification-required rows met | Open rows predicted correctly |
+|---|---|---|---|
+| `signature-byte` | One byte inside the signature value of the loader, Secure Boot on | 1 of 1 | 17 of 17 |
+| `signature-byte-off` (secondary) | The same byte, Secure Boot switched off | 1 of 1 | 18 of 18 |
+| `boot-order-same` | `BootOrder` lists entry B before entry A; both hold the same signed loader | 2 of 2 | 18 of 18 |
+| `boot-order-different` | The same change; entry B holds a second signed loader | 2 of 2 | 19 of 19 |
 
-| Counted experiment | Specification-required rows met | Open rows predicted correctly |
+| Claim | Evidence | Where |
 |---|---|---|
-| `signature-byte` | 1 of 1 | 17 of 17 |
-| `signature-byte-off` | 1 of 1 | 18 of 18 |
-| `boot-order-same` | 2 of 2 | 18 of 18 |
-| `boot-order-different` | 2 of 2 | 19 of 19 |
+| The two numbers are what the files say | One score file per counted run, with a verdict for every row. A test makes each score again from the committed recording, comparison and prediction, and pins the totals | `recordings/scores/`, `docs/RESULTS.md`, `recorder/tests/test_committed_recordings.py` |
+| Each prediction came before its run | Each counted recording stores the path, hash and commit of the prediction it ran under, and the recorder refuses a counted run whose prediction file is not byte for byte the committed one. The prediction commits are ancestors of the recording commits | `recordings/<run>/recording.json` field `provenance.prediction`, `docs/RESULTS.md` "How the runs were made" |
+| The normal run repeats | Each of the three normal runs was recorded twice, and each pair is identical on every compared field | `recordings/comparisons/*-1_vs_*-2.json` |
+| A recording follows from its boot | Three readings of each boot (the firmware's event log, the TPM's own log, the registers read from the TPM) agree on all 24 registers in four hash banks, in all 14 recordings. A test replays every committed event log | field `gate` of each recording, `eventlog.bin` beside it |
+| Every line the site quotes is in a recording | A check compares each evidence line with the field it names, letter for letter, and fails if a claim has no basis or a UEFI basis has no full citation | `scripts/check_content.py`: 354 claims, 28 screens |
+| The pilots are what they are said to be | Four recordings and their comparisons with the normal run, described one by one | `docs/PILOTS.md` |
 
-The numbers count rows, and rows are not independent: the six required rows cover four behaviours, and most open rows predicted that this firmware would repeat what a normal run or a pilot had already shown. `signature-byte-off` changes two things against its normal run and is secondary; without it the numbers are 5 of 5 and 54 of 54. An early research test had already changed a boot order on another configuration, which bears on three boot order rows. `docs/RESULTS.md` gives every row and these limits in full.
+What one changed byte looks like on the site. This run is a pilot:
 
-## The site
+![The experiments page: two laptops side by side. On the left, screen lit: "Untouched, the loader is started." On the right, screen dark: "With one byte changed, the loader is never started", with the console line that ends in "Access Denied". A label says the run is a pilot, shown and not counted.](docs/images/experiment.png)
+
+## Limits
+
+What this project does not show, stated so that nobody has to find out.
+
+- **A virtual machine, not a real one.** QEMU under software emulation. Power sequencing, the first step of a real boot, does not exist there, so the first stop is described from documents and says so.
+- **A software TPM** (swtpm), not a hardware chip.
+- **One build of open-source firmware** (OVMF, built from EDK II, as packaged by Ubuntu). Another firmware may make every platform choice differently.
+- **A release build.** It prints no log of its early phases, so the recording begins with what the firmware measured, not with what it did internally. Stop 2 shows nothing recorded, and says so.
+- **Two documents were not read.** The Trusted Computing Group document that defines the event log and the use of the registers could not be obtained. The Platform Initialization specification, where the phase names come from, was not read. Event type names are the names the tool `tpm2_eventlog` prints, and the assignment of an event to a story stop is this project's own, declared rule by rule in `recorder/storymap.py`.
+- **The paraphrases of UEFI 2.11 were checked by reading, not by a test.** The content check proves that a citation is complete and that a quoted line is in a recording. It cannot prove that a sentence about the specification is right.
+- **Each counted experiment was booted once.** A single run says nothing about how often a changed run repeats.
+- **The predictions were written with the pilots and the normal runs in sight.** That is what "this firmware" as a basis means.
+- **The blindness of the counted runs rests on the repository's history and one audit**, not on a mechanism that could not have been bypassed. The recorder refuses a counted run without a committed prediction; it cannot prove that nobody booted that configuration with other tools.
+- **One machine, one set of tool versions.** Another QEMU version, machine type or firmware package may give other register values; the recorder then says so instead of producing a recording that looks comparable. Debian or Ubuntu only, as written.
+- **The pilots edit the variable store file while the machine is off.** `e5` writes the revocation record directly and not through a signed update, so it shows how this firmware treats a list that is there, not how it treats an update.
+- **The loader does not read `BootCurrent`**, so no recording can show it.
+- **The test keys are public**, private halves included, so that the recordings can be reproduced. Never trust them anywhere. See `recorder/testkeys/README.md`.
+- **The test certificates are not yet valid at the guest's fixed clock**, and this firmware accepts them all the same. That is observed behaviour.
+- **The pictures are illustrations** of a fictional laptop and board. They show where the story is and prove nothing.
+
+Not tested, and carried here from `docs/VERIFICATION.md`:
+
+- **No automated test opens a browser.** The site's tests render pages to HTML. Motion, layout and focus were checked by eye and by a scripted drive in one Chromium-based browser at 1440 x 900 and 390 x 844. Firefox, Safari, a physical phone, a phone held sideways, a window under 600 px tall and a screen reader have not been tested.
+- **The hosted workflow has never run.** `.github/workflows/check.yml` was written for a hosted runner and has only been reasoned about; every command in it passes locally.
+- **There is no live demo.** The site has been run locally only, and link previews have not been checked against a public address.
+- **Process cleanup when the virtual machine is killed from outside** is covered by the integration test and a script, not by a unit test.
+
+## Non-goals
+
+| Not in this project | Why |
+|---|---|
+| A recording of a real laptop or board | Real firmware is a vendor's code and not a public source. Every step here can be repeated by anyone. This is the project's largest limit |
+| Vendor-specific firmware behaviour | The project is vendor-neutral |
+| Hardware error handling | Out of scope |
+| Anything after the handoff: kernel start-up, an operating system's own boot manager | The story ends when firmware steps back |
+| An attack tutorial: no bypass of Secure Boot, no reproduction of a known vulnerability | Each experiment changes one thing on the project's own virtual machine to see how the protection reacts. That is validation |
+| A live virtual machine in the browser | Readers see recorded evidence |
+| A course with quizzes, progress or accounts; other languages; a polished phone version | It is an explainer for a wide screen, readable on a phone, in English |
+| A measure of whether readers understand it | No reader study was run |
+
+## What the site shows
+
+![Stop 6 of 7, "Load and verify": the statement "Before the loader runs, firmware checks who signed it", a lit circuit board, one line from the recording (PCR 7, EV_EFI_VARIABLE_AUTHORITY, "variable db, 851 data bytes") and the control "Open the evidence".](docs/images/stop-6.png)
+
+- **The story**: the opening, the way inside the machine, and seven stops from power and reset to the handoff, in 22 steps. A screen holds one statement, one line copied from a recording, a citation marker and "Open the evidence". Behind that control are the console lines, the log records with their digests, the register values, every claim with its basis label and source, the terms, and what the recording does not show.
+- **The experiments**: the two numbers as the score files have them, with what they do not show directly under them; the normal run and a changed run side by side; a card per pilot and per counted experiment; and what the specification leaves open.
+- **The sources**: what was read or run, what was not read and what that costs the reader, the limits, a glossary with a filter, and one recording's own account of how it was made.
+
+The site holds no fact of its own. Its words come from `content/`, and what has been run, compared, predicted and scored is read from the files when it is built. The pictures are illustrations; the evidence is the recording.
+
+### Run it locally
+
+Needs Node.js 22.12 or later in the 22 line, or 24. `npm ci` downloads the pinned packages once; after that nothing is fetched, and the page makes no request to any other address.
 
 ```
 cd site
@@ -48,98 +103,35 @@ npm ci
 npm run dev
 ```
 
-The page opens at `http://127.0.0.1:5183/`. `npm test`, `npm run build` and `npm run format:check` are the three checks.
+Open `http://127.0.0.1:5183/`. There is no live demo: the site has only been run locally.
 
 | Address | What it shows |
 |---|---|
-| `/` | The story, pinned while the page scrolls through its steps: the opening, the way inside, and one step per screen of the seven stops |
+| `/` | The story, pinned while the page scrolls through its steps |
 | `/?static` | Every step as a still section, one under the other. A reader who prefers reduced motion gets this without asking |
-| `/?step=N` | The story frozen at step N, counted from 0 (the opening) to the last screen of stop 7, with nothing to scroll. Add `&evidence` to open that step's evidence |
-| `/#step-N` | The scrolled story, landed on step N. The seven marks at the foot of a stop lead to the first step of each stop this way |
-| `/#overview` | The strip after the story: the seven stops as seven small boards, each leading to its stop |
-| `/#/experiments` | The experiments: one statement and the score as the files have it, the two runs side by side, a card per other experiment, and what the specification leaves open. The question and the measure are behind the first screen's "Open the evidence" |
-| `/#/sources` | The sources: what was read or run, what was not read and what that costs, the limits, the glossary with a filter, one recording's provenance block, and what the project is |
+| `/?step=N` | The story frozen at step N, from 0 (the opening) to 21. Add `&evidence` to open that step's evidence |
+| `/#step-N` | The scrolled story, landed on step N |
+| `/#overview` | The strip after the story: the seven stops as seven small boards |
+| `/#/experiments` | The experiments |
+| `/#/sources` | The sources |
 | `/#/experiments/<section>` | A page landed on one of its sections, named by the screen's `id` in the content (on the sources page also `read`, `not-read`, `limits`, `glossary`, `provenance`). Add `/evidence` to open that section's evidence, or `/<card>/evidence` for one card's |
 
-In the scrolled story one press of Space or Page Down is one step on, and Shift with Space or Page Up one step back; two controls that appear when the keyboard reaches them do the same. The first thing the keyboard reaches is a link to `/?static`, the whole story as a plain page.
+In the scrolled story one press of Space or Page Down is one step on, and Shift with Space or Page Up one step back. The first thing the keyboard reaches is a link to `/?static`, the whole story as a plain page.
 
-The experiments page shows what is on disk when the site is built, and nothing it is told elsewhere. A card belongs to the recording whose `run.experiment` is the card's `id`, or that `id` with a suffix (`boot-order-same` for `boot-order`). With no recording it says "Not yet run"; with a recording of a pilot, "Pilot", with the outcome, the registers that differ and the first differing record from the comparison file; with a prediction file, the number of rows and, behind the control, every row with its basis label; with a score file (format `lux-score/1`, looked for in `results/`, `recordings/scores/` and `recordings/<run>/score.json`), "Scored" and the two numbers. The headline score on the first screen is the sum over the score files, and the content's own sentence until there is one.
+The first load is about 0.7 MB: one script of 936 kB (186 kB compressed), one stylesheet, two fonts and the pictures. About two thirds of the script is the recordings and the content.
 
 ### Hosting
 
-Every page lives after the hash sign of one address, so a static host needs no rule for any address. `npm run build` writes `dist/` with relative paths, which works under any folder, and a `404.html` that leads back to the start. Two settings, read from the environment or from a `.env` file. Neither is needed to run the site locally. **A published build needs both**: without `LUX_BASE` the link in `404.html` is relative and is wrong for a missing address deeper than the site's folder, and without `LUX_SITE_URL` link previews cannot find their picture.
+Nothing has been published. The build is prepared for a static host: every page lives after the hash sign of one address, `npm run build` writes `dist/` with relative paths, and a `404.html` leads back to the start. Two settings are read from the environment or a `.env` file. Neither is needed locally. **A published build needs both.**
 
 | Setting | Use |
 |---|---|
 | `LUX_BASE` | The folder the site is served from, for example `/lux/`. Asset paths and the link in `404.html` then start there |
-| `LUX_SITE_URL` | The full public address. Link previews need an absolute address for their picture (`og.jpg`); without this setting the tag holds a relative one |
+| `LUX_SITE_URL` | The full public address. A link preview needs an absolute address for its picture (`og.jpg`); without this setting the tag holds a relative one, which preview services do not follow |
 
-The site's tests render pages to HTML without a browser. They check the experiments page with nothing on file, with a pilot and with a score, the comparison laid out from the committed files, the sources page against the content, the addresses of the pages, the step-to-picture mapping for every step, that every screen of the content has what a scene needs and that its evidence panel shows every claim, line, record and register the content names, the two address switches, the key that steps through the story, and the evidence panel's key and focus rules. They do not prove motion, layout or focus in a real window; those were checked by eye in one Chromium browser.
+## Re-recording on Linux or WSL
 
-## How a run is trusted
-
-Every run ends the same way, whether the loader was accepted or refused: the guest is paused, its memory is saved, and the virtual machine is killed while paused, so the software TPM is still alive to be read. Three readings of the same boot, taken by different routes, must then agree on all 24 registers in all four hash banks:
-
-1. a replay of the firmware's event log, cut out of the saved guest memory;
-2. a replay of the extend commands found in the software TPM's own log;
-3. the register values read from the TPM itself.
-
-The first reading is written by the firmware and does not pass through the TPM. The second and third both come from the one software TPM process, by two routes, and both replays use the same extend function, so the three are not fully independent of each other. `docs/DESIGN.md` section 4.3 says exactly how far.
-
-If they disagree anywhere, the command exits with an error and writes nothing. The same holds when the end of the boot was not seen in time, and when a normal run was not accepted: a hung boot never becomes a recording of the normal run.
-
-## Pilots and counted experiments
-
-The measure of this project is a prediction committed **before** an experiment is run. Experiments that were tried during the early research, before any prediction existed, cannot meet that. They are declared as **pilots**: shown, never counted. There are four:
-
-| Pilot | What it changes | What the recording shows | Registers that differ from the normal run |
-|---|---|---|---|
-| `e1` | One byte of the loader's content, Secure Boot switched off | The changed loader ran | 4, 7 |
-| `e2` | The same byte, Secure Boot on | Refused, `Access Denied` | 4, 5, 7 |
-| `e4` | Secure Boot switched off, nothing else | The signed loader ran | 7 |
-| `e5` | The signed loader's hash added to the revocation list (`dbx`) | Refused, `Access Denied` | 4, 5, 7 |
-
-All four were tried in the early research, with other tooling and a throwaway key set, and all four have since been recorded with this recorder, from the same variable store template as the normal run. They stay pilots: no prediction, no score. `docs/PILOTS.md` gives the first differing event of each, why each register differs, and what the recordings do not show.
-
-A **counted** experiment is one that had never been run when its prediction was committed. There are five:
-
-| Counted experiment | The one thing changed | Compared with | Prediction |
-|---|---|---|---|
-| `boot-order-same` | `BootOrder` lists boot entry B before entry A; both entries hold the same signed loader | `normal-two-same-1` | committed, then run once: `boot-order-same-1` |
-| `boot-order-different` | The same change; entry B holds a second signed loader | `normal-two-different-1` | committed, then run once: `boot-order-different-1` |
-| `signature-byte` | One byte inside the signature value of the loader, Secure Boot on | `normal-1` | committed, then run once: `signature-byte-1` |
-| `signature-byte-off` | The same byte, Secure Boot switched off | `normal-1` | committed, then run once: `signature-byte-off-1` |
-| `rebuilt-firmware` | Firmware rebuilt with one driver changed | `normal-1` | none; no such firmware has been built |
-
-The recorder refuses to run a counted experiment unless all of this holds:
-
-- the command carries `--for-the-record`, which says that this boot is meant to be the experiment's one run;
-- `predictions/<experiment>.json` exists and is valid;
-- it describes the same change as the experiment, and carries the values that decide what the experiment tests (which byte of the signature area, which rebuilt firmware file). Those values are read from the prediction and from nowhere else;
-- it is committed, and the file on disk is byte for byte the committed one;
-- two recordings of the normal run that the experiment changes are on file and identical.
-
-The recording stores the prediction's hash, commit and values, so a prediction edited after its run is detected. A counted recording is never overwritten.
-
-The boot order experiments need a machine with two boot entries, so they have normal runs of their own, and a variable store in which the two entries stand in the other order. That store is the changed configuration, and the same rule guards it: `python3 -m recorder prepare --changed-boot-order` makes it with one preparation boot, and is refused until a boot order prediction is committed. `docs/COUNTED.md` has the details and the commands for each single run.
-
-## Limits
-
-- **A virtual machine, not a real one.** QEMU under software emulation. Power sequencing, the first step of a real boot, does not exist here.
-- **A software TPM** (swtpm), not a hardware chip.
-- **Open-source firmware** (OVMF, built from EDK II, as packaged by Ubuntu). Nothing here shows what any vendor's firmware does on real hardware.
-- **A release build of the firmware.** It prints no log of its early phases, so the recording begins with what the firmware measured, not with what it did internally.
-- **One machine, one set of tool versions.** The recordings have been reproduced on the machine that made them. Another QEMU version, machine type or firmware package may give other register values; the recorder then says so instead of producing a recording that looks comparable.
-- **Event type names are tool names.** They are the names `tpm2_eventlog` prints, not citations of a specification. The Trusted Computing Group document that defines the event log has not been read for this project yet.
-- **The story stops assigned to events are this project's own mapping**, declared rule by rule in `recorder/storymap.py`.
-- **Each counted experiment was booted once.** Before its run, no changed configuration had been booted, in whole or in part; what was known about the staging came from normal runs, from preparation boots and from tests that boot nothing. One early research test had changed a boot order on another configuration. `docs/COUNTED.md` says exactly what, and `docs/RESULTS.md` what the single runs showed. A single run says nothing about how often a changed run repeats.
-- **The loader does not read `BootCurrent`.** The boot order predictions say what UEFI expects it to hold, and no recording can show it.
-- **The pilots edit the variable store file while the machine is off.** `e5` writes the revocation record directly and not through a signed update, so it shows how this firmware treats a list that is there, not how it treats an update.
-- **The test keys are public.** See `recorder/testkeys/README.md`. Never trust them anywhere.
-- **The test certificates are not yet valid at the guest's fixed clock**, and this firmware accepts them all the same. That is observed behaviour, described in the same README.
-- **Debian or Ubuntu only, as written.** Tool versions are read with `dpkg-query`.
-
-## Setup on Linux or WSL
+A reader needs none of this to check the evidence. It is for someone who wants to see the runs repeat.
 
 Tested on Ubuntu 24.04 inside WSL 2 only. The recorder needs these Ubuntu packages, and every recording stores their versions in its `provenance` block:
 
@@ -153,11 +145,9 @@ Tested on Ubuntu 24.04 inside WSL 2 only. The recorder needs these Ubuntu packag
 | `git` | the prediction gate asks it whether a prediction is committed; needed for counted experiments only |
 | `tpm2-tools` (optional) | decoding `eventlog.bin` yourself with `tpm2_eventlog` |
 
-The first four are the ones whose versions a recording stores, read with `dpkg-query`, together with the Python version. `sbsigntool`, `efitools` and `openssl` were used once to create the committed key set and sign the loader. A clone of this repository does not need them, and their versions are recorded once, in `recorder/testkeys/MANIFEST.json`.
+`sbsigntool`, `efitools` and `openssl` were used once to create the committed key set and sign the loaders. A clone does not need them; their versions are recorded in `recorder/testkeys/MANIFEST.json`.
 
-The recorder keeps its scratch files (run directories, sockets, the variable store template) in a work directory: `~/lux-work`, or the path in `LUX_WORK_DIR`. It must be on a Linux file system. On WSL that means not under `/mnt/`, because unix sockets do not work on a Windows drive. The repository itself may live anywhere.
-
-All commands are run from the repository root.
+The recorder keeps its scratch files in a work directory: `~/lux-work`, or the path in `LUX_WORK_DIR`. It must be on a Linux file system. On WSL that means not under `/mnt/`, because unix sockets do not work on a Windows drive. The repository itself may live anywhere. All commands are run from the repository root.
 
 ### 1. Prepare (once per machine)
 
@@ -165,7 +155,7 @@ All commands are run from the repository root.
 python3 -m recorder prepare
 ```
 
-This verifies the committed test keys against their manifest, builds the guest loader and checks that it equals the committed signed one, checks the second signed loader, checks that the packaged firmware file is the one the recordings were made with, and makes two variable store templates with one enrolment boot each (about ten seconds per boot): the one every plain run starts from, and one with two boot entries for the boot order experiments. Expected output:
+This verifies the committed test keys against their manifest, builds the guest loader and checks that it equals the committed signed one, checks the second signed loader, checks that the packaged firmware file is the one the recordings were made with, and makes two variable store templates with one enrolment boot each (about ten seconds per boot). Expected output:
 
 ```
 firmware_sha256: 1286f2a3217d09b374d05951355d7a561c8bacecd74845c8a1fbb71a48c0de8d
@@ -182,7 +172,7 @@ If your tools build a different loader or a different template, or your firmware
 
 ### 2. Record a run
 
-The names `normal-1`, `normal-2`, `e1`, `e2`, `e4`, `e5`, the four that begin with `normal-two-` and the four counted runs are the committed recordings. They are evidence, and `record` refuses to write over an existing name. So use names of your own:
+The committed recordings are evidence, and `record` refuses to write over an existing name. So use names of your own:
 
 ```
 python3 -m recorder record my-normal --experiment normal
@@ -199,29 +189,20 @@ written: recordings/my-normal/recording.json
 
 and for the pilot: `run my-e2: refused, 26 events, agreement gate passed`. The normal run with two boot entries has 30 events.
 
-To keep your runs out of the repository's `recordings/` folder altogether, add `--out some/other/folder`. To overwrite a recording on purpose, add `--replace`; the recording of a counted experiment is never replaced.
+To keep your runs out of the repository's `recordings/` folder, add `--out some/other/folder`. Exit codes of `record`: 0 for a recording; 1 for a refusal, with one sentence saying why, and nothing written; 3 when a changed run reached neither the loader's last line nor a refusal and was recorded as `timeout`.
 
-Exit codes of `record`: 0 for a recording; 1 for a refusal, with one sentence saying why, and nothing written; 3 when a changed run reached neither the loader's last line nor a refusal and was recorded as `timeout`.
-
-A counted experiment without a committed prediction is refused:
-
-```
-$ python3 -m recorder record blind --experiment rebuilt-firmware --for-the-record
-refused: experiment 'rebuilt-firmware' is counted and must not run: no prediction file rebuilt-firmware.json exists
-```
-
-**The four experiments that have a committed prediction are not refused for that reason.** For them `record` boots the changed configuration, and that boot is the counted run. All four have had theirs, under the names `<experiment>-1`. So `record` asks for the words `--for-the-record` before it starts any counted experiment, and without them it refuses at once:
+**Do not boot a counted experiment.** Each of the four has had its one run, under the name `<experiment>-1`. `record` refuses a counted experiment unless the command carries `--for-the-record`, and those words are not for trying the command out:
 
 ```
 $ python3 -m recorder record blind --experiment signature-byte
 refused: experiment 'signature-byte' is counted: it is booted once, for the record. Pass --for-the-record when this boot is meant to be that one run
 ```
 
-Do not add those words to try the command out. `docs/COUNTED.md` says how each counted run is made, once. A run of your own, under another name or in another folder, is a repetition and not the counted run.
+A run of your own, under another name or in another folder, is a repetition and not the counted run. `docs/COUNTED.md` says how each counted run was made.
 
 ### 3. Compare
 
-Compare your own run with the committed normal run. The baseline, named first, must be a recording of a normal run, and for a changed run it must be the normal run that experiment changes (`normal-1` for the pilots):
+The baseline, named first, must be a recording of a normal run, and for a changed run it must be the normal run that experiment changes (`normal-1` for the pilots):
 
 ```
 python3 -m recorder compare recordings/normal-1/recording.json recordings/my-e2/recording.json --out recordings/comparisons/normal-1_vs_my-e2.json
@@ -233,82 +214,166 @@ registers differing (sha256): [4, 5, 7]
 written: recordings/comparisons/normal-1_vs_my-e2.json
 ```
 
-Comparing `recordings/normal-1/recording.json` with `recordings/my-normal/recording.json` prints `identical: true` when your machine reproduces the committed run.
+Comparing `recordings/normal-1/recording.json` with `recordings/my-normal/recording.json` prints `identical: true` when your machine reproduces the committed run. `compare` refuses a recording with itself, with a renamed copy of itself, with a recording whose agreement gate did not pass, and a changed run against another normal run than its own.
 
-`compare` refuses a recording with itself, with a renamed copy of itself, with a recording whose agreement gate did not pass, and a changed run against another normal run than its own.
+`scripts/record-pilots.sh` and `scripts/record-baselines.sh` make the normal runs, the pilots and their comparisons again, and pass `--replace` on purpose. The recording time is part of each file, so after them the files differ from the committed ones even when every compared field is equal, and the committed predictions and scores, which name their baseline recordings by hash, no longer fit. Run them in a copy, not in a checkout you mean to commit.
 
-`scripts/record-pilots.sh` makes the plain normal run's two recordings, the four pilots and their five comparisons again, and `scripts/record-baselines.sh` does the same for the four two-entry normal runs and their two comparisons. Both pass `--replace` on purpose and then check that nothing is left running. The recording time is part of each file, so after them the committed files differ from the ones in git even when every compared field is equal. The committed predictions name their baseline recordings by hash, so a baseline that is recorded again no longer fits them.
+### 4. Check the committed scores
 
-### 4. Check against a prediction (for counted experiments, once they have been run)
-
-```
-python3 -m recorder check COMPARISON.json --prediction predictions/ID.json --recording recordings/NAME/recording.json --baseline recordings/normal-1/recording.json --repeat recordings/comparisons/normal-1_vs_normal-2.json --out results/ID.json
-```
-
-For a boot order experiment the baseline and the repeat are those of its two-entry normal run; `docs/COUNTED.md` lists them.
-
-What it prints, here for a prediction of four rows of which two did not hold:
+Nothing is booted. This makes one score again from the committed files:
 
 ```
-specification-required rows met: 0 of 1
-open rows predicted correctly: 2 of 3
-mismatches: continues, pcr1
-written: results/ID.json
+python3 -m recorder compare recordings/normal-1/recording.json recordings/signature-byte-1/recording.json --out my-comparison.json
+python3 -m recorder check my-comparison.json --prediction predictions/signature-byte.json --recording recordings/signature-byte-1/recording.json --baseline recordings/normal-1/recording.json --repeat recordings/comparisons/normal-1_vs_normal-2.json
 ```
 
-**Exit code 0 means "scored", not "every row held".** A mismatch is a result and is listed by row; it is not an error. Exit code 1 means the score was refused: the comparison does not belong to that recording or baseline, the prediction was edited after the run or names another baseline recording, or the two normal runs are not identical. The file written with `--out` has the format `lux-score/1` (`docs/DESIGN.md` section 6.1) and is what the site loads for the two headline numbers. The committed scores are in `recordings/scores/`.
+```
+specification-required rows met: 1 of 1
+open rows predicted correctly: 17 of 17
+mismatches: none
+```
+
+**Exit code 0 means "scored", not "every row held".** A mismatch is a result and is listed by row. Exit code 1 means the score was refused: the comparison does not belong to that recording or baseline, the prediction was edited after the run, or the two normal runs are not identical. `docs/COUNTED.md` lists the normal run and the repeat comparison of the three other experiments.
+
+## How a run is trusted
+
+Every run ends the same way, whether the loader was accepted or refused: the guest is paused, its memory is saved, and the virtual machine is killed while paused, so the software TPM is still alive to be read. Three readings of the same boot, taken by different routes, must then agree on all 24 registers in all four hash banks:
+
+1. a replay of the firmware's event log, cut out of the saved guest memory;
+2. a replay of the extend commands found in the software TPM's own log;
+3. the register values read from the TPM itself.
+
+The first reading is written by the firmware and does not pass through the TPM. The second and third both come from the one software TPM process, by two routes, and both replays use the same extend function, so the three are not fully independent of each other. `docs/DESIGN.md` section 4.3 says exactly how far.
+
+If they disagree anywhere, the command exits with an error and writes nothing. The same holds when the end of the boot was not seen in time, and when a normal run was not accepted: a hung boot never becomes a recording of the normal run.
+
+## Pilots and counted experiments
+
+The measure of this project is a prediction committed **before** an experiment is run. Experiments that were tried before any prediction existed cannot meet that. They are declared as **pilots**: shown, never counted.
+
+| Pilot | What it changes | What the recording shows | Registers that differ from the normal run |
+|---|---|---|---|
+| `e1` | One byte of the loader's content, Secure Boot switched off | The changed loader ran | 4, 7 |
+| `e2` | The same byte, Secure Boot on | Refused, `Access Denied` | 4, 5, 7 |
+| `e4` | Secure Boot switched off, nothing else | The signed loader ran | 7 |
+| `e5` | The signed loader's hash added to the revocation list (`dbx`) | Refused, `Access Denied` | 4, 5, 7 |
+
+A **counted** experiment is one that had never been run when its prediction was committed. Four were run, once each (the table under "What the evidence shows"). A fifth, `rebuilt-firmware`, has no prediction and no firmware file, was not run, and is refused by the recorder.
+
+The recorder refuses to run a counted experiment unless all of this holds: the command carries `--for-the-record`; `predictions/<experiment>.json` exists, is valid, describes the same change in the same words and carries the values that decide what the experiment tests; it is committed, and the file on disk is byte for byte the committed one; and two identical recordings of the normal run that the experiment changes are on file. The recording stores the prediction's hash, commit and values, so a prediction edited after its run is detected. A counted recording is never overwritten.
 
 ## Tests
+
+Recorder, from the repository root. The unit tests need no virtual machine and change no file in the repository:
 
 ```
 python3 -m unittest discover -s recorder/tests -t .
 ```
 
-Expected last lines (the time varies):
-
 ```
-Ran 366 tests in 40.680s
+Ran 368 tests in 36.074s
 
 OK (skipped=6)
 ```
 
-The unit tests need no virtual machine; they were also run with Python 3.12 on Windows. They do not change any file in the repository. Three of them build a temporary git repository to test the prediction gate against the real `git`. The six skipped tests are the integration test. To include it, on a prepared machine:
+The time varies. The six skipped tests boot the virtual machine. To include them, on a prepared machine:
 
 ```
-LUX_VM_TESTS=1 python3 -m unittest discover -s recorder/tests -t .
+bash scripts/test-with-vm.sh
 ```
 
-It boots the normal run twice and the normal run with two boot entries once (about thirty seconds in total), asserts that the agreement gate passed, that the two runs are equal on every compared field, that a fresh run equals the committed `normal-1`, that a fresh two-entry run equals the committed `normal-two-same-1`, and that no process is left running. It never boots a changed run. Expected: `Ran 366 tests`, `OK`.
+It boots the normal run twice and the normal run with two boot entries once, asserts that the agreement gate passed, that the two runs are equal on every compared field, that a fresh run equals the committed `normal-1` and `normal-two-same-1`, and that nothing is left running. It never boots a changed run. Expected: `Ran 368 tests`, `OK`, then three lines that end in `none`.
 
-The content has its own check, which the unit tests also run:
+The content check, from the repository root:
 
 ```
 python3 scripts/check_content.py
 ```
 
-Expected last lines:
-
 ```
-content check: 5 files, 28 screens, 327 claims, 81 claims uefi-required, 26 claims uefi-platform, 19 claims tcg-unread, 38 claims this-firmware, 148 claims recording, 15 claims general, 14 recordings, 59 glossary entries
+content check: 5 files, 28 screens, 354 claims, 85 claims uefi-required, 28 claims uefi-platform, 21 claims tcg-unread, 38 claims this-firmware, 167 claims recording, 15 claims general, 14 recordings, 59 glossary entries
 content check: passed, no problems
 ```
 
-It fails if a claim has no basis, a UEFI basis has no full citation, an evidence line is not found letter for letter in the recording it names, a statement has more than 14 words, wording such as "the specification says" sits on a claim about measured boot or about this firmware, or one of the seven stops is missing. `content/README.md` lists every rule.
+The site, from `site/`:
 
-## Reading a recording
+```
+npm test
+npm run build
+npm run format:check
+```
 
-`recording.json` holds, for one boot: what was changed, down to the one byte (`run.change_detail`); the provenance (tool versions, firmware hash, key fingerprints, full command lines); the outcome; the console lines, with the loader's long address dump kept apart in `loader_report`; every logged event with its register, type, digest, a one-line summary and its story stop; all register values in four banks; and the result of the agreement gate. Events are to be read in the order of their `index`: a story stop is a label, and in a refused boot the stops do not rise steadily. The field list `may_vary` names the only fields a comparison ignores. `docs/DESIGN.md` section 4 describes the format.
+```
+ Test Files  9 passed (9)
+      Tests  329 passed (329)
+```
+
+`npm run build` prints a line that contains `built in`, and a warning that one chunk is larger than 500 kB. `npm run format:check` ends with `All matched files use Prettier code style!`.
+
+`.github/workflows/check.yml` runs the recorder's unit tests, the content check and the three site commands on every push and pull request. It boots nothing and publishes nothing. `docs/VERIFICATION.md` maps each acceptance check to a named test, lists what is not tested, and gives the counts per layer.
+
+## Repository map
+
+```
+README.md            this file
+docs/                the documentation; ENGINEERING.md is the entry point
+recorder/            the recorder: a Python package, standard library only
+  guest/             the guest loader's assembly source and the second signed loader
+  testkeys/          the public test keys, the signed loader and their manifest
+  tests/             the recorder's tests and the fixtures of two real boots
+predictions/         one prediction per counted experiment, committed before its run
+recordings/          one folder per run: recording.json and the raw eventlog.bin
+  comparisons/       a normal run against its repeat, and against each changed run
+  scores/            one score per counted run
+content/             the words of the site as data, five JSON files in one shape
+scripts/             check_content.py, and shell scripts for preparing, testing and recording
+site/                the site: React, TypeScript and Vite
+  src/content/       the two doors to the data: the content, and the files that say what was run
+  src/model/         the story's steps, the state of an experiment, the addresses
+  src/components/    the stage, the evidence panel and the pages
+  tools/             the script that makes the shipped pictures
+.github/workflows/   the offline checks for a hosted runner
+```
+
+| Document | What it holds |
+|---|---|
+| [`docs/ENGINEERING.md`](docs/ENGINEERING.md) | The entry point: purpose and requirements, the architecture of the whole system, two operations traced end to end, the file formats, the decisions, operating guidance |
+| [`docs/VERIFICATION.md`](docs/VERIFICATION.md) | Acceptance checks mapped to tests, the failures most likely to hurt a reader, test counts, what was checked by eye, defects found, the release assessment |
+| [`docs/RESULTS.md`](docs/RESULTS.md) | Every row of every counted run, the two numbers and their limits |
+| [`docs/DESIGN.md`](docs/DESIGN.md) | The recorder's modules, the four file formats and decisions D1 to D8 |
+| [`docs/PILOTS.md`](docs/PILOTS.md), [`docs/COUNTED.md`](docs/COUNTED.md), [`docs/MUTATION_CHECKS.md`](docs/MUTATION_CHECKS.md) | The pilots as recorded; how the counted experiments were staged; seven rules broken on purpose |
+| [`content/README.md`](content/README.md), [`site/ASSETS.md`](site/ASSETS.md) | The shape of the content and what its check refuses; how each picture was made |
 
 ## Provenance of the committed recordings
 
-QEMU 8.2.2 (`1:8.2.2+ds-0ubuntu1.18`), OVMF 2024.02 (`2024.02-2ubuntu0.10`, file `OVMF_CODE_4M.secboot.fd`, SHA-256 `1286f2a3217d09b374d05951355d7a561c8bacecd74845c8a1fbb71a48c0de8d`), swtpm 0.7.3, binutils 2.42, Python 3.12.3, on Ubuntu 24.04 under WSL 2. The key set and the signed loader were created once with OpenSSL 3.0.13, sbsigntool 0.9.4 and efitools 1.9.2. Machine type `pc-q35-8.2`, CPU model `qemu64`, 512 MiB, software emulation, clock fixed at 2026-01-01.
+QEMU 8.2.2 (`1:8.2.2+ds-0ubuntu1.18`), OVMF 2024.02 (`2024.02-2ubuntu0.10`, file `OVMF_CODE_4M.secboot.fd`, SHA-256 `1286f2a3217d09b374d05951355d7a561c8bacecd74845c8a1fbb71a48c0de8d`), swtpm 0.7.3, binutils 2.42, Python 3.12.3, on Ubuntu 24.04 under WSL 2. The key set and the signed loaders were created once with OpenSSL 3.0.13, sbsigntool 0.9.4 and efitools 1.9.2. Machine type `pc-q35-8.2`, CPU model `qemu64`, 512 MiB, software emulation, clock fixed at 2026-01-01. Every recording carries its own `provenance` block with these values and the full command lines.
 
-## Licence
+## Sources and licences of what is used
 
-No licence has been chosen for this repository yet. Until a licence file is added, the usual default applies: all rights are reserved, and this README's description of how to re-run the recorder is not a grant of any right. The firmware, virtual machine and TPM programs it drives are separate projects under their own licences.
+Public sources only. Nothing from any employer or vendor system was read or used.
 
-## Sources
+| What | How it is used | Licence or terms |
+|---|---|---|
+| UEFI Forum, *Unified Extensible Firmware Interface (UEFI) Specification*, version 2.11 | The chapters the story needs were read page by page, and the whole published PDF was searched by keyword; some chapters were not read, and figures have no text to read. Paraphrased and cited by section and PDF page. No table or figure is reproduced | Copyright UEFI Forum, Inc. All rights reserved |
+| EDK II and its OVMF firmware | Run as packaged by Ubuntu; not redistributed here. Six of its source files are named as the basis of claims and linked from the sources page | BSD-2-Clause-Patent |
+| QEMU | Run; not redistributed | GNU General Public License, version 2; stated per file in its source tree |
+| swtpm | Run; not redistributed | BSD-3-Clause |
+| tpm2-tools | The event type names it prints are kept as a test fixture | Not recorded in this project |
+| GNU binutils, Python | Build the guest loader; run the recorder | Not recorded in this project |
+| React, React DOM | The site's only runtime code besides its own | MIT |
+| Vite, Vitest, Prettier, the React plugin for Vite, the React type packages; TypeScript | Build, test and format the site; not shipped to a reader | MIT; TypeScript is Apache-2.0 |
+| Inter and IBM Plex Mono, through the Fontsource packages | Bundled into the built site; nothing is fetched from another site | SIL Open Font License 1.1 |
+| The pictures | Generated illustrations of a fictional laptop and board, processed by `site/tools/make_assets.py`. Not photographs, not a real product | Part of this repository; see below |
+| The recordings, fixtures, test keys and signed loaders | Output of this project's own runs, and test material made for it | Part of this repository; see below |
 
-- UEFI Forum, *Unified Extensible Firmware Interface (UEFI) Specification*, version 2.11.
-- Microsoft, *Windows Authenticode Portable Executable Signature Format* (the image digest).
-- The source code and documentation of EDK II, QEMU, swtpm and tpm2-tools.
+The method by which `recorder/pe.py` computes an image's Authenticode digest is the one named in Microsoft's *Windows Authenticode Portable Executable Signature Format*. The digest it computes is confirmed against what the firmware measured in the recordings, not against that document, and the site lists the document among those not read: no claim on the site cites it.
+
+Names of specifications, standards bodies and software projects belong to their owners and are used here only to say where a statement comes from.
+
+## Status and licence
+
+Not published. The intended repository name is `lux`, under the GitHub account `lejie710`; there is no live demo, and the site runs locally only. Its last screen links on to the earlier site, Nox, at https://lejie710.github.io/nox/, where the story of the running machine continues.
+
+**No licence has been chosen for this repository.** Until a licence file is added, the usual default applies: all rights are reserved, and this README's description of how to re-run the recorder is not a grant of any right. The firmware, virtual machine and TPM programs it drives are separate projects under their own licences.
+
+A personal project based on public specifications. Not affiliated with or endorsed by any employer or vendor.
