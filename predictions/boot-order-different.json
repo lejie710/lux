@@ -115,7 +115,7 @@
       },
       "source": "recordings/normal-two-different-1/recording.json, event 14",
       "reason": "The cited text lets the firmware add boot options to the list and remove invalid ones, and in the normal run this firmware measured the order exactly as the preparation boot had written it, so the same is expected here.",
-      "note": "The same text guarantees a change only after the next reset; the order is written in a preparation boot and the machine is switched off before the recorded boot. The predicted digest is the SHA-256 of the eight bytes that will be written as BootOrder (03 00 02 00 00 00 01 00). In the normal run the digest of event 14 is the SHA-256 of the variable's value, which the agreement gate recomputed."
+      "note": "The citation covers one thing only: that the firmware may add to the list or remove from it. UEFI 2.11 has no sentence on measuring BootOrder. That this firmware measures it into register 1 with this event type is the observation named in 'source'; measuring boot events into registers is defined by a Trusted Computing Group document that has not been read, and nothing is claimed here about what it says. The same text guarantees a change only after the next reset; the order is written in a preparation boot and the machine is switched off before the recorded boot. The predicted digest is the SHA-256 of the eight bytes that will be written as BootOrder (03 00 02 00 00 00 01 00). In the normal run the digest of event 14 is the SHA-256 of the variable's value, which the agreement gate recomputed."
     },
     {
       "id": "first-event",

@@ -69,7 +69,7 @@
       },
       "source": "recordings/e4/recording.json, event 4 (pilot); the same event in recordings/e1/recording.json (pilot)",
       "reason": "The cited text leaves the value of SecureBoot to platform policy, and in e4 and e1 this firmware measured SecureBoot as 0, with exactly this digest, once its own switch was off.",
-      "note": "UEFI defines no switch that turns checking off while the keys stay enrolled. The switch is this firmware's own."
+      "note": "UEFI defines no switch that turns checking off while the keys stay enrolled. The switch is this firmware's own. The citation covers one thing only: that the value of SecureBoot is platform policy. UEFI 2.11 has no sentence on measuring that value. That this firmware measures it into register 7 with this event type is the observation named in 'source'; measuring boot events into registers is defined by a Trusted Computing Group document that has not been read, and nothing is claimed here about what it says."
     },
     {
       "id": "first-event",
