@@ -4,17 +4,24 @@ import storyA from "../../../content/story-a.json";
 import storyB from "../../../content/story-b.json";
 import storyC from "../../../content/story-c.json";
 import shared from "../../../content/sources.json";
+import experiments from "../../../content/experiments.json";
 import {
   BASES,
   PARTS,
+  type BaseScreen,
   type BasisLabel,
+  type Card,
   type Claim,
   type Definition,
   type FirmwareSource,
   type GlossaryEntry,
+  type Limit,
+  type NotRead,
   type OpeningScreen,
+  type PageScreen,
   type RecordedEvent,
   type Screen,
+  type Source,
   type Stop,
   type StoryFile,
 } from "./types";
@@ -22,7 +29,8 @@ import {
 export const FORMAT = "lux-content/2";
 
 const stories = [storyA, storyB, storyC] as unknown as StoryFile[];
-if ([...stories, shared].some((file) => file.format !== FORMAT)) throw new Error(`content: expected format ${FORMAT}`);
+if ([...stories, shared, experiments].some((file) => file.format !== FORMAT))
+  throw new Error(`content: expected format ${FORMAT}`);
 if (!stories[0].opening) throw new Error("content: the first story file has no opening");
 
 export const OPENING: OpeningScreen = stories[0].opening;
@@ -37,6 +45,19 @@ export const PICTURE_NOTE: string = shared.picture_note;
 export const DISCLAIMER: string = shared.disclaimer;
 /** How to read a page number, a type name or a register value. */
 export const READING_NOTES: Record<string, string> = shared.reading_notes;
+export const TRADEMARK_NOTE: string = shared.trademark_note;
+/** Where the names of the four stages come from. */
+export const STAGE_NAMES = shared.stage_names as { text: string; claims: Claim[] };
+/** What was read or run, what was not read, and the limits of what is shown. */
+export const SOURCES = shared.sources as unknown as Source[];
+export const NOT_READ = shared.not_read as unknown as NotRead[];
+export const LIMITS = shared.limits as unknown as Limit[];
+
+/** The screens of the experiments page, in reading order, and the name the navigation gives the page. */
+export const EXPERIMENT_SCREENS = experiments.screens as unknown as PageScreen[];
+export const EXPERIMENTS_LABEL: string = experiments.section.nav_label;
+/** The two screens of the sources page: the sources themselves, and what the project is. */
+export const SOURCE_SCREENS = shared.screens as unknown as PageScreen[];
 
 // The four fields of a committed recording that the story quotes, for every run on file. Only these fields
 // are taken into the page; the rest of a recording stays in its file.
@@ -121,22 +142,62 @@ export function recordedRegister(run: string, bank: string, register: number): s
   return found;
 }
 
+/** The same three readings for a file that may name what a recording does not have: null, not an error. */
+export const eventAt = (run: string, index: number) => EVENTS[run]?.find((e) => e.index === index) ?? null;
+export const lineAt = (run: string, position: number) => CONSOLE[run]?.[position] ?? null;
+export const registerAt = (run: string, bank: string, register: number) =>
+  PCRS[run]?.[bank]?.[String(register)] ?? null;
+
 /** A long hexadecimal value cut to its first and last digits, for a line that has no room for all of it. */
 export function shortened(value: string, keep = 8): string {
   return value.length <= keep * 2 + 3 ? value : `${value.slice(0, keep)}...${value.slice(-keep)}`;
 }
 
+/** What an evidence panel can be opened on: a screen, or one card of a screen of cards. */
+export interface Subject {
+  /** The screen's id, or the screen's and the card's with a slash between. */
+  id: string;
+  screen: BaseScreen & Pick<PageScreen, "evidence" | "sides" | "cards" | "items" | "experiment" | "status">;
+  card: Card | null;
+}
+
+export const subjectId = (screenId: string, cardId?: string) => (cardId ? `${screenId}/${cardId}` : screenId);
+
+/** The screen, or the card of a screen, that an id names, on any page. Null when nothing has that id. */
+export function findSubject(id: string | null): Subject | null {
+  if (!id) return null;
+  const [screenId, cardId] = id.split("/");
+  const screen = [...allScreens(), ...EXPERIMENT_SCREENS, ...SOURCE_SCREENS].find((s) => s.id === screenId);
+  if (!screen) return null;
+  const card = cardId ? (screen as PageScreen).cards?.find((c) => c.id === cardId) : undefined;
+  if (cardId && !card) return null;
+  return { id, screen, card: card ?? null };
+}
+
+/** The claims of a page's screens in reading order: a screen's own, then those of each of its cards and items. */
+function claimGroups(screens: readonly (BaseScreen & Pick<PageScreen, "cards" | "items">)[]): [string, Claim[]][] {
+  return screens.flatMap((screen) => [
+    [screen.id, screen.claims] as [string, Claim[]],
+    ...[...(screen.cards ?? []), ...(screen.items ?? [])].map(
+      (part) => [subjectId(screen.id, part.id), part.claims] as [string, Claim[]],
+    ),
+  ]);
+}
+
 /**
- * The number printed on a claim: claims count from 1 through the story in reading order, so a marker
- * beside a statement and the list behind "Open the evidence" show the same numbers.
+ * The number printed on a claim: claims count from 1 through a page in reading order, so a marker beside a
+ * statement and the list behind "Open the evidence" show the same numbers. The story, the experiments and
+ * the sources each count from 1. The id is a screen's, or a screen's and a card's or item's.
  */
-export function claimNumbers(screenId: string): { first: number; last: number } {
-  let before = 0;
-  for (const screen of allScreens()) {
-    if (screen.id === screenId) return { first: before + 1, last: before + screen.claims.length };
-    before += screen.claims.length;
+export function claimNumbers(id: string): { first: number; last: number } {
+  for (const page of [allScreens(), EXPERIMENT_SCREENS, SOURCE_SCREENS]) {
+    let before = 0;
+    for (const [key, claims] of claimGroups(page)) {
+      if (key === id) return { first: before + 1, last: before + claims.length };
+      before += claims.length;
+    }
   }
-  throw new Error(`content: no screen ${screenId}`);
+  throw new Error(`content: no screen ${id}`);
 }
 
 /** Where a claim comes from, in one line. Empty for general background, which names no source. */
@@ -152,7 +213,7 @@ export function claimSource(claim: Claim): string {
  * What a screen lacks that the scene needs in order to draw it. An empty list means the screen can be shown.
  * The content has its own, stricter check against the recordings; this one guards the site's reading of it.
  */
-export function screenProblems(screen: Screen): string[] {
+export function screenProblems(screen: Screen | PageScreen): string[] {
   const problems: string[] = [];
   const attempt = (what: string, read: () => unknown) => {
     try {
@@ -166,23 +227,29 @@ export function screenProblems(screen: Screen): string[] {
   else if (screen.statement.emphasis && !screen.statement.text.includes(screen.statement.emphasis))
     problems.push("the emphasis is not a phrase of the statement");
 
-  const evidence = screen.evidence;
-  if (!evidence) problems.push("no evidence");
-  else if (evidence.recorded) {
-    if (!evidence.text) problems.push("recorded evidence has no line");
-    if (evidence.kind === "event") {
-      attempt("evidence", () => {
-        const event = recordedEvent(evidence.run, evidence.event_index ?? -1);
-        if (event.summary !== evidence.text) throw new Error("the line is not the event's summary");
-      });
-    } else {
-      const list = evidence.kind;
-      attempt("evidence", () => {
-        if (recordedLine(evidence.run, list, evidence.position) !== evidence.text)
-          throw new Error("the line is not the recorded one");
-      });
-    }
-  } else if (!evidence.label) problems.push("missing evidence has no label");
+  // A two-run screen has no line of its own: each of its two sides carries one.
+  const lines = screen.kind === "side-by-side" ? ((screen as PageScreen).sides ?? []).map((s) => s.evidence) : [];
+  if (screen.kind === "side-by-side" && lines.length !== 2) problems.push("a two-run screen needs two sides");
+  for (const evidence of screen.kind === "side-by-side" ? lines : [screen.evidence]) checkEvidence(evidence);
+
+  function checkEvidence(evidence: Screen["evidence"] | null) {
+    if (!evidence) problems.push("no evidence");
+    else if (evidence.recorded) {
+      if (!evidence.text) problems.push("recorded evidence has no line");
+      if (evidence.kind === "event") {
+        attempt("evidence", () => {
+          const event = recordedEvent(evidence.run, evidence.event_index ?? -1);
+          if (event.summary !== evidence.text) throw new Error("the line is not the event's summary");
+        });
+      } else {
+        const list = evidence.kind;
+        attempt("evidence", () => {
+          if (recordedLine(evidence.run, list, evidence.position) !== evidence.text)
+            throw new Error("the line is not the recorded one");
+        });
+      }
+    } else if (!evidence.label) problems.push("missing evidence has no label");
+  }
 
   if (!screen.claims?.length) problems.push("no claims");
   for (const claim of screen.claims ?? []) {
@@ -203,9 +270,11 @@ export function screenProblems(screen: Screen): string[] {
   for (const group of screen.detail?.pcrs ?? [])
     for (const n of group.registers) attempt("detail register", () => recordedRegister(group.run, group.bank, n));
 
-  const picture = screen.picture;
-  if (!picture) problems.push("no picture");
-  else {
+  // Only the story is pictured from the content; the other pages have null there.
+  const picture = (screen as Screen).picture;
+  if (!picture) {
+    if (screen.stop !== null || screen.kind === "opening") problems.push("no picture");
+  } else {
     if (picture.plate !== "board" && picture.plate !== "laptop") problems.push(`unknown plate ${picture.plate}`);
     for (const part of [...picture.lit, ...picture.newly_lit])
       if (!PARTS.includes(part)) problems.push(`unknown part ${part}`);
