@@ -350,6 +350,8 @@ The site tells the boot as seven stops: reset, SEC, PEI, DXE, BDS, load and veri
 | `boot-return` | "Returning from EFI Application" action | 6 | Observed: logged only when a boot option hands control back, here after a refused load |
 | `exit-boot-services` | The two exit actions in PCR 5 | 7 | Observed: only after the loader's exit call |
 
+The basis given for `load-verify` was written before the pilot `e5` was recorded. In `e5` the loader is refused and the authority record is present all the same; only the image digest is absent (`docs/PILOTS.md`). So "absent when it is refused" holds for the image digest in every refused run on file, and for the authority record in `e2` and `signature-byte-1`, not in `e5`.
+
 Stops 1 and 2 have no events and the recording says so. An event matching no rule gets `stop: null`, and a test fails if that happens in a committed recording.
 
 **Stops are labels and do not always rise.** In the refused pilot `e2` the last three events carry stops 5, 6, 5: the first boot option is called (`boot-attempt`), the firmware gives it up (`boot-return`), and then calls the next option (`boot-attempt` again). The site must render events in `index` order and may use `stop` only to label them. A test pins that sequence.

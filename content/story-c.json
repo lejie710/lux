@@ -19,7 +19,7 @@
           "load-verify"
         ],
         "events": "The authorising event in TPM register 7 and the loaded image in register 4",
-        "rests_on": "Which events belong to this stop is this project's own rule ('load-verify' in docs/DESIGN.md section 7): the two events that are present when the loader is accepted and absent when it is refused. The event log carries no timestamps and no phase markers."
+        "rests_on": "Which events belong to this stop is this project's own rule ('load-verify' in docs/DESIGN.md section 7): the two events that are both present when the loader is accepted. In the refused pilot e2 both are absent; in the refused pilot e5 the image digest is absent and the authority record is present. The event log carries no timestamps and no phase markers."
       },
       "not_shown": [
         "How the firmware checked the signature internally. The recording holds the result and one log record, not the steps.",
