@@ -1,0 +1,185 @@
+{
+  "baseline": {
+    "experiment": "normal",
+    "kind": "normal",
+    "recording_sha256": "5f06748352fdf3d684fbdc917606e547aeccf95d6e91dd5225d7d40af512728c",
+    "run": "normal-1"
+  },
+  "changed": {
+    "experiment": "e4",
+    "kind": "pilot",
+    "recording_sha256": "61ce1f4e1c290af19015fd0aaf67b365d212785af3a648bf4dbe428732dcf651",
+    "run": "e4"
+  },
+  "console_first_differing_line": 6,
+  "events_only_in_baseline": [
+    {
+      "digest_sha256": "ccfc4bb32888a345bc8aeadaba552b627d99348c767681ab3141f5b01e40a40e",
+      "index": 4,
+      "pcr": 7,
+      "type": "EV_EFI_VARIABLE_DRIVER_CONFIG"
+    },
+    {
+      "digest_sha256": "3af949760de8f2194b4046474edc565c6361dd881b99dfc2b744908e75c19ece",
+      "index": 25,
+      "pcr": 7,
+      "type": "EV_EFI_VARIABLE_AUTHORITY"
+    }
+  ],
+  "events_only_in_changed": [
+    {
+      "digest_sha256": "115aa827dbccfb44d216ad9ecfda56bdea620b860a94bed5b7a27bba1c4d02d8",
+      "index": 4,
+      "pcr": 7,
+      "type": "EV_EFI_VARIABLE_DRIVER_CONFIG"
+    }
+  ],
+  "first_differing_event": {
+    "baseline": {
+      "digest_sha256": "ccfc4bb32888a345bc8aeadaba552b627d99348c767681ab3141f5b01e40a40e",
+      "pcr": 7,
+      "type": "EV_EFI_VARIABLE_DRIVER_CONFIG"
+    },
+    "changed": {
+      "digest_sha256": "115aa827dbccfb44d216ad9ecfda56bdea620b860a94bed5b7a27bba1c4d02d8",
+      "pcr": 7,
+      "type": "EV_EFI_VARIABLE_DRIVER_CONFIG"
+    },
+    "index": 4,
+    "stop": 4
+  },
+  "format": "lux-comparison/1",
+  "identical": false,
+  "loader_report_first_differing_line": 28,
+  "other_fields_differing": [
+    "event_log.bytes",
+    "event_log.events",
+    "event_log.sha256",
+    "gate.counts.content_digests_recomputed",
+    "vars_after_sha256"
+  ],
+  "outcome": {
+    "baseline": "accepted",
+    "changed": "accepted"
+  },
+  "pcrs_differing": {
+    "sha1": [
+      7
+    ],
+    "sha256": [
+      7
+    ],
+    "sha384": [
+      7
+    ],
+    "sha512": [
+      7
+    ]
+  },
+  "pcrs_same": {
+    "sha1": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23
+    ],
+    "sha256": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23
+    ],
+    "sha384": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23
+    ],
+    "sha512": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23
+    ]
+  },
+  "refusal_lines": {
+    "baseline": [],
+    "changed": []
+  }
+}
