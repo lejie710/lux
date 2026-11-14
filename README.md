@@ -124,7 +124,7 @@ npm run dev -- --port 5191
 
 In the scrolled story one press of Space or Page Down is one step on, and Shift with Space or Page Up one step back. The first thing the keyboard reaches is a link to `/?static`, the whole story as a plain page.
 
-The first load is about 0.7 MB by the sizes of the built files: one script of 936 kB (186 kB compressed), one stylesheet, two font files and the pictures. That figure assumes a host that compresses text and a browser that fetches only the two Latin font files of the 23 the build writes; it was not measured in a browser. About two thirds of the script is the recordings and the content.
+The first load is about 0.7 MB by the sizes of the built files: one script of 936 kB (186 kB compressed), one stylesheet, two font files and the pictures. That figure assumes a host that compresses text and a browser that fetches only the two Latin font files of the 17 the build writes; it was not measured in a browser. About two thirds of the script is the recordings and the content.
 
 ### Hosting
 
@@ -315,7 +315,7 @@ The time varies. The six skipped tests boot the virtual machine. To include them
 bash scripts/test-with-vm.sh
 ```
 
-It boots the normal run twice and the normal run with two boot entries once, asserts that the agreement gate passed, that the two runs are equal on every compared field, that a fresh run equals the committed `normal-1` and `normal-two-same-1`, and that nothing is left running. It never boots a changed run, and takes about two minutes. Expected: `Ran 368 tests`, `OK`, then `virtual machines running: none`, `software TPMs running: none` and `guest memory files: none`.
+It boots the normal run twice and the normal run with two boot entries once, asserts that the agreement gate passed, that the two runs are equal on every compared field, that a fresh run equals the committed `normal-1` and `normal-two-same-1`, and that nothing is left running. It never boots a changed run, and takes one to two minutes. Expected: `Ran 368 tests`, `OK`, then `virtual machines running: none`, `software TPMs running: none` and `guest memory files: none`.
 
 The content check, from the repository root:
 

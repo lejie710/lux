@@ -31,11 +31,11 @@ No row failed, so there is no mismatch to state. **Read the numbers with the fiv
 2. **The six specification-required rows cover four behaviours.** "The boot continues with the stored order" and "the first element of `BootOrder` is tried first" are each counted in both forms of the boot order experiment. The other two are "an image whose signature is not found in `db` is not started" and "with `SecureBoot` at 0 nothing is verified".
 3. **Most open rows predicted that this firmware would repeat what a pilot or a normal run had already shown.** `signature-byte` predicted a record equal to the pilot `e2` and `signature-byte-off` one equal to the pilot `e4`, row by row. What was not known before the runs was whether a changed signature value would behave like changed content (refused, same events) and whether the measured image digest would ignore the signature area. Both turned out as predicted.
 4. **`signature-byte-off` is secondary.** Against its normal run it changes two things, the switch and the byte, so it is not a one-change experiment against `normal-1`. It changes one thing against the pilot `e4`, and `e4` was recorded once for the repository. Its prediction said so before the run. Without it the numbers are 5 of 5 and 54 of 54.
-5. **The boot order rows `continues`, `entry-b-first` and `order-measured-as-written` were not written without any earlier observation.** During the early research a boot order was changed once on another configuration (the packaged firmware without Secure Boot, the firmware's own three options, console lines and two variables read, no register or event read), and the test was repeated once. It showed that this firmware tries the option now listed first and leaves the written order as written. `docs/COUNTED.md` declares it. The counted configuration itself, entry B before entry A with Secure Boot on, was booted here for the first time.
+5. **The boot order rows `continues`, `entry-b-first` and `order-measured-as-written` were not written without any earlier observation.** Before the recorder existed and before any prediction, a boot order was changed once on another configuration (the packaged firmware without Secure Boot, the firmware's own three options, console lines and two variables read, no register or event read), and the test was repeated once. It showed that this firmware tries the option now listed first and leaves the written order as written. `docs/COUNTED.md` declares it. The counted configuration itself, entry B before entry A with Secure Boot on, was booted here for the first time.
 
 ## How the runs were made
 
-- **Order of events:** the predictions were committed (`76ce581`, notes reworded in `b6270c1` before any run); an independent audit found no trace of any changed configuration in the repository or the work directory; then each experiment was recorded once with `python3 -m recorder record <experiment>-1 --experiment <experiment> --for-the-record`.
+- **Order of events:** the predictions were committed (`76ce581`, notes reworded in `b6270c1` before any run); a separate audit, which booted nothing, found no trace of any counted configuration in the repository or the work directory (no store that lists entry B first, no loader with the changed signature byte); then each experiment was recorded once with `python3 -m recorder record <experiment>-1 --experiment <experiment> --for-the-record`.
 - **The dates, on one clock.** A recording carries its time in UTC. The `written` date in a prediction file is the calendar date at the place of writing, eight hours ahead of UTC. So a prediction that says `written: 2026-11-15` stands beside a run recorded on `2026-11-14`, and that reads as if the run came first. It did not. In UTC the predictions were committed at 2026-11-14T16:13:51Z (`76ce581`) and their notes reworded at 16:41:25Z (`b6270c1`); the four runs were recorded at 16:52:02Z, 16:53:32Z, 16:55:26Z and 16:56:19Z.
 - **Each was booted exactly once.** No run failed, none was repeated, none ended as `timeout`. The agreement gate passed in all four.
 - **The changed boot order store** was made by one preparation boot (`python3 -m recorder prepare --changed-boot-order`) after the boot order predictions were committed. That boot runs the enrolment program on the empty store; it does not boot the changed order. The store has SHA-256 `6bce1b1d7fcd7e037096fbc574f270946c6491909eaa605eb90a86192eff09c7` and differs from the pinned two-entry template in the value of `BootOrder` only.
@@ -212,7 +212,7 @@ Beyond the rows of the two boot order runs, read from the recordings:
 
 ## The pilots, not counted
 
-Four experiments were tried during the early research, before any prediction existed. They have no prediction and no score, and they are in none of the numbers above. `docs/PILOTS.md` describes each.
+Four experiments were tried before any prediction existed. They have no prediction and no score, and they are in none of the numbers above. `docs/PILOTS.md` describes each.
 
 | Pilot | What it changes | What the recording shows | Registers that differ from the normal run |
 |---|---|---|---|
@@ -227,9 +227,9 @@ One counted experiment has not been run: `rebuilt-firmware`. No such firmware ha
 
 - **One run each.** A counted experiment is booted once by rule, so nothing here says how often a changed run repeats. The normal runs they are compared with were each recorded twice and are identical.
 - **One firmware build in one virtual machine**, with a software TPM, under software emulation: OVMF 2024.02 as packaged by Ubuntu, QEMU 8.2.2, swtpm 0.7.3. Nothing here shows what another build or any vendor's firmware on real hardware does.
-- **"Required by UEFI 2.11" means: the cited sentence was found in a reading of that document, by section title and PDF page.** It is this project's reading, not a conformance test. Four behaviours were checked, out of a specification of many hundred pages.
+- **"Required by UEFI 2.11" means: the cited sentence was found in a reading of that document, by section title and PDF page.** It is this project's reading, not a conformance test. Four behaviours were checked, out of a specification whose published PDF has 2301 pages.
 - **No row says what a Trusted Computing Group document requires.** The document that defines the event log and the use of the registers has not been read. Every register and event row is an observation of this firmware, and event type names are the names a tool prints.
-- **The blindness of the runs rests on the repository's history and one audit**, not on a mechanism that could not have been bypassed. The recorder refuses a counted experiment without a committed prediction; it cannot prove that nobody booted the configuration with other tools. The audit read every variable store and loader file in the work directory before the runs and found none of a changed configuration.
+- **The blindness of the runs rests on the repository's history and one audit**, not on a mechanism that could not have been bypassed. The recorder refuses a counted experiment without a committed prediction; it cannot prove that nobody booted the configuration with other tools. The audit read every variable store and loader file in the work directory before the runs and found none of a counted configuration: no store that lists entry B first, and no loader with the changed signature byte. The changed configurations of the declared pilots had been booted on that machine before, and are not what the audit looked for. The audit's script and its output are not in the repository.
 - **The prediction notes were reworded once after the first commit and before any run** (`b6270c1`): three files, notes on what a citation covers, no expected value. `signature-byte.json` is unchanged since `76ce581`. Each recording stores the hash and commit of the prediction it ran under.
 - **The predictions were written with the pilots and the normal runs in sight.** That is what "this firmware" as a basis means. A high count of open rows therefore shows that the firmware is consistent with itself across these changes more than it shows foresight.
 - **What a recording cannot see was not scored:** the value of `BootCurrent`, and the table in which UEFI says a refused image is recorded.
@@ -238,30 +238,34 @@ One counted experiment has not been run: `rebuilt-firmware`. No such firmware ha
 
 ## Checked a second time
 
-After the runs, a second check was made by someone who ran none of them, with a script that shares no code with the recorder. Nothing was booted for it. It found no difference from this note.
+After the runs, a second check was made in a separate pass that booted nothing, with a script that shares no code with the recorder. It was made within this project and on the same machine, not by an outside party. It found no difference from this note.
 
-| What was checked | Result |
-|---|---|
-| The four scores, made again from the recordings and the prediction files: the comparison fields recomputed from the two recordings, then every row judged | 6 of 6 and 72 of 72, no mismatch. Every row verdict equals the committed score file, and every recomputed comparison field equals the committed comparison |
-| The registers of all 14 committed recordings, replayed from `eventlog.bin` with a separate parser, in all four hash banks | 96 of 96 values equal in each recording. Every digest that is defined by its event's own data was recomputed and is equal |
-| The gate block of each recording | `passed`, and all seven checks true, in all 14 |
-| Each prediction: the file on disk, the hash stored in the recording, the file read out of the commit the recording names, and the file at the head of the history | The same SHA-256 in all four places, for all four predictions |
-| Order in the history | Both prediction commits are ancestors of every commit that adds a counted recording |
-| The run directories left on the machine | One directory and one attempt marker per counted run. Each TPM log holds one start-up command, and each console log one boot |
-| Every variable store and loader file on the machine | The only stores that list entry B first, and the only loader files with the changed signature byte, were written after the prediction commits: by the preparation boot and by the four runs |
-| The changed loader, made again from the committed signed loader by flipping the lowest bit of the byte at file offset 40170 | SHA-256 `f9a028b6f2544a7e03f007b6058c3b45ebc930e094e0a92de0d902938e0b9496`, as recorded. The byte lies in the 256 bytes of the signature value |
-| The store with the changed order against the two-entry template | Two bytes differ, both inside the value of `BootOrder` |
+**That script and its output are not in the repository.** So the last column says, row by row, whether a reader can repeat the check from the committed files, or whether it rests on what was seen on the recording machine.
 
-What this check cannot show: file times and commit times can be set by hand, and it was made on the same machine as the runs. It shows that the files agree with each other and with this note, not that no other boot was ever made.
+| What was checked | Result | Can a reader repeat it |
+|---|---|---|
+| The four scores, made again from the recordings and the prediction files: the comparison fields recomputed from the two recordings, then every row judged | 6 of 6 and 72 of 72, no mismatch. Every row verdict equals the committed score file, and every recomputed comparison field equals the committed comparison | Yes, with the recorder's own code: `test_committed_recordings.py`, `CommittedRecordings.test_committed_comparisons_equal_a_fresh_comparison` and `CountedRuns.test_each_score_file_follows_from_the_committed_files`. The separate script is not there |
+| The registers of all 14 committed recordings, replayed from `eventlog.bin` with a separate parser, in all four hash banks | 96 of 96 values equal in each recording. Every digest that is defined by its event's own data was recomputed and is equal | The replay, yes, with the recorder's own parser: `CommittedRecordings.test_each_recording_follows_from_its_own_event_log`. The separate parser and the recomputed event digests are not in the repository |
+| The gate block of each recording | `passed`, and all seven checks true, in all 14 | Yes: the same test |
+| Each prediction: the file on disk, the hash stored in the recording, the file read out of the commit the recording names, and the file at the head of the history | The same SHA-256 in all four places, for all four predictions | Yes. The file against the recording: `CountedRuns.test_each_run_was_recorded_under_the_prediction_that_is_still_on_file`. The file in the named commit: by hand, with `git show <commit>:predictions/<file>` and a SHA-256 of what it prints |
+| Order in the history | Both prediction commits are ancestors of every commit that adds a counted recording | Yes, by hand: `git merge-base --is-ancestor <prediction commit> <recording commit>` for the commits named in the sections above. No test does it |
+| The run directories left on the machine | One directory and one attempt marker per counted run. Each TPM log holds one start-up command, and each console log one boot | **No.** Seen on the recording machine only |
+| Every variable store and loader file on the machine | The only stores that list entry B first, and the only loader files with the changed signature byte, were written after the prediction commits: by the preparation boot and by the four runs | **No.** Seen on the recording machine only |
+| The changed loader, made again from the committed signed loader by flipping the lowest bit of the byte at file offset 40170 | SHA-256 `f9a028b6f2544a7e03f007b6058c3b45ebc930e094e0a92de0d902938e0b9496`, as recorded. The byte lies in the 256 bytes of the signature value | Yes, by hand, from `recorder/testkeys/loader-signed.efi`. No test computes that hash |
+| The store with the changed order against the two-entry template | Two bytes differ, both inside the value of `BootOrder` | **No.** The store is not committed; a recording holds its hash only |
+
+What this check cannot show: file times and commit times can be set by hand, and it was made on the same machine as the runs. It shows that the files agree with each other and with this note, not that no other boot was ever made. The three rows marked "No" are the ones the blindness of the runs rests on, and they rest on this note's word.
 
 ## Checking the scores
 
 From the repository root. Nothing is booted.
 
 ```
-python3 -m recorder compare recordings/normal-1/recording.json recordings/signature-byte-1/recording.json --out /tmp/c.json
-python3 -m recorder check /tmp/c.json --prediction predictions/signature-byte.json --recording recordings/signature-byte-1/recording.json --baseline recordings/normal-1/recording.json --repeat recordings/comparisons/normal-1_vs_normal-2.json
+python3 -m recorder compare recordings/normal-1/recording.json recordings/signature-byte-1/recording.json --out scratch/my-comparison.json
+python3 -m recorder check scratch/my-comparison.json --prediction predictions/signature-byte.json --recording recordings/signature-byte-1/recording.json --baseline recordings/normal-1/recording.json --repeat recordings/comparisons/normal-1_vs_normal-2.json
 ```
+
+The first command prints three lines of its own and writes into `scratch/`, a folder git ignores. The second prints:
 
 ```
 specification-required rows met: 1 of 1

@@ -1,8 +1,8 @@
 # A run from a fresh clone, following the README
 
-The repository was cloned into a new, empty folder outside the project at commit `b3222a5`, and `README.md` was followed in its own order, typing what it says. This file records what was typed, what came back, and every place where the README was wrong, incomplete, ambiguous or assumed something it does not state. Nothing in the repository was changed to make a step pass.
+The repository was cloned into a new, empty folder outside the project at commit `b3222a5`, and `README.md` was followed in its own order, typing what it says. This file records what was typed, what came back, and every place where the README was wrong, incomplete, ambiguous or assumed something it does not state. Nothing in the repository was changed to make a step pass. Sections 1 to 5 are that run as it was. Section 6 records what was corrected in the README afterwards and which steps were then typed again in a second new clone.
 
-Run on 2026-11-15. No counted experiment was booted. The clone and its work directory were deleted afterwards.
+Both runs were made on 2026-11-15. No counted experiment was booted. The first clone and both work directories were deleted afterwards. The second clone is a folder outside the repository that nothing depends on.
 
 ## 1. Result in one table
 
@@ -24,7 +24,7 @@ Run on 2026-11-15. No counted experiment was booted. The clone and its work dire
 
 | Item | Version |
 |---|---|
-| Windows | Windows 11 Enterprise, version 10.0.26100.9711 |
+| Windows | Windows 11, version 10.0.26100.9711 |
 | Python on Windows | 3.12.10, as `python`; `python3` is not a working command there |
 | Node.js, npm | 24.22.0, 11.19.1 |
 | git on Windows | 2.54.0.windows.1, `core.autocrlf=true` |
@@ -103,3 +103,26 @@ What matched without remark: the question and the headline table against `record
 - **Not the hosted workflow.** It has still never run.
 - **Not a counted experiment.** None was booted, by rule; only the refusal of one was seen.
 - **Not a clean install of the Ubuntu packages**, and not an ordinary Linux user.
+
+## 6. After the README was corrected
+
+The README was corrected in commit `89fa143` for findings F1 to F10; two numbers in it (how many font files the build writes, and how long the test with the virtual machine takes) were set from this second pass in the commit that adds this section. The repository was then cloned again into a new, empty folder at that commit, on the machine of section 2, and the steps the findings touch were typed again. The recorder used a new work directory through `LUX_WORK_DIR`, so `prepare` made its templates from nothing.
+
+| Finding | What the README says now | Typed again, and what came back |
+|---|---|---|
+| F3 | The recording examples carry `--out scratch`, a folder that git and the tests ignore; the README says what happens without it | In the second clone, under WSL, in the README's order: `prepare` (the eight lines, equal); the three recordings (`accepted, 28 events`, `refused, 26 events`, `accepted, 30 events`, each `written: scratch/<name>/recording.json`); the refusal of the counted experiment (the README's line, exit 1, nothing booted). Then, **with those recordings still on disk**: `Ran 368 tests`, `OK (skipped=6)`; `bash scripts/test-with-vm.sh` gave `Ran 368 tests in 63.545s`, `OK`, the three lines ending in `none`, exit 0, 65 seconds in all; the content check printed `14 recordings` and `passed, no problems`; `git status` was clean |
+| F1 | Says the commands are written as on Linux or WSL and that Windows uses `python` | In the second clone on Windows: `python -m unittest discover -s recorder/tests -t .` gave `Ran 368 tests in 29.151s`, `OK (skipped=6)`; `python scripts/check_content.py` gave both lines of the README |
+| F5, F6 | Each `compare` and the `check` has its own command and its own output block, and every output path lies in `scratch/` | In the second clone: `identical: false`, `[4, 5, 7]`, `written: scratch/normal-1_vs_my-e2.json`; `identical: true`, `[]`, `written: scratch/normal-1_vs_my-normal.json`; `identical: false`, `[4, 5, 7]`, `written: scratch/my-comparison.json`; then `1 of 1`, `17 of 17`, `mismatches: none`. All equal |
+| F2 | Quotes the message of a taken port and gives `npm run dev -- --port 5191` | In the working tree, not in the clone: `npm run dev` printed `Error: Port 5183 is already in use`, because the same other process still held the port; `npm run dev -- --port 5191` answered 200 with the site's title |
+| F4 | Names `npm run preview` after `npm run build` | In the working tree: `npm run preview -- --port 5191` answered 200 and served `og.jpg` |
+| F7 | Says the commands were run as root, and gives one `apt install` line with the note that it was not exercised | Not exercised: the packages were installed already. Again run as root |
+| F8 | Names what `engines` accepts and that only Node.js 24.22.0 with npm 11.19.1 was used | Read against `site/package.json` |
+| F9 | Shows the last line of `npm ci` and says `test-with-vm.sh` takes one to two minutes | 65 seconds in the second clone, about 100 in the first |
+| F10 | Says the first-load figure is added up from the built files and was not measured in a browser | The build writes 17 font files (12 `.woff2`, 5 `.woff`), counted in `dist/assets` in this pass, not the 23 that finding F10 states. Script 177.5 kB and stylesheet 7.5 kB after gzip. Still no network log from a browser |
+| F11 | The document tables of the README and of `ENGINEERING.md` name this file, and `VERIFICATION.md` section 8 summarises it | Read |
+
+In the working tree at the same commit: `npm test` gave `Test Files  9 passed (9)`, `Tests  329 passed (329)`; `npm run build` gave 936.94 kB, gzip 185.68 kB, the chunk warning and `built in`; `npm run format:check` gave `All matched files use Prettier code style!`.
+
+**What this second pass is not.** It is not a complete run from start to end in one clone. `npm ci` was not repeated, because nothing was downloaded for it, so the site's commands were run in the working tree and not in the second clone. The default port 5183 was again not seen. Taken together, every step of the corrected README has been typed and has matched, either in a new clone or, for the site's commands, in the working tree at the same commit; a single pass that does all of it in one new clone has not been made.
+
+Boots made by the second pass: the enrolment boots of `prepare`, the three recordings above, and the three normal runs of `test-with-vm.sh`. All are normal runs or the pilot `e2`. Afterwards no virtual machine, no software TPM and no guest memory file was left.

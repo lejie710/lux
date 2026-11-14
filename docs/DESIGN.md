@@ -1,6 +1,6 @@
 # Lux recorder: design
 
-Status: fourth version. The first was written before the code. The second matched the package as first built. The third matched the package after an independent review of that build. This one adds how the counted experiments are staged (decisions D6 to D8), written when their predictions were committed and before any of them was run. Section 11 lists every point where building or review proved an earlier version wrong or incomplete.
+Status: fourth version. The first was written before the code. The second matched the package as first built. The third matched the package after a review of that build. This one adds how the counted experiments are staged (decisions D6 to D8), written when their predictions were committed and before any of them was run. Section 11 lists every point where building or review proved an earlier version wrong or incomplete.
 
 ## 1. Purpose and the question
 
@@ -446,10 +446,10 @@ The standard library `unittest` runs everywhere; no test runner is installed ins
 - **Tests with fakes for `session`, `runner`, `preparation` and `staging`.** A fake machine and a fake clock exercise the ending path, the timeout and the cleanup without booting anything. A whole run is recorded from the fixtures through the real pipeline. All twelve experiment descriptions are staged, including those that may not yet be run. Each committed prediction is driven from staging to a score this way; the fake replays a normal boot, so the scores mean nothing and only the path is proven.
 - **One test class against real git.** The prediction gate is run against a temporary repository made with the installed `git`, so the commands the gate sends are proven and not only the answers a fake gives. It is skipped where `git` is not installed.
 - **Refusal tests.** Prediction gate, key regeneration, overwriting, self-comparison and the outcome rule, as listed in section 9.
-- **Committed recordings.** `test_committed_recordings` checks that the ten recordings in the repository still follow from their own event logs, still compare as published, may be compared, and satisfy the repeat precondition of their normal run. It also pins what each pilot was observed to do (`docs/PILOTS.md`): outcome, first differing event and differing registers.
+- **Committed recordings.** `test_committed_recordings` checks that the 14 recordings in the repository still follow from their own event logs, still compare as published, may be compared, and satisfy the repeat precondition of their normal run. It also pins what each pilot was observed to do (`docs/PILOTS.md`): outcome, first differing event and differing registers.
 - **Committed predictions.** `test_counted_set` checks each prediction file against the code and the recordings it rests on: the change sentence, the parameters, the baseline hash, the changed byte and its part, the digest predicted for the changed `BootOrder`, and the citations.
 - **One integration test, skipped unless `LUX_VM_TESTS=1`.** It boots the normal run twice and the two-entry normal run once, asserts the agreement gate passed, that the two runs are equal on every compared field, that a fresh run equals the committed `normal-1`, that a fresh two-entry run equals the committed `normal-two-same-1`, and that no process is left. It never runs a changed boot.
-- **Mutation checks.** Seven rules the question depends on were broken on purpose to confirm a test fails; see `docs/MUTATION_CHECKS.md`.
+- **Mutation checks.** Nine rules the question depends on were broken on purpose to confirm a test fails: seven in the recorder, one in the content check and one in the site; see `docs/MUTATION_CHECKS.md`.
 
 Not tested: behaviour on another QEMU version or machine type, hardware acceleration, a second machine, whether a third boot of one variable store equals the second, and the real process cleanup when QEMU is killed from outside.
 

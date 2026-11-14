@@ -9,8 +9,9 @@ This is the entry point to the documentation of Lux as built. It describes the w
 | [`RESULTS.md`](RESULTS.md) | The result of the four counted experiments: every row, the two numbers, the limits, and a second check of all of it |
 | [`PILOTS.md`](PILOTS.md) | What each of the four pilots was observed to do. Pilots are shown and never counted |
 | [`COUNTED.md`](COUNTED.md) | How each counted experiment was staged and how its one run is made. Written before the runs and kept as it was |
-| [`MUTATION_CHECKS.md`](MUTATION_CHECKS.md) | Seven rules broken on purpose, and the tests that failed |
+| [`MUTATION_CHECKS.md`](MUTATION_CHECKS.md) | Nine rules broken on purpose, and the tests that failed |
 | [`VERIFICATION.md`](VERIFICATION.md) | The acceptance checks, the failures most likely to hurt a reader, the test counts per layer, what was checked by eye, the defects found, and the release assessment |
+| [`FRESH_CLONE_RUN.md`](FRESH_CLONE_RUN.md) | The README followed in a new clone: what was typed, what came back, what it found, and what was repeated after the README was corrected |
 | [`../content/README.md`](../content/README.md) | The shape of the site's words as data, and every rule the content check enforces |
 | [`../site/ASSETS.md`](../site/ASSETS.md) | How each picture was made and how a stop's picture is put together |
 | [`../predictions/README.md`](../predictions/README.md) | What a prediction file is and which four exist |
@@ -51,7 +52,7 @@ The acceptance checks for these requirements, each as a concrete example mapped 
 
 | Non-goal | Why |
 |---|---|
-| Recording a real laptop or board | Real firmware is a vendor's code and not a public source. Every step of the virtual machine can be repeated by anyone. This is the largest limit of the project |
+| Recording a real laptop or board | Real firmware is a vendor's code and not a public source. Every step of the virtual machine is meant to be repeatable on Ubuntu 24.04 with the pinned package versions; it has been repeated on one machine only. This is the largest limit of the project |
 | Vendor-specific firmware behaviour | The project is vendor-neutral by rule |
 | Hardware error handling | Out of scope |
 | Anything after the handoff: kernel start-up, an operating system's own boot manager | The story ends when firmware steps back |
@@ -62,7 +63,7 @@ The acceptance checks for these requirements, each as a concrete example mapped 
 
 ## 2. Architecture and data flow
 
-Four parts, and files between them. Nothing flows backwards: the recorder never reads the content or the site, and the site never writes a file.
+Four parts, and files between them. The recorder never reads the content or the site, and the site never writes a file. One file flows back into the recorder: before a counted run it reads the comparison of the two normal runs.
 
 ```mermaid
 flowchart LR
@@ -85,10 +86,12 @@ flowchart LR
     RECS -->|"compare"| CMP
     CMP -->|"check, against a prediction"| SCO
     PRED --> SCO
+    CMP -->|"two normal runs identical, before a counted run"| REC
 
     CHECK["scripts/check_content.py"]
     CON --> CHECK
     RECS --> CHECK
+    CMP --> CHECK
 
     subgraph Site["site/, built by Vite into static files"]
         LOAD["src/content/load.ts<br/>words, and four fields of each recording"]
@@ -113,15 +116,15 @@ flowchart LR
 
 | Part | Runs where | Reads | Writes |
 |---|---|---|---|
-| **Recorder** (`recorder/`) | Linux or WSL, with QEMU, OVMF and swtpm installed | The committed keys and loaders, the packaged firmware, a committed prediction for a counted run | One `recording.json` and `eventlog.bin` per run; comparison files; score files |
+| **Recorder** (`recorder/`) | Linux or WSL, with QEMU, OVMF and swtpm installed | The committed keys and loaders, the packaged firmware; for a counted run, its committed prediction and the comparison of the two normal runs | One `recording.json` and `eventlog.bin` per run; comparison files; score files |
 | **Content** (`content/`) | Nowhere: it is data | | |
-| **Content check** (`scripts/check_content.py`) | Any Python 3.12 | The content and the recordings | Nothing. It prints problems and exits 1 if there is one |
+| **Content check** (`scripts/check_content.py`) | Any Python 3.12 | The content, the recordings and the comparison files | Nothing. It prints problems and exits 1 if there is one |
 | **Site** (`site/`) | Built once by Vite; then any static file host, or `npm run dev` | The content, the recordings, comparisons, predictions and scores, all at build time | `dist/`, which is not committed |
 
 ### 2.2 Boundaries that matter
 
-- **The virtual machine exists only on the recording side.** A reader's browser receives one script, one stylesheet, two fonts and pictures. The built site makes no request to any other address.
-- **The site holds no fact of its own.** Words come from `content/` through `src/content/load.ts`; what has been run, compared, predicted and scored comes from the files through `src/content/files.ts`. Components hold only labels of controls. A sentence that is not in the content is not on the page, and a score that is not in a score file is not shown.
+- **The virtual machine exists only on the recording side.** A reader's browser receives one script, one stylesheet, fonts and pictures. No address of another site is requested anywhere in the site's source; that was read from the source and the build output, not measured in a browser.
+- **The site holds no fact of its own.** Words come from `content/` through `src/content/load.ts`; what has been run, compared, predicted and scored comes from the files through `src/content/files.ts`. Components hold labels of controls and a few fixed sentences about the state of the files, such as "No prediction is on file for this run." Every other sentence on the page is in the content, and a score that is not in a score file is not shown.
 - **The content cannot quote what was not recorded.** The content check compares every evidence line with the field of the recording it names, character by character.
 - **A recording cannot be made from a boot whose readings disagree**, and a counted recording cannot be made without a committed prediction. Both are refusals inside the recorder, before a file is written.
 - **A picture is never evidence.** The board and the laptop are illustrations composed from the same few image files at every stop (`site/ASSETS.md`), and every screen says so.
@@ -166,7 +169,7 @@ The screen traced here is the headline screen of stop 6, `s6-verify`: "Before th
 
 Where the record came from: event 25 of `normal-1` was written by the firmware into its event log during the recorded boot. The recorder cut that log out of the saved guest memory (`recorder/capture.py`), parsed it (`recorder/eventlog.py`), confirmed that its replay equals the registers read from the software TPM (`recorder/gate.py`), and labelled the event with stop 6 by the rule `load-verify` (`recorder/storymap.py`). The type name `EV_EFI_VARIABLE_AUTHORITY` is the name a decoding tool prints, not a citation of a specification.
 
-What guards this path: the content check fails if `variable db, 851 data bytes` is not exactly `events[24].summary` of that recording; the site's own `screenProblems` fails a test if the line is not that event's summary; and a site test renders the panel of every screen and requires every claim, term, line, digest and register the content names.
+What guards this path: the content check fails if `variable db, 851 data bytes` is not exactly `events[24].summary` of that recording; the site's own `screenProblems` fails a test if the line is not that event's summary; and a site test renders the panel of every screen of the story (21) and requires every claim, term, line, digest and register the content names. The seven screens of the experiments and sources pages have panel tests for selected screens only.
 
 ### 3.2 A counted experiment, from its prediction to the score on the page
 
@@ -185,7 +188,7 @@ The experiment traced here is `signature-byte`: one byte inside the signature va
 | 9 | `python3 -m recorder compare` puts the run beside `normal-1` | `recorder/compare.py` | `recordings/comparisons/normal-1_vs_signature-byte-1.json`: registers 4, 5 and 7 differ; the first differing event is 25 |
 | 10 | `python3 -m recorder check ... --out` judges every row of the prediction against the comparison. It refuses if the prediction no longer has the hash the recording stores | `recorder/prediction.py` | `recordings/scores/signature-byte.json`: `required_met` 1 of `required_total` 1, `open_correct` 17 of `open_total` 17, `mismatches` empty, one verdict per row |
 | 11 | The recording, the comparison and the score are committed | git | Commit `8be0f6f` |
-| 12 | At build time the site finds every file that says it is a score | `SCORES` in `site/src/content/files.ts` (`import.meta.glob` over `recordings/scores/*.json`, kept only if `format` is `lux-score/1`) | |
+| 12 | At build time the site finds every file that says it is a score | `SCORES` in `site/src/content/files.ts`: `import.meta.glob` over `recordings/scores/*.json` and over two places where no file lies (`results/*.json`, `recordings/*/score.json`); a file is kept only if its `format` is `lux-score/1` | |
 | 13 | The headline numbers are the sum over the score files | `totals` in `site/src/model/experiments.ts` | 6 of 6 and 72 of 72, over four score files |
 | 14 | The first screen of the experiments page shows the two numbers and how many experiments they are summed over | `site/src/components/Experiments.tsx` | |
 | 15 | The card "signature byte" finds its two forms by name (`signature-byte`, `signature-byte-off`), and shows each as scored with its own two numbers | `experimentsOf`, `cardStates` and `experimentState` in `experiments.ts`; the card in `Experiments.tsx` | A recording belongs to an experiment by `run.experiment`, never by its folder name |
@@ -260,7 +263,7 @@ Superseded in the recorder, as [`DESIGN.md`](DESIGN.md) section 11 records row b
 *Context.* The evidence for one screen is large: console lines, log records with digests, register values, claims with citations, definitions, and what the recording does not show. The intended reader scrolls first and probes second.
 *Chosen.* A screen holds one statement of at most 14 words, at most one supporting sentence, one line copied from a recording, a citation marker, and "Open the evidence". Everything else is in a panel that any screen, card or section can open, and that has its own address (`/?step=N&evidence`, `#/experiments/<section>/evidence`).
 *Weighed.* Showing specification, recording and measurement side by side on every screen (see the superseded decision below). Linking out to the raw files only (a reader would need to know the formats).
-*Consequences.* The story reads in minutes, and nothing is lost: a site test renders the panel of every screen and requires every claim, term, line, digest and register the content names. The word limit is enforced by the content check.
+*Consequences.* The story reads in minutes, and nothing is lost: a site test renders the panel of every screen of the story (21) and requires every claim, term, line, digest and register the content names. The word limit is enforced by the content check.
 *Cost.* The evidence is one press away, and a reader who never presses sees one line per screen. The panel needed its own focus and key rules, and those were the source of defects 10 and 11 in `VERIFICATION.md` section 5.
 
 > **Superseded: three columns on every screen.** An earlier layout showed what the specification says, what the recording shows and what was measured in three columns, with no pictures. It was replaced by P2 because a screen was too dense to read while scrolling.
@@ -275,7 +278,7 @@ Superseded in the recorder, as [`DESIGN.md`](DESIGN.md) section 11 records row b
 
 #### P4. Experiments tried before any prediction are declared as pilots
 
-*Context.* Four changed runs (`e1`, `e2`, `e4`, `e5`) had been tried during early research, before the measure "prediction before run" could apply to them.
+*Context.* Four changed runs (`e1`, `e2`, `e4`, `e5`) had been tried before any prediction existed, so the measure "prediction before run" cannot apply to them.
 *Chosen.* They are recorded with the same recorder, shown on the site with the label "pilot", and counted in no number. The counted set is what had not been run when its prediction was committed.
 *Weighed.* Leaving them out (the reader would not know that the predictions were written with them in sight). Counting them with predictions written afterwards (not a prediction).
 *Consequences.* The site can show the clearest case, one byte changed with Secure Boot on, as a two-run screen without claiming it as a result.
@@ -283,7 +286,7 @@ Superseded in the recorder, as [`DESIGN.md`](DESIGN.md) section 11 records row b
 
 #### P5. The site shows the state of the files, not a sentence about them
 
-*Context.* Experiments were run while the site was being built, and a sentence such as "not yet run" goes stale the moment a recording is committed.
+*Context.* A sentence such as "not yet run" goes stale the moment a recording is committed.
 *Chosen.* What has been run, compared, predicted and scored is worked out at build time from `recordings/`, `predictions/` and the score files (`site/src/model/experiments.ts`): not run, pilot, recorded, or scored. The headline score is the sum over the score files, and with no score file the page claims no score.
 *Weighed.* Writing the status and the numbers into the content (simpler, and the content check could verify them, but two places would have to change together).
 *Consequences.* The page cannot show a score that is not on file, and tests cover the page with nothing on file, with a pilot and with a score.
@@ -296,12 +299,12 @@ Superseded in the recorder, as [`DESIGN.md`](DESIGN.md) section 11 records row b
 | To do this | You need | Network |
 |---|---|---|
 | Read the evidence | Nothing. The recordings, comparisons, scores and predictions are text files | None |
-| Run the site locally | Node.js 22.12 or later in the 22 line, or 24 (24 was used). `npm ci` in `site/` | `npm ci` downloads the packages pinned in `site/package-lock.json` once. After that, none |
+| Run the site locally | Node.js 22.12 or later in the 22 line, 24, or 26 and later (only 24 was used). `npm ci` in `site/` | `npm ci` downloads the packages pinned in `site/package-lock.json` once. After that, none |
 | Run the recorder's unit tests and the content check | Python 3.12, standard library only. `git` for three tests, which are skipped without it | None |
 | Record a run | Ubuntu 24.04, or WSL 2 with it, and the packages `qemu-system-x86`, `ovmf`, `swtpm`, `binutils`, `python3`, `git` | The packages are installed once with the system's package manager. After that, none |
 | Rebuild the pictures | Python with Pillow, and the source pictures, which are not in the repository | None |
 
-There is no configuration file and no secret. Three environment variables exist: `LUX_WORK_DIR` (where the recorder keeps its scratch files, default `~/lux-work`), `LUX_VM_TESTS=1` (include the tests that boot a virtual machine), and for a published build `LUX_BASE` and `LUX_SITE_URL` (`README.md`, "Hosting").
+There is no configuration file and no secret. Four environment variables exist: `LUX_WORK_DIR` (where the recorder keeps its scratch files, default `~/lux-work`), `LUX_VM_TESTS=1` (include the tests that boot a virtual machine), and for a published build `LUX_BASE` and `LUX_SITE_URL` (`README.md`, "Hosting").
 
 ### 6.2 Run
 
@@ -309,9 +312,11 @@ The commands, with their expected output, are in [`../README.md`](../README.md).
 
 ```
 python3 -m recorder prepare
-python3 -m recorder record my-normal --experiment normal
-python3 -m recorder compare recordings/normal-1/recording.json recordings/my-normal/recording.json --out my-comparison.json
+python3 -m recorder record my-normal --experiment normal --out scratch
+python3 -m recorder compare recordings/normal-1/recording.json scratch/my-normal/recording.json --out scratch/normal-1_vs_my-normal.json
 ```
+
+`scratch/` is ignored by git and by the tests. A run of your own written into `recordings/` makes one unit test fail until it is deleted.
 
 and from `site/`:
 
@@ -321,6 +326,8 @@ npm run dev
 ```
 
 ### 6.3 Tests
+
+The commands are written as on Linux or WSL. On Windows the first and the third run with `python` in place of `python3`.
 
 | Command | From | What it runs |
 |---|---|---|
@@ -345,7 +352,7 @@ npm run dev
 | `record` says the agreement gate failed | The three readings of the boot disagree. Nothing was written. Run `bash scripts/check-clean.sh` and try again; if it repeats, the tool versions differ from the ones in `README.md` |
 | `check` refuses to score | The comparison was not made from the recording or the baseline given, the prediction file is not the one the run was recorded under, or the repeat comparison is missing. The sentence printed says which |
 | A virtual machine seems to be left running | `bash scripts/check-clean.sh` reports any `qemu-system` or `swtpm` process and any leftover guest memory file |
-| `npm run dev` or `npm run preview` fails to start | Port 5183 is fixed and strict. Something else is using it |
+| `npm run dev` or `npm run preview` fails to start | Port 5183 is fixed and strict, and something else is using it. Add `-- --port 5191`, or any free port, to the command |
 | A build with `LUX_BASE=/lux/` in Git Bash on Windows has wrong paths | The shell rewrites an argument that begins with a slash. Set `MSYS_NO_PATHCONV=1` for that command |
 | The content check fails after an edit to the content | It prints one line per problem with the rule's code. `content/README.md`, "What the check refuses", explains each code |
 

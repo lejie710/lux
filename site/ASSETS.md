@@ -56,4 +56,10 @@ At the pilot screen and at the end of the story the board gives way to the lapto
 
 ## Fonts
 
-Inter (variable) and IBM Plex Mono, both under the SIL Open Font License, bundled from the `@fontsource` packages. Nothing is fetched from another site when the page loads.
+Inter (variable) and IBM Plex Mono, both under the SIL Open Font License, Version 1.1, bundled from the `@fontsource` packages. Nothing is fetched from another site when the page loads.
+
+Inter: Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter). IBM Plex Mono: Copyright 2017 IBM Corp. The licence text is the `LICENSE` file of each of the two packages, under `node_modules/` after `npm ci`. It is not copied into the built site; a deployment should carry it or link to it.
+
+## Screenshots in the documentation
+
+The three files in `docs/images/` (`opening.png`, `experiment.png`, `stop-6.png`) are pictures of the running site in a window of 1440 x 900, taken in a headless browser. They hold nothing but the pictures and fonts listed above and the site's own words.

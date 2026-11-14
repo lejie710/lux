@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Run every test, including the one that boots the virtual machine twice.
+# Run every test, including the ones that boot the virtual machine three times.
 set -eu
 cd "$(dirname "$0")/.."
 export PYTHONDONTWRITEBYTECODE=1
