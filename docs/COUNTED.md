@@ -110,7 +110,7 @@ On a prepared machine, from the repository root. Shown for `boot-order-same`; th
 ```
 python3 -m recorder prepare
 python3 -m recorder prepare --changed-boot-order
-python3 -m recorder record boot-order-same-1 --experiment boot-order-same
+python3 -m recorder record boot-order-same-1 --experiment boot-order-same --for-the-record
 python3 -m recorder compare recordings/normal-two-same-1/recording.json recordings/boot-order-same-1/recording.json --out recordings/comparisons/normal-two-same-1_vs_boot-order-same-1.json
 python3 -m recorder check recordings/comparisons/normal-two-same-1_vs_boot-order-same-1.json --prediction predictions/boot-order-same.json --recording recordings/boot-order-same-1/recording.json --baseline recordings/normal-two-same-1/recording.json --repeat recordings/comparisons/normal-two-same-1_vs_normal-two-same-2.json --out results/boot-order-same.json
 ```
@@ -122,6 +122,8 @@ python3 -m recorder check recordings/comparisons/normal-two-same-1_vs_boot-order
 | `signature-byte`, `signature-byte-off` | `normal-1` | `normal-1_vs_normal-2.json` |
 
 `prepare --changed-boot-order` makes the store with the order B, A by one preparation boot and boots nothing else. It is needed once for both boot order experiments.
+
+**The third line is the counted run.** Since the predictions are committed, the recorder no longer refuses these four experiments for want of one. `record` therefore asks for `--for-the-record`, and without it a counted experiment is refused before the prediction is looked at and before anything is staged. The words exist so that the one run is never made by a command typed to see what happens.
 
 ## The rule for the one run
 

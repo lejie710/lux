@@ -298,6 +298,7 @@ A prediction must carry exactly the parameters its experiment names. Staging rea
 
 **The rule.** `record` refuses to start a `counted` experiment unless all of this holds:
 
+0. the command carries `--for-the-record`. Once a prediction is committed, nothing else would stand between a typed command and the one boot a counted experiment gets, so the command must say that this boot is meant to be that run. This is checked first, before the prediction is looked at;
 1. its prediction file exists and validates;
 2. the file names this experiment, its `change` sentence is word for word the experiment's, and its parameters are exactly the ones the experiment needs;
 3. git tracks the file, reports no uncommitted change, can name the commit that last changed it, and that commit is part of the current history;
@@ -432,6 +433,7 @@ Stops 1 and 2 have no events and the recording says so. An event matching no rul
 | 15 | The changed configuration of a counted experiment is tried out before its prediction exists | The prediction would not be blind | `test_counted_set`: `prepare --changed-boot-order` is refused without a committed boot order prediction, and no machine is made; a prediction for another experiment does not open it. Staging and scoring of every predicted experiment are driven with fakes only |
 | 16 | A changed run is compared with the wrong normal run, or scored against a prediction written for another baseline recording | Differences that belong to the two extra boot entries would be counted as the experiment's | `test_counted_set`: a boot order run against the plain normal run, a pilot against a two-entry normal run and a repeat of another normal run are refused; `check` refuses a prediction that names another baseline recording |
 | 17 | A prediction row is worded so that it cannot fail, or cites a page that was never read | The headline numbers would count rows that predict nothing | `test_counted_set`: every row carries a reason; each of registers 0 to 7 has exactly one row; every UEFI citation is one of the section and page pairs of the verified reading; every observation names a committed file; a row about an unread document says so and names no source |
+| 18 | A counted experiment is booted by a command typed to try the recorder out | Its one run would be spent, or made twice | `test_session_runner`: every counted experiment is refused without `--for-the-record`, before the prediction is looked at; the test of the prediction gate runs in an empty folder and cannot see the committed predictions |
 
 ## 10. Test mix
 
@@ -487,6 +489,7 @@ Not tested: behaviour on another QEMU version or machine type, hardware accelera
 | 31 | The comparison gave the number of the first differing console line | It also gives the text of that line in both runs. The five committed comparisons were made again from the unchanged recordings and gained that one field |
 | 32 | A prediction held rows and parameters | It also says what would prove it wrong, what it cannot score, and which baseline recording it was written against |
 | 33 | The reference to a prediction was listed among the differing fields of a counted run | It is one of the fields that say which experiment a run is, and is left out |
+| 34 | A counted experiment with a committed prediction was started by `record` like any other run | `record` needs `--for-the-record` for it. Found right after the predictions were committed: a test and a README example relied on "no prediction exists" for their refusal. The test was stopped by the repeat precondition and by its replaced machine, so nothing was booted; the test now works in an empty folder, and the example names an experiment without a prediction |
 
 The recording format is still called `lux-recording/1`. Its shape changed in review (rows 10, 18, 19, 20, 23), before any site or other reader depended on it, and all three committed recordings were made again with the new shape. Their register values and event logs are the same as before.
 

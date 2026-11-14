@@ -29,7 +29,7 @@ from pathlib import Path
 from recorder import (capture, compare, experiments, prediction, preparation, provenance,
                       recording, runner)
 from recorder.errors import (ComparisonRefused, FormatError, LuxError, PredictionMissing,
-                             RecordingExists)
+                             RecordingExists, StagingRefused)
 from recorder.experiments import Experiment
 from recorder.session import Limits, QemuMachine, SystemClock
 
@@ -78,6 +78,9 @@ def _parser() -> argparse.ArgumentParser:
     record.add_argument("--replace", action="store_true",
                         help="overwrite an existing recording of this name; never allowed "
                              "for a counted experiment")
+    record.add_argument("--for-the-record", action="store_true",
+                        help="needed for a counted experiment: says that this boot is its "
+                             "one run, made on purpose")
     record.add_argument("--repeat", type=Path, default=None,
                         help="comparison of two normal runs, needed before a counted "
                              "experiment (default: <out>/comparisons/<normal run>-1_vs_"
@@ -211,9 +214,24 @@ def _require_repeat_on_file(repeat_file: Path, recordings: Path,
         compare.require_repeat(repeat, repeat["baseline"]["recording_sha256"], baseline)
 
 
+def _require_meant(experiment: Experiment, for_the_record: bool) -> None:
+    """Refuse to boot a counted experiment unless the caller says this is its one run.
+
+    Once a prediction is committed, nothing else stands between a typed
+    command and the single boot a counted experiment gets. So the command
+    line must say it in so many words. Raises `StagingRefused` before the
+    prediction is looked at and before anything is staged.
+    """
+    if experiment.kind == experiments.KIND_COUNTED and not for_the_record:
+        raise StagingRefused(
+            f"experiment '{experiment.identifier}' is counted: it is booted once, for the "
+            "record. Pass --for-the-record when this boot is meant to be that one run")
+
+
 def _record(arguments: argparse.Namespace) -> int:
     provenance.require_programs()
     experiment = experiments.get(arguments.experiment)
+    _require_meant(experiment, arguments.for_the_record)
     target = arguments.out / arguments.name
     _require_free_target(target, experiment, arguments.replace)
     repeat_file = arguments.repeat or arguments.out / repeat_comparison(experiment.baseline)

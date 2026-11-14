@@ -602,13 +602,40 @@ class CommandLine(unittest.TestCase):
     def test_counted_experiment_is_refused_with_exit_code_1_and_no_file(self) -> None:
         target = Path(tempfile.mkdtemp(prefix="lux-test-"))
         self.addCleanup(shutil.rmtree, target, ignore_errors=True)
+        # The repository is replaced by an empty folder: this test must never see the
+        # committed predictions, with which the same command would be a counted run.
         with mock.patch.object(cli.provenance, "require_programs"), \
+                mock.patch.object(cli, "REPOSITORY", target), \
                 mock.patch.object(cli, "QemuMachine", side_effect=AssertionError("no machine may be made")):
             code, _, err = self._main(["record", "blind", "--experiment", "signature-byte",
+                                       "--for-the-record",
                                        "--out", str(target), "--work-dir", str(target / "work")])
         self.assertEqual(code, 1)
         self.assertIn("refused: experiment 'signature-byte' is counted and must not run", err)
         self.assertEqual(list(target.iterdir()), [])
+
+    def test_a_counted_experiment_is_not_booted_by_a_command_that_does_not_say_so(self) -> None:
+        target = Path(tempfile.mkdtemp(prefix="lux-test-"))
+        self.addCleanup(shutil.rmtree, target, ignore_errors=True)
+        counted = [e.identifier for e in cli.experiments.EXPERIMENTS.values() if e.kind == "counted"]
+        self.assertEqual(len(counted), 5)
+        for experiment in counted:
+            with mock.patch.object(cli.provenance, "require_programs"), \
+                    mock.patch.object(cli, "REPOSITORY", target), \
+                    mock.patch.object(cli.prediction, "require_committed",
+                                      side_effect=AssertionError("the prediction is not even looked at")), \
+                    mock.patch.object(cli.runner, "record_run",
+                                      side_effect=AssertionError("nothing may be recorded")), \
+                    mock.patch.object(cli, "QemuMachine", side_effect=AssertionError("no machine may be made")):
+                code, _, err = self._main(["record", "blind", "--experiment", experiment,
+                                           "--out", str(target), "--work-dir", str(target / "work")])
+            self.assertEqual(code, 1, experiment)
+            self.assertIn("--for-the-record", err)
+            self.assertEqual(list(target.iterdir()), [])
+
+    def test_normal_and_pilot_runs_need_no_such_word(self) -> None:
+        for experiment in ("normal", "normal-two-same", "e2"):
+            cli._require_meant(cli.experiments.get(experiment), False)
 
     def test_gate_failure_gives_exit_code_1_and_writes_nothing(self) -> None:
         target = Path(tempfile.mkdtemp(prefix="lux-test-"))
@@ -656,7 +683,8 @@ class CommandLine(unittest.TestCase):
         target = self._temp()
         (target / "blind").mkdir()
         (target / "blind" / "recording.json").write_text("the first result")
-        code, _, err, run = self._record_into(target, "blind", "boot-order-same", "--replace")
+        code, _, err, run = self._record_into(target, "blind", "boot-order-same", "--replace",
+                                              "--for-the-record")
         self.assertEqual((code, run.call_count), (1, 0))
         self.assertIn("recorded once", err)
         self.assertEqual((target / "blind" / "recording.json").read_text(), "the first result")

@@ -97,6 +97,7 @@ A **counted** experiment is one that has never been run. There are five:
 
 The recorder refuses to run a counted experiment unless all of this holds:
 
+- the command carries `--for-the-record`, which says that this boot is meant to be the experiment's one run;
 - `predictions/<experiment>.json` exists and is valid;
 - it describes the same change as the experiment, and carries the values that decide what the experiment tests (which byte of the signature area, which rebuilt firmware file). Those values are read from the prediction and from nowhere else;
 - it is committed, and the file on disk is byte for byte the committed one;
@@ -186,12 +187,21 @@ To keep your runs out of the repository's `recordings/` folder altogether, add `
 
 Exit codes of `record`: 0 for a recording; 1 for a refusal, with one sentence saying why, and nothing written; 3 when a changed run reached neither the loader's last line nor a refusal and was recorded as `timeout`.
 
-A counted experiment is refused:
+A counted experiment without a committed prediction is refused:
+
+```
+$ python3 -m recorder record blind --experiment rebuilt-firmware --for-the-record
+refused: experiment 'rebuilt-firmware' is counted and must not run: no prediction file rebuilt-firmware.json exists
+```
+
+**The four experiments that have a committed prediction are not refused for that reason any more.** For them `record` boots the changed configuration, and that boot is the counted run. So `record` asks for the words `--for-the-record` before it starts any counted experiment, and without them it refuses at once:
 
 ```
 $ python3 -m recorder record blind --experiment signature-byte
-refused: experiment 'signature-byte' is counted and must not run: no prediction file signature-byte.json exists
+refused: experiment 'signature-byte' is counted: it is booted once, for the record. Pass --for-the-record when this boot is meant to be that one run
 ```
+
+Do not add those words to try the command out. `docs/COUNTED.md` says how each counted run is made, once.
 
 ### 3. Compare
 
@@ -241,7 +251,7 @@ python3 -m unittest discover -s recorder/tests -t .
 Expected last lines (the time varies):
 
 ```
-Ran 356 tests in 40.680s
+Ran 358 tests in 40.680s
 
 OK (skipped=6)
 ```
@@ -252,7 +262,7 @@ The unit tests need no virtual machine; they were also run with Python 3.12 on W
 LUX_VM_TESTS=1 python3 -m unittest discover -s recorder/tests -t .
 ```
 
-It boots the normal run twice and the normal run with two boot entries once (about thirty seconds in total), asserts that the agreement gate passed, that the two runs are equal on every compared field, that a fresh run equals the committed `normal-1`, that a fresh two-entry run equals the committed `normal-two-same-1`, and that no process is left running. It never boots a changed run. Expected: `Ran 356 tests`, `OK`.
+It boots the normal run twice and the normal run with two boot entries once (about thirty seconds in total), asserts that the agreement gate passed, that the two runs are equal on every compared field, that a fresh run equals the committed `normal-1`, that a fresh two-entry run equals the committed `normal-two-same-1`, and that no process is left running. It never boots a changed run. Expected: `Ran 358 tests`, `OK`.
 
 The content has its own check, which the unit tests also run:
 
