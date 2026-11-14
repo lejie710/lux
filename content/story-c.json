@@ -137,6 +137,9 @@
               "security"
             ],
             "newly_lit": [],
+            "attention": [
+              "storage"
+            ],
             "screen": "none",
             "note": "Storage, lit since stop 5, is the part the loader is read from. Illustration only."
           }
@@ -325,6 +328,9 @@
               "security"
             ],
             "newly_lit": [],
+            "attention": [
+              "security"
+            ],
             "screen": "none",
             "note": "The security chip, lit since stop 3, is the point of attention while the check and its record happen. Illustration only."
           }
@@ -449,6 +455,9 @@
               "security"
             ],
             "newly_lit": [],
+            "attention": [
+              "security"
+            ],
             "screen": "none",
             "note": "Same parts as the screen before; the security chip stays the point of attention. Illustration only."
           }
@@ -567,6 +576,9 @@
               "security"
             ],
             "newly_lit": [],
+            "attention": [
+              "processor"
+            ],
             "screen": "none",
             "note": "Everything the boot has reached is lit. The screen is still dark. Illustration only."
           }
@@ -1079,6 +1091,9 @@
               "security"
             ],
             "newly_lit": [],
+            "attention": [
+              "memory"
+            ],
             "screen": "none",
             "note": "The whole board stays lit; memory is the point of attention. Illustration only."
           }
@@ -1094,12 +1109,13 @@
           "support": "Two of the 13 entries carry the identifiers UEFI 2.11 defines for ACPI tables.",
           "evidence": {
             "recorded": true,
-            "kind": "loader_report",
+            "kind": "console",
             "run": "normal-1",
             "file": "recordings/normal-1/recording.json",
-            "field": "loader_report[10]",
-            "position": 10,
-            "text": "LUX CFG 71E86888F1E4D311BC220080C73C8881 000000001E77E014"
+            "field": "console[8]",
+            "position": 8,
+            "text": "LUX ConfigTableEntries=000000000000000D",
+            "caption": "The count is in hexadecimal: 0D is 13. The 13 entries themselves are below."
           },
           "detail": {
             "console_lines": [
@@ -1240,6 +1256,9 @@
               "security"
             ],
             "newly_lit": [],
+            "attention": [
+              "firmware"
+            ],
             "screen": "none",
             "note": "Whole board lit. Illustration only."
           }
@@ -1524,6 +1543,9 @@
               "ribbon"
             ],
             "newly_lit": [],
+            "attention": [
+              "security"
+            ],
             "screen": "none",
             "note": "Whole board and display cable lit. Illustration only."
           }

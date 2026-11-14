@@ -15,7 +15,7 @@
       "text": "What your laptop does before it wakes.",
       "emphasis": null
     },
-    "support": "One recorded boot of open-source UEFI firmware in a virtual machine, followed to the moment firmware hands the machine over.",
+    "support": "One recorded boot of open-source UEFI firmware in a virtual machine.",
     "evidence": {
       "recorded": true,
       "kind": "event",
@@ -188,7 +188,7 @@
           "kind": "stop",
           "stop": 1,
           "statement": {
-            "text": "Power settles, reset lets go, and the processor fetches its first instruction.",
+            "text": "Power settles, and the processor fetches its first instruction.",
             "emphasis": "its first instruction"
           },
           "support": "Described, not recorded: a virtual machine has no power sequencing, so no timing is given.",

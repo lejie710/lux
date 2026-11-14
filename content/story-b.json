@@ -423,6 +423,9 @@
               "security"
             ],
             "newly_lit": [],
+            "attention": [
+              "security"
+            ],
             "screen": "none",
             "note": "Which parts light is a choice made for the illustration. It is not evidence and is not taken from the recording."
           }
@@ -433,7 +436,7 @@
           "stop": 4,
           "thread": "secure-boot",
           "statement": {
-            "text": "The forbidden list is empty in this run, and that is recorded too.",
+            "text": "In this run the forbidden list is empty, and that is recorded.",
             "emphasis": "empty"
           },
           "support": "An empty list still leaves a record, and a separator follows in register 7, earlier than the other registers get theirs.",
@@ -560,6 +563,9 @@
               "security"
             ],
             "newly_lit": [],
+            "attention": [
+              "security"
+            ],
             "screen": "none",
             "note": "Which parts light is a choice made for the illustration. It is not evidence and is not taken from the recording."
           }
@@ -947,6 +953,9 @@
               "security"
             ],
             "newly_lit": [],
+            "attention": [
+              "storage"
+            ],
             "screen": "none",
             "note": "Which parts light is a choice made for the illustration. It is not evidence and is not taken from the recording."
           }
@@ -1131,6 +1140,9 @@
               "security"
             ],
             "newly_lit": [],
+            "attention": [
+              "security"
+            ],
             "screen": "none",
             "note": "Which parts light is a choice made for the illustration. It is not evidence and is not taken from the recording."
           }

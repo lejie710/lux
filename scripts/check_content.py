@@ -26,7 +26,8 @@ The rules, by the code printed in front of each problem:
               is tcg-unread or this-firmware
   stage       a claim cites UEFI 2.11 as the basis for SEC, PEI, DXE or BDS
   stop        a stop number is missing, repeated, or a stop is malformed
-  picture     a picture names an unknown part, or light goes out along the story
+  picture     a picture names an unknown part, light goes out along the story,
+              or attention is drawn to a part that is not lit
   general     too many claims lean on the basis "general"
 """
 from __future__ import annotations
@@ -316,6 +317,9 @@ class Checker:
         if set(new) != set(now) - lit:
             self.fail("picture", where, "newly_lit is %s, but the parts new on this screen are %s"
                       % (sorted(new), sorted(set(now) - lit)))
+        attention = picture.get("attention", [])
+        if not isinstance(attention, list) or not set(attention) <= set(now):
+            self.fail("picture", where, "'attention' must be a list of parts that are lit on this screen")
         return set(now)
 
     # ------------------------------------------------------------ screens

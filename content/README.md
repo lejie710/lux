@@ -168,6 +168,7 @@ Two rules of wording. A claim whose basis is `tcg-unread` or `this-firmware` nev
 | `plate` | `"board"` or `"laptop"` |
 | `lit` | The parts that glow, from: `power`, `firmware`, `processor`, `memory`, `controllers`, `storage`, `security`, `ribbon` |
 | `newly_lit` | The parts that are lit here and were dark on the screen before |
+| `attention` | Optional: the lit parts this screen is about, which are given a slightly stronger light. Without it, the newly lit parts are |
 | `screen` | `"none"` on the board plate, where no screen is in view; `"dark"` or `"dawn"` on the laptop plate |
 | `note` | Why these parts. Always says, or implies, that it is an illustration |
 | `view`, `reasons` | Optional: the camera position, and one line per part |
@@ -202,7 +203,7 @@ Light never goes out along the story: each story screen's `lit` contains the `li
 | `phrase` | Wording such as "the specification says" is on a `tcg-unread` or `this-firmware` claim |
 | `stage` | A claim that cites UEFI 2.11 as a requirement names SEC, PEI, DXE or BDS, or a stage name is attributed without saying that its defining document was not read |
 | `stop` | A stop number from 1 to 7 is missing or repeated, or a stop lacks a field |
-| `picture` | A picture names an unknown part, or light goes out along the story |
+| `picture` | A picture names an unknown part, light goes out along the story, or attention is drawn to a part that is not lit |
 | `general` | More than one claim in ten has the basis `general` |
 
 The check proves form and the letter-for-letter match with the recordings. It cannot prove that a paraphrase of the specification is right; that was checked by reading, against the section and page each claim cites.
