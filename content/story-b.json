@@ -227,7 +227,7 @@
           "thread": "secure-boot",
           "thread_first_appearance": true,
           "statement": {
-            "text": "Before checking any software, firmware records the rules it will check by.",
+            "text": "Before any check, firmware records the rules it will check by.",
             "emphasis": "the rules it will check by"
           },
           "support": "Five records in a row go to TPM register 7: the Secure Boot switch, the owner's key, the update key, the allowed list and the forbidden list.",
