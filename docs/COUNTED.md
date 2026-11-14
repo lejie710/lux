@@ -7,7 +7,7 @@ Four counted experiments have a committed prediction: `boot-order-same`, `boot-o
 | Configuration | Booted | Why that is allowed |
 |---|---|---|
 | The packaged empty variable store with the enrolment program that also writes entries A and B and the order A, B | Yes, several times | A preparation boot. It makes the two-entry template; two independent boots gave the same file |
-| The same, with the order A, B, `Boot0001`, `Boot0000` | Yes, once; the store was not kept and never booted | A preparation boot. Entry A stays before entry B. It tests the claim the staging check rests on (see "The stores") |
+| The same, with the order A, B, `Boot0001`, `Boot0000` | Yes, once; the store was not made a template and was never booted | A preparation boot. Entry A stays before entry B. It tests the claim the staging check rests on (see "The stores") |
 | Two boot entries, order A then B, same loader behind both (`normal-two-same`) | Yes, recorded twice for the repository | A normal run |
 | Two boot entries, order A then B, second loader behind B (`normal-two-different`) | Yes, recorded twice for the repository | A normal run |
 | The plain normal run and the pilots | Recordings unchanged; their comparison files were made again from them | Normal run and declared pilots |
@@ -16,6 +16,20 @@ Four counted experiments have a committed prediction: `boot-order-same`, `boot-o
 | A loader with the chosen signature byte changed | **No.** It has only been written into temporary folders by tests that boot nothing | The changed configuration of a counted experiment |
 
 Everything known about the changed configurations comes from tests with a fake machine, which replays a normal boot whatever is staged. Those tests prove that each counted experiment can be staged from its committed prediction, recorded, compared and scored without an error. They say nothing about what the firmware will do.
+
+## One earlier boot order change, declared
+
+During the early research, before the recorder and before any prediction, a boot order was changed once on another configuration, and the test was repeated once to check it. It is not one of the counted experiments, and it is written down here because it bears on three of their rows.
+
+| | The early test | The counted boot order experiments |
+|---|---|---|
+| Firmware file | The packaged build without Secure Boot | The packaged build with Secure Boot, keys enrolled |
+| Boot options | The firmware's own three: its setup application, the disk, its built-in shell | Entries A and B, each a signed loader on the disk, and the firmware's own two |
+| The change | The shell option moved to the front of `BootOrder`, with the shell's own command | Entry B listed before entry A, written by a preparation boot |
+| What was read | The console lines and the variables `BootOrder` and `BootCurrent` | Console, loader report, event log, registers |
+| Registers and event log | Not read | Read and compared |
+
+What it showed: on the next boot this firmware tried the option now listed first, and `BootOrder` read back as it had been written. So the rows `continues`, `entry-b-first` and `order-measured-as-written` of the two boot order predictions were not written without any earlier observation of this firmware's handling of a changed order. It showed nothing about a path-only entry, a second loader, a register or an event, and every row on those rests on the normal runs and pilots named in the row.
 
 ## The two boot entries
 
