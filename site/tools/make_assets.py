@@ -157,7 +157,7 @@ def main() -> None:
             "top": round(min(ys), 4),
             "bottom": round(max(ys), 4),
         }
-    (out / "parts.json").write_text(json.dumps(boxes, indent=2) + chr(10), encoding="utf-8")
+    (out / "parts.json").write_text(json.dumps(boxes, indent=2) + chr(10), encoding="utf-8", newline=chr(10))
 
     for path in sorted(out.rglob("*.webp")):
         print(f"{path.as_posix()}  {Image.open(path).size}  {path.stat().st_size} bytes")

@@ -4,7 +4,7 @@
 
 Lux records one boot of open-source UEFI firmware in a virtual machine, from reset to the moment firmware hands the machine to the operating system. Then it changes one thing and boots again, and puts the normal run and the changed run side by side.
 
-This repository holds three parts: **the recorder**, **the content**, and the first scene of **the site**. The recorder boots the machine, captures what the boot left behind, refuses any run whose readings disagree, and writes one JSON recording per boot. The content is the words of the site as data, each claim labelled with where it comes from and each evidence line copied from a recording. The site shows them as a scroll story; so far it has its opening and the first of seven stops.
+This repository holds three parts: **the recorder**, **the content**, and **the site**. The recorder boots the machine, captures what the boot left behind, refuses any run whose readings disagree, and writes one JSON recording per boot. The content is the words of the site as data, each claim labelled with where it comes from and each evidence line copied from a recording. The site shows them as a scroll story of seven stops, from the dark machine to the moment firmware steps back.
 
 ## What exists so far
 
@@ -17,7 +17,7 @@ This repository holds three parts: **the recorder**, **the content**, and the fi
 | `recordings/comparisons/` | The five comparison files those statements come from: the two normal runs, and each pilot against `normal-1` |
 | `content/` | The site's words as five JSON files in one shape: seven stops, the experiments section, the sources and the glossary. `content/README.md` describes the shape |
 | `scripts/check_content.py` | Checks the content against the committed recordings and the rules in `content/README.md`. Standard library only |
-| `site/` | The site: React, TypeScript and Vite, no other runtime package. Built so far: the navigation, the opening, the move inside the machine, stop 1 and its evidence panel. It reads its words from `content/` and writes none of its own. `site/ASSETS.md` says how each picture was made |
+| `site/` | The site: React, TypeScript and Vite, no other runtime package. Built so far: the navigation, the opening, the move inside the machine, all seven stops with one step per screen of the content, the ending, and the evidence panel of every screen. It reads its words from `content/` and writes none of its own. `site/ASSETS.md` says how each picture was made |
 | `predictions/` | Empty. No prediction has been committed, so no counted experiment has been run |
 | `docs/DESIGN.md` | Module boundaries, the four file formats (recording, comparison, prediction, score), the decisions and their costs |
 | `docs/MUTATION_CHECKS.md` | Four rules broken on purpose, and the tests that failed |
@@ -36,12 +36,12 @@ The page opens at `http://127.0.0.1:5183/`. `npm test`, `npm run build` and `npm
 
 | Address | What it shows |
 |---|---|
-| `/` | The scene, pinned while the page scrolls through its steps |
+| `/` | The story, pinned while the page scrolls through its steps: the opening, the way inside, and one step per screen of the seven stops |
 | `/?static` | Every step as a still section, one under the other. A reader who prefers reduced motion gets this without asking |
-| `/?step=N` | The scene frozen at step N (0, 1 or 2), with nothing to scroll. Add `&evidence` to open that step's evidence |
-| `/#step-N` | The scrolled scene, landed on step N |
+| `/?step=N` | The story frozen at step N, counted from 0 (the opening) to the last screen of stop 7, with nothing to scroll. Add `&evidence` to open that step's evidence |
+| `/#step-N` | The scrolled story, landed on step N. The seven marks at the foot of a stop lead to the first step of each stop this way |
 
-The site's tests render pages to HTML without a browser. They check the step-to-picture mapping, that every screen of the content has what a scene needs, the two address switches and the evidence panel's key and focus rules. They do not prove motion, layout or focus in a real window; those were checked by eye in one Chromium browser.
+The site's tests render pages to HTML without a browser. They check the step-to-picture mapping for every step, that every screen of the content has what a scene needs and that its evidence panel shows every claim, line, record and register the content names, the two address switches and the evidence panel's key and focus rules. They do not prove motion, layout or focus in a real window; those were checked by eye in one Chromium browser.
 
 ## How a run is trusted
 
