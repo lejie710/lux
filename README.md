@@ -1,6 +1,6 @@
 # Lux
 
-_What your laptop does before it wakes: one recorded boot of open-source UEFI firmware, from reset to the moment firmware hands the machine over, and what happens when one thing in that chain is changed._
+_What your laptop does before it wakes: one boot of open-source UEFI firmware, told from reset to the moment firmware hands the machine over and recorded from the firmware's first measurement on, and what happens when one thing in that chain is changed._
 
 ![The opening screen of the site: a laptop before power, dark, with the words "Lux. Before light. What your laptop does before it wakes." and an invitation to scroll.](docs/images/opening.png)
 
@@ -8,7 +8,7 @@ _What your laptop does before it wakes: one recorded boot of open-source UEFI fi
 
 **When one thing in a PC's boot chain is changed, what does the specification require, what does it leave open, and what does this firmware actually do?**
 
-Lux records one boot of open-source UEFI firmware in a virtual machine, from reset to the moment firmware hands the machine to the operating system. Then it changes one thing and boots again, and puts the normal run and the changed run side by side. Before each counted experiment, a prediction was committed, and every row of it says where it comes from: required by the UEFI specification, left to the platform by that specification, belonging to a Trusted Computing Group document that was not read, or this firmware's own behaviour.
+Lux records one boot of open-source UEFI firmware in a virtual machine, up to the moment firmware hands the machine to the operating system. The recording begins at the firmware's first measurement; the steps before it are described, not recorded. Then it changes one thing and boots again, and puts the normal run and the changed run side by side. Before each counted experiment, a prediction was committed, and every row of it says where it comes from: required by the UEFI specification, left to the platform by that specification, belonging to a Trusted Computing Group document that was not read, or this firmware's own behaviour.
 
 ## What the evidence shows
 
@@ -21,7 +21,7 @@ Read the numbers with these beside them:
 - **Three boot order rows were not written without any earlier observation.** An early test on another configuration had already shown this firmware trying the option listed first.
 - **One firmware build, one virtual machine, a software TPM, one run each.** Nothing here shows what any vendor's firmware does on real hardware, or how often a changed run repeats.
 - **"Required" means a sentence found in a reading of UEFI 2.11**, cited by section title and PDF page. It is this project's reading of four behaviours, not a conformance test. The chapters the story needs were read page by page and the rest was searched by keyword; some chapters were not read.
-- **No row says what a Trusted Computing Group document requires, and no stop says what the Platform Initialization specification requires.** Neither was read. Every statement about a TPM register or a logged event is an observation of this firmware, and the phase names SEC, PEI, DXE and BDS are taken from the firmware's own source.
+- **No row says what a Trusted Computing Group document requires, and no stop says what the Platform Initialization specification requires.** Neither was read. Every statement about a TPM register or a logged event is an observation of this firmware, and the phase names SEC, PEI, DXE and BDS are taken from the firmware's own source, read at the EDK II project's master branch and not at the tag the packaged build was made from.
 
 | Counted experiment | The one thing changed | Specification-required rows met | Open rows predicted correctly |
 |---|---|---|---|
@@ -55,8 +55,8 @@ What this project does not show, stated so that nobody has to find out.
 - **The paraphrases of UEFI 2.11 were checked by reading, not by a test.** The content check proves that a citation is complete and that a quoted line is in a recording. It cannot prove that a sentence about the specification is right.
 - **Each counted experiment was booted once.** A single run says nothing about how often a changed run repeats.
 - **The predictions were written with the pilots and the normal runs in sight.** That is what "this firmware" as a basis means.
-- **The blindness of the counted runs rests on the repository's history and one audit**, not on a mechanism that could not have been bypassed. The recorder refuses a counted run without a committed prediction; it cannot prove that nobody booted that configuration with other tools.
-- **One machine, one set of tool versions.** Another QEMU version, machine type or firmware package may give other register values; the recorder then says so instead of producing a recording that looks comparable. Debian or Ubuntu only, as written.
+- **The blindness of the counted runs rests on the repository's history and one audit**, not on a mechanism that could not have been bypassed. The recorder refuses a counted run without a committed prediction; it cannot prove that nobody booted that configuration with other tools. The audit's script and its output are not in the repository; `docs/RESULTS.md`, "Checked a second time", says which of its rows a reader can repeat from the committed files.
+- **One machine, one set of tool versions.** Another QEMU version, machine type or firmware package may give other register values; the recorder then says so instead of producing a recording that looks comparable. The recordings were made and repeated on one machine only, Ubuntu 24.04 under WSL 2. `prepare` refuses any firmware file but the one from the Ubuntu package `ovmf` `2024.02-2ubuntu0.10`, and any assembler or linker that builds other loader bytes, so another distribution or release has never passed and may be refused.
 - **The pilots edit the variable store file while the machine is off.** `e5` writes the revocation record directly and not through a signed update, so it shows how this firmware treats a list that is there, not how it treats an update.
 - **The loader does not read `BootCurrent`**, so no recording can show it.
 - **The test keys are public**, private halves included, so that the recordings can be reproduced. Never trust them anywhere. See `recorder/testkeys/README.md`.
@@ -74,7 +74,7 @@ Not tested, and carried here from `docs/VERIFICATION.md`:
 
 | Not in this project | Why |
 |---|---|
-| A recording of a real laptop or board | Real firmware is a vendor's code and not a public source. Every step here can be repeated by anyone. This is the project's largest limit |
+| A recording of a real laptop or board | Real firmware is a vendor's code and not a public source. Every step here is meant to be repeatable on Ubuntu 24.04 with the pinned package versions; it has been repeated on one machine only. This is the project's largest limit |
 | Vendor-specific firmware behaviour | The project is vendor-neutral |
 | Hardware error handling | Out of scope |
 | Anything after the handoff: kernel start-up, an operating system's own boot manager | The story ends when firmware steps back |
@@ -95,7 +95,7 @@ The site holds no fact of its own. Its words come from `content/`, and what has 
 
 ### Run it locally
 
-Needs Node.js 22.12 or later in the 22 line, or 24. `npm ci` downloads the pinned packages once; after that nothing is fetched, and the page makes no request to any other address.
+Needs Node.js 22.12 or later in the 22 line, 24, or 26 and later (`engines` in `site/package.json`); only 24.22.0 with npm 11.19.1 has been used. `npm ci` downloads the pinned packages once; after that nothing is fetched. No address of another site is requested by the site's source, so the page asks no other address for anything; that was read from the source, not measured in a browser.
 
 ```
 cd site
@@ -103,7 +103,13 @@ npm ci
 npm run dev
 ```
 
-Open `http://127.0.0.1:5183/`. There is no live demo: the site has only been run locally.
+`npm ci` ends with a line like `added 47 packages, and audited 48 packages in 13s`. Open `http://127.0.0.1:5183/`. There is no live demo: the site has only been run locally.
+
+The port is fixed, and the command stops with `Port 5183 is already in use` when something else holds it. Then name another one, and open that address:
+
+```
+npm run dev -- --port 5191
+```
 
 | Address | What it shows |
 |---|---|
@@ -118,11 +124,11 @@ Open `http://127.0.0.1:5183/`. There is no live demo: the site has only been run
 
 In the scrolled story one press of Space or Page Down is one step on, and Shift with Space or Page Up one step back. The first thing the keyboard reaches is a link to `/?static`, the whole story as a plain page.
 
-The first load is about 0.7 MB: one script of 936 kB (186 kB compressed), one stylesheet, two fonts and the pictures. About two thirds of the script is the recordings and the content.
+The first load is about 0.7 MB by the sizes of the built files: one script of 936 kB (186 kB compressed), one stylesheet, two font files and the pictures. That figure assumes a host that compresses text and a browser that fetches only the two Latin font files of the 23 the build writes; it was not measured in a browser. About two thirds of the script is the recordings and the content.
 
 ### Hosting
 
-Nothing has been published. The build is prepared for a static host: every page lives after the hash sign of one address, `npm run build` writes `dist/` with relative paths, and a `404.html` leads back to the start. Two settings are read from the environment or a `.env` file. Neither is needed locally. **A published build needs both.**
+Nothing has been published. The build is prepared for a static host: every page lives after the hash sign of one address, `npm run build` writes `dist/` with relative paths, and a `404.html` leads back to the start. To look at the built site, run `npm run preview` after `npm run build`; it serves `dist/` at the same address and port as `npm run dev`, and takes `-- --port 5191` in the same way. Two settings are read from the environment or a `.env` file. Neither is needed locally. **A published build needs both.**
 
 | Setting | Use |
 |---|---|
@@ -133,7 +139,7 @@ Nothing has been published. The build is prepared for a static host: every page 
 
 A reader needs none of this to check the evidence. It is for someone who wants to see the runs repeat.
 
-Tested on Ubuntu 24.04 inside WSL 2 only. The recorder needs these Ubuntu packages, and every recording stores their versions in its `provenance` block:
+Tested on Ubuntu 24.04 inside WSL 2 only, with every command run as root; an ordinary user was not tried. The recorder needs these Ubuntu packages, and every recording stores their versions in its `provenance` block:
 
 | Package | Used for |
 |---|---|
@@ -144,6 +150,8 @@ Tested on Ubuntu 24.04 inside WSL 2 only. The recorder needs these Ubuntu packag
 | `python3` (3.12) | the recorder itself, standard library only |
 | `git` | the prediction gate asks it whether a prediction is committed; needed for counted experiments only |
 | `tpm2-tools` (optional) | decoding `eventlog.bin` yourself with `tpm2_eventlog` |
+
+They are installed with the system's package manager, for example `sudo apt install qemu-system-x86 ovmf swtpm binutils python3 git`. That command was not run for this project on a clean system: the packages were already there.
 
 `sbsigntool`, `efitools` and `openssl` were used once to create the committed key set and sign the loaders. A clone does not need them; their versions are recorded in `recorder/testkeys/MANIFEST.json`.
 
@@ -172,24 +180,24 @@ If your tools build a different loader or a different template, or your firmware
 
 ### 2. Record a run
 
-The committed recordings are evidence, and `record` refuses to write over an existing name. So use names of your own:
+The committed recordings are evidence: `record` refuses to write over an existing name, and the tests and the content check expect `recordings/` to hold the 14 committed runs and no other. So use names of your own, and a folder of your own. `scratch/` in the repository root is ignored by git and by the tests:
 
 ```
-python3 -m recorder record my-normal --experiment normal
-python3 -m recorder record my-e2 --experiment e2
-python3 -m recorder record my-two --experiment normal-two-same
+python3 -m recorder record my-normal --experiment normal --out scratch
+python3 -m recorder record my-e2 --experiment e2 --out scratch
+python3 -m recorder record my-two --experiment normal-two-same --out scratch
 ```
 
-Each takes about ten seconds and writes `recordings/<name>/recording.json` and `eventlog.bin`. Expected output for the normal run:
+Each takes about ten seconds and writes `scratch/<name>/recording.json` and `eventlog.bin`. Expected output for the normal run:
 
 ```
 run my-normal: accepted, 28 events, agreement gate passed
-written: recordings/my-normal/recording.json
+written: scratch/my-normal/recording.json
 ```
 
 and for the pilot: `run my-e2: refused, 26 events, agreement gate passed`. The normal run with two boot entries has 30 events.
 
-To keep your runs out of the repository's `recordings/` folder, add `--out some/other/folder`. Exit codes of `record`: 0 for a recording; 1 for a refusal, with one sentence saying why, and nothing written; 3 when a changed run reached neither the loader's last line nor a refusal and was recorded as `timeout`.
+Without `--out` a run is written into `recordings/`. A folder of your own there makes one unit test fail (`test_every_committed_recording_is_listed_here`) and changes the count the content check prints, until it is deleted. Exit codes of `record`: 0 for a recording; 1 for a refusal, with one sentence saying why, and nothing written; 3 when a changed run reached neither the loader's last line nor a refusal and was recorded as `timeout`.
 
 **Do not boot a counted experiment.** Each of the four has had its one run, under the name `<experiment>-1`. `record` refuses a counted experiment unless the command carries `--for-the-record`, and those words are not for trying the command out:
 
@@ -205,26 +213,49 @@ A run of your own, under another name or in another folder, is a repetition and 
 The baseline, named first, must be a recording of a normal run, and for a changed run it must be the normal run that experiment changes (`normal-1` for the pilots):
 
 ```
-python3 -m recorder compare recordings/normal-1/recording.json recordings/my-e2/recording.json --out recordings/comparisons/normal-1_vs_my-e2.json
+python3 -m recorder compare recordings/normal-1/recording.json scratch/my-e2/recording.json --out scratch/normal-1_vs_my-e2.json
 ```
 
 ```
 identical: false
 registers differing (sha256): [4, 5, 7]
-written: recordings/comparisons/normal-1_vs_my-e2.json
+written: scratch/normal-1_vs_my-e2.json
 ```
 
-Comparing `recordings/normal-1/recording.json` with `recordings/my-normal/recording.json` prints `identical: true` when your machine reproduces the committed run. `compare` refuses a recording with itself, with a renamed copy of itself, with a recording whose agreement gate did not pass, and a changed run against another normal run than its own.
+When your machine reproduces the committed normal run, comparing it with your own says so:
+
+```
+python3 -m recorder compare recordings/normal-1/recording.json scratch/my-normal/recording.json --out scratch/normal-1_vs_my-normal.json
+```
+
+```
+identical: true
+registers differing (sha256): []
+written: scratch/normal-1_vs_my-normal.json
+```
+
+`compare` refuses a recording with itself, with a renamed copy of itself, with a recording whose agreement gate did not pass, and a changed run against another normal run than its own.
 
 `scripts/record-pilots.sh` and `scripts/record-baselines.sh` make the normal runs, the pilots and their comparisons again, and pass `--replace` on purpose. The recording time is part of each file, so after them the files differ from the committed ones even when every compared field is equal, and the committed predictions and scores, which name their baseline recordings by hash, no longer fit. Run them in a copy, not in a checkout you mean to commit.
 
 ### 4. Check the committed scores
 
-Nothing is booted. This makes one score again from the committed files:
+Nothing is booted. This makes one score again from the committed files, in two commands. The first writes the comparison into the ignored folder `scratch/`:
 
 ```
-python3 -m recorder compare recordings/normal-1/recording.json recordings/signature-byte-1/recording.json --out my-comparison.json
-python3 -m recorder check my-comparison.json --prediction predictions/signature-byte.json --recording recordings/signature-byte-1/recording.json --baseline recordings/normal-1/recording.json --repeat recordings/comparisons/normal-1_vs_normal-2.json
+python3 -m recorder compare recordings/normal-1/recording.json recordings/signature-byte-1/recording.json --out scratch/my-comparison.json
+```
+
+```
+identical: false
+registers differing (sha256): [4, 5, 7]
+written: scratch/my-comparison.json
+```
+
+The second scores it:
+
+```
+python3 -m recorder check scratch/my-comparison.json --prediction predictions/signature-byte.json --recording recordings/signature-byte-1/recording.json --baseline recordings/normal-1/recording.json --repeat recordings/comparisons/normal-1_vs_normal-2.json
 ```
 
 ```
@@ -264,6 +295,8 @@ The recorder refuses to run a counted experiment unless all of this holds: the c
 
 ## Tests
 
+The commands are written as on Linux or WSL. On Windows, where `python3` may not be a command, the unit tests and the content check run with `python` in its place; both were run that way too. The expected output below is that of a checkout whose `recordings/` folder holds only the committed runs.
+
 Recorder, from the repository root. The unit tests need no virtual machine and change no file in the repository:
 
 ```
@@ -282,7 +315,7 @@ The time varies. The six skipped tests boot the virtual machine. To include them
 bash scripts/test-with-vm.sh
 ```
 
-It boots the normal run twice and the normal run with two boot entries once, asserts that the agreement gate passed, that the two runs are equal on every compared field, that a fresh run equals the committed `normal-1` and `normal-two-same-1`, and that nothing is left running. It never boots a changed run. Expected: `Ran 368 tests`, `OK`, then three lines that end in `none`.
+It boots the normal run twice and the normal run with two boot entries once, asserts that the agreement gate passed, that the two runs are equal on every compared field, that a fresh run equals the committed `normal-1` and `normal-two-same-1`, and that nothing is left running. It never boots a changed run, and takes about two minutes. Expected: `Ran 368 tests`, `OK`, then `virtual machines running: none`, `software TPMs running: none` and `guest memory files: none`.
 
 The content check, from the repository root:
 
@@ -339,9 +372,10 @@ site/                the site: React, TypeScript and Vite
 |---|---|
 | [`docs/ENGINEERING.md`](docs/ENGINEERING.md) | The entry point: purpose and requirements, the architecture of the whole system, two operations traced end to end, the file formats, the decisions, operating guidance |
 | [`docs/VERIFICATION.md`](docs/VERIFICATION.md) | Acceptance checks mapped to tests, the failures most likely to hurt a reader, test counts, what was checked by eye, defects found, the release assessment |
+| [`docs/FRESH_CLONE_RUN.md`](docs/FRESH_CLONE_RUN.md) | This README followed in a new clone: what was typed, what came back, what it found, and which steps were repeated after the README was corrected |
 | [`docs/RESULTS.md`](docs/RESULTS.md) | Every row of every counted run, the two numbers and their limits |
 | [`docs/DESIGN.md`](docs/DESIGN.md) | The recorder's modules, the four file formats and decisions D1 to D8 |
-| [`docs/PILOTS.md`](docs/PILOTS.md), [`docs/COUNTED.md`](docs/COUNTED.md), [`docs/MUTATION_CHECKS.md`](docs/MUTATION_CHECKS.md) | The pilots as recorded; how the counted experiments were staged; seven rules broken on purpose |
+| [`docs/PILOTS.md`](docs/PILOTS.md), [`docs/COUNTED.md`](docs/COUNTED.md), [`docs/MUTATION_CHECKS.md`](docs/MUTATION_CHECKS.md) | The pilots as recorded; how the counted experiments were staged; nine rules broken on purpose |
 | [`content/README.md`](content/README.md), [`site/ASSETS.md`](site/ASSETS.md) | The shape of the content and what its check refuses; how each picture was made |
 
 ## Provenance of the committed recordings
@@ -355,11 +389,11 @@ Public sources only. Nothing from any employer or vendor system was read or used
 | What | How it is used | Licence or terms |
 |---|---|---|
 | UEFI Forum, *Unified Extensible Firmware Interface (UEFI) Specification*, version 2.11 | The chapters the story needs were read page by page, and the whole published PDF was searched by keyword; some chapters were not read, and figures have no text to read. Paraphrased and cited by section and PDF page. No table or figure is reproduced | Copyright UEFI Forum, Inc. All rights reserved |
-| EDK II and its OVMF firmware | Run as packaged by Ubuntu; not redistributed here. Six of its source files are named as the basis of claims and linked from the sources page | BSD-2-Clause-Patent |
+| EDK II and its OVMF firmware | Run as packaged by Ubuntu; not redistributed here. Six of its source files are named as the basis of claims and linked from the sources page. They were read at the project's master branch, not at the tag of the packaged build, and the package's build settings were not confirmed | BSD-2-Clause-Patent |
 | QEMU | Run; not redistributed | GNU General Public License, version 2; stated per file in its source tree |
 | swtpm | Run; not redistributed | BSD-3-Clause |
-| tpm2-tools | The event type names it prints are kept as a test fixture | Not recorded in this project |
-| GNU binutils, Python | Build the guest loader; run the recorder | Not recorded in this project |
+| tpm2-tools | The event type names it prints are kept as a test fixture; the program is not redistributed | BSD-3-Clause, by the copyright file of its Ubuntu package |
+| GNU binutils, Python | Build the guest loader; run the recorder. Neither is redistributed | GNU General Public License, version 3 or later; Python Software Foundation License. Neither licence text was checked for this project |
 | React, React DOM | The site's only runtime code besides its own | MIT |
 | Vite, Vitest, Prettier, the React plugin for Vite, the React type packages; TypeScript | Build, test and format the site; not shipped to a reader | MIT; TypeScript is Apache-2.0 |
 | Inter and IBM Plex Mono, through the Fontsource packages | Bundled into the built site; nothing is fetched from another site | SIL Open Font License 1.1 |
