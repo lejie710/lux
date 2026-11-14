@@ -73,11 +73,9 @@ describe("the scrolled page", () => {
     expect(html).toContain('<p class="sr-only" role="status"></p>');
   });
 
-  it("has the navigation, with the two unbuilt places as text that says so", () => {
-    expect(html).toContain('aria-current="location"');
-    expect(count(html, /<span class="soon">/g)).toBe(2);
-    expect(count(html, /<small>coming<\/small>/g)).toBe(2);
-    expect(count(/<nav[\s\S]*?<\/nav>/.exec(html)![0], /<a /g)).toBe(2);
+  it("has the navigation, with the story marked as the page in view", () => {
+    expect(html).toContain('<a href="#top" aria-current="page">The boot</a>');
+    expect(count(/<nav[\s\S]*?<\/nav>/.exec(html)![0], /<a /g)).toBe(4);
   });
 });
 
@@ -143,7 +141,7 @@ describe("?step=N: the scene frozen at one step", () => {
   it("puts the page behind an open panel out of reach, and lets the panel itself take focus", () => {
     const open = renderToStaticMarkup(<App mode={{ kind: "frozen", step: 2, evidence: true }} />);
     expect(open).toMatch(/<nav class="lnav" aria-label="Site" inert="">/);
-    expect(open).toMatch(/<main id="top" inert="">/);
+    expect(open).toMatch(/<main id="top" inert="" data-page="story">/);
     expect(open).toMatch(/role="dialog" aria-modal="true" aria-labelledby="sheet-title" tabindex="-1"/);
     const still = renderToStaticMarkup(<App mode={{ kind: "still" }} />);
     expect(still).not.toContain("inert");
@@ -325,7 +323,10 @@ describe("the evidence panel for every screen", () => {
   it("names the run beside its lines, so the pilot's lines are not taken for the normal run's", () => {
     const html = panelOf("s6-pilot-refusal");
     expect(html).toContain('<p class="sheet-run">Run e2</p>');
-    expect(html).not.toContain('<p class="sheet-run">Run normal-1</p>');
+    // The normal run is named only where the two runs are compared, never over the pilot's printed lines.
+    const printed = /<h3>What was printed<\/h3>.*?<\/section>/s.exec(html)![0];
+    expect(printed).not.toContain('<p class="sheet-run">Run normal-1</p>');
+    expect(html).toContain("The first record that differs");
     expect(html).toContain(esc(screenOf("s6-pilot-refusal").pilot_label!));
     expect(html).toContain("recordings/comparisons/normal-1_vs_e2.json");
   });

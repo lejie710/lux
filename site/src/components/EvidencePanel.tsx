@@ -1,26 +1,32 @@
 // What "Open the evidence" shows for one screen: the evidence line or the label that says there is none, the
 // explanation, the console lines, records and registers behind it, every claim with its basis and source,
-// the terms, and what the recording does not show. A dialog: focus moves in, Tab stays in, Escape closes.
+// the terms, and what the recording does not show. A two-run screen and a card of an experiment also show
+// what their comparison file holds. A dialog: focus moves in, Tab stays in, Escape closes.
 import { useEffect, useRef } from "react";
+import { FILES, comparisonAt } from "../content/files";
 import {
   READING_NOTES,
   STOPS,
   basisLabel,
   claimNumbers,
-  claimSource,
   define,
-  firmwareSource,
   recordedEvent,
   recordedLine,
   recordedRegister,
-  shortened,
+  subjectId,
+  type Subject,
 } from "../content/load";
-import { BASES, type Claim, type Detail, type Screen } from "../content/types";
+import { BASES, type Card, type Claim, type Detail } from "../content/types";
+import { cardStates, experimentState, onFile } from "../model/experiments";
+import { Comparison, Prediction, StatusNote } from "./Comparison";
 import { EvidencePill } from "./Stage";
 import { panelKey } from "./panel";
+import { ClaimItem, Digest, RunName } from "./sheetParts";
 
 interface EvidencePanelProps {
-  screen: Screen;
+  screen: Subject["screen"];
+  /** One card of the screen: the panel is then about that experiment alone. */
+  card?: Card | null;
   /** Open at the list of claims, not at the top. */
   atClaims: boolean;
   onClose: () => void;
@@ -29,20 +35,40 @@ interface EvidencePanelProps {
 /** What the panel's Tab loop goes through: its controls, its fold-outs and its scrolling lists. */
 const CONTROLS = "button, a[href], summary, [tabindex='0']";
 
-export function EvidencePanel({ screen, atClaims, onClose }: EvidencePanelProps) {
+export function EvidencePanel({ screen, card = null, atClaims, onClose }: EvidencePanelProps) {
   const sheet = useRef<HTMLDivElement>(null);
   const closeButton = useRef<HTMLButtonElement>(null);
   const claimsHeading = useRef<HTMLHeadingElement>(null);
   const stop = STOPS.find((s) => s.number === screen.stop) ?? null;
   const { detail, evidence } = screen;
-  const first = claimNumbers(screen.id).first;
   const notShown = [...(stop?.not_shown ?? []), ...(detail.not_shown ?? [])];
-  const cited = screen.claims.some((claim) => claim.citation ?? claim.uefi_pointer);
-  // The labels to explain: the ones this screen's claims carry and the ones it asks for, in the content's order.
+  // The claims shown: a card's own, or the screen's followed by those of each of its cards and items.
+  const groups: { id: string; title: string | null; claims: Claim[] }[] = card
+    ? [{ id: subjectId(screen.id, card.id), title: null, claims: card.claims }]
+    : [
+        { id: screen.id, title: null, claims: screen.claims },
+        ...[...(screen.cards ?? []), ...(screen.items ?? [])].map((part) => ({
+          id: subjectId(screen.id, part.id),
+          title: part.title,
+          claims: part.claims,
+        })),
+      ].filter((group) => group.title === null || group.claims.length > 0);
+  const claims = groups.flatMap((group) => group.claims);
+  const cited = claims.some((claim) => claim.citation ?? claim.uefi_pointer);
+  // The labels to explain: the ones these claims carry and the ones the screen asks for, in the content's order.
   const labels = BASES.filter(
-    (basis) => screen.claims.some((claim) => claim.basis === basis) || detail.basis_labels?.includes(basis),
+    (basis) => claims.some((claim) => claim.basis === basis) || detail.basis_labels?.includes(basis),
   ).map(basisLabel);
   const stageName = stop?.stage_name;
+  // What the files on disk hold for this experiment: its comparison with the normal run, prediction and score.
+  // A card may stand for more than one form of its experiment; a two-run screen names one.
+  const states = card
+    ? cardStates(card.id, FILES).filter(onFile)
+    : screen.experiment
+      ? [experimentState(screen.experiment, FILES)]
+      : [];
+  const comparison = !card && detail.comparison ? comparisonAt(detail.comparison.file) : null;
+  const status = card ? card.status : (screen.status?.text ?? null);
 
   // Focus moves into the panel when it opens: to the claims when a citation marker opened it.
   useEffect(() => {
@@ -83,50 +109,102 @@ export function EvidencePanel({ screen, atClaims, onClose }: EvidencePanelProps)
                 {stop.label}
               </>
             )}
+            {card && (
+              <>
+                {" "}
+                <span aria-hidden="true">·</span> {card.label}
+              </>
+            )}
           </p>
           <button type="button" className="sheet-close" ref={closeButton} onClick={onClose}>
             Close
           </button>
         </header>
         <h2 id="sheet-title" className="sheet-title">
-          {screen.statement.text}
+          {card ? card.title : screen.statement.text}
         </h2>
-        {screen.support && <p className="sheet-support">{screen.support}</p>}
+        {card
+          ? card.change && <p className="sheet-support">{card.change}</p>
+          : screen.support && <p className="sheet-support">{screen.support}</p>}
         {screen.pilot_label && <p className="sheet-pilot">{screen.pilot_label}</p>}
+        {status && <p className="sheet-pilot">{status}</p>}
 
-        <section>
-          <h3>{evidence.recorded ? "The line from the recording" : "Nothing was recorded here"}</h3>
-          <EvidencePill evidence={evidence} />
-          {evidence.caption && <p className="sheet-caption">{evidence.caption}</p>}
-          {evidence.recorded && (
-            <p className="sheet-path">
-              {evidence.file}: {evidence.field}
-            </p>
-          )}
-        </section>
-
-        <section>
-          <h3>What happens</h3>
-          <p className="sheet-prose">{detail.explanation}</p>
-        </section>
-
-        <Lines detail={detail} />
-        <Records detail={detail} />
-        <Registers detail={detail} />
-
-        {detail.comparison && (
+        {!card && screen.sides && (
           <section>
-            <h3>The two runs compared</h3>
-            <p className="sheet-prose">
-              Run {detail.comparison.changed} against run {detail.comparison.baseline}.
-            </p>
-            <p className="sheet-path">{detail.comparison.file}</p>
+            <h3>The line from each recording</h3>
+            {screen.sides.map((side) => (
+              <div key={side.id} className="sheet-lines-group">
+                <RunName run={side.run} />
+                <EvidencePill evidence={side.evidence} />
+                <p className="sheet-path">
+                  {side.evidence.file}: {side.evidence.field}
+                </p>
+              </div>
+            ))}
+          </section>
+        )}
+        {!card && evidence && (
+          <section>
+            <h3>{evidence.recorded ? "The line from the recording" : "Nothing was recorded here"}</h3>
+            <EvidencePill evidence={evidence} />
+            {evidence.caption && <p className="sheet-caption">{evidence.caption}</p>}
+            {evidence.recorded && (
+              <p className="sheet-path">
+                {evidence.file}: {evidence.field}
+              </p>
+            )}
           </section>
         )}
 
-        {detail.other_fields && detail.other_fields.length > 0 && (
+        {!card && (
           <section>
-            <h3>{evidence.recorded ? "Other fields of the recording" : "The nearest the recording has"}</h3>
+            <h3>What happens</h3>
+            <p className="sheet-prose">{detail.explanation}</p>
+          </section>
+        )}
+        {card && !states.some((state) => state.run) && (
+          <section>
+            <h3>Not yet run</h3>
+            <p className="sheet-prose">{card.result_note ?? "No recording of this experiment is on file."}</p>
+          </section>
+        )}
+
+        {comparison ? (
+          <Comparison comparison={comparison} detail={card ? null : detail} />
+        ) : (
+          !card &&
+          detail.comparison && (
+            <section>
+              <h3>The two runs compared</h3>
+              <p className="sheet-prose">
+                Run {detail.comparison.changed} against run {detail.comparison.baseline}.
+              </p>
+              <p className="sheet-path">{detail.comparison.file}</p>
+            </section>
+          )
+        )}
+        {states.map((state) => (
+          <div key={state.experiment} className="sheet-form">
+            {card && (states.length > 1 || state.experiment !== card.id) && (
+              <p className="sheet-form-name">{state.experiment}</p>
+            )}
+            {card && state.comparison && <Comparison comparison={state.comparison} detail={null} />}
+            <Prediction state={state} status={status} />
+          </div>
+        ))}
+        {!card && detail.status_mismatch && <StatusNote note={detail.status_mismatch} />}
+
+        {!card && (
+          <>
+            <Lines detail={detail} />
+            <Records detail={detail} />
+            <Registers detail={detail} />
+          </>
+        )}
+
+        {!card && detail.other_fields && detail.other_fields.length > 0 && (
+          <section>
+            <h3>{evidence?.recorded ? "Other fields of the recording" : "The nearest the recording has"}</h3>
             <ul className="sheet-rows">
               {detail.other_fields.map((field) => (
                 <li key={`${field.file}-${field.field}`}>
@@ -142,50 +220,63 @@ export function EvidencePanel({ screen, atClaims, onClose }: EvidencePanelProps)
           </section>
         )}
 
-        <section>
-          <h3 ref={claimsHeading} tabIndex={-1}>
-            Where each claim comes from
-          </h3>
-          {/* The legend: what each label on this screen's claims means. */}
-          <dl className="sheet-legend" aria-label="What the labels mean">
-            {labels.map((label) => (
-              <div key={label.basis}>
-                <dt className="claim-basis" data-basis={label.basis}>
-                  {label.label}
-                </dt>
-                <dd>{label.meaning}</dd>
-              </div>
-            ))}
-          </dl>
-          <ol className="sheet-claims" start={first}>
-            {screen.claims.map((claim, n) => (
-              <ClaimItem key={claim.id ?? n} claim={claim} number={first + n} />
-            ))}
-          </ol>
-          {cited && <p className="sheet-caption">{READING_NOTES.pdf_page}</p>}
-        </section>
+        {claims.length > 0 && (
+          <section>
+            <h3 ref={claimsHeading} tabIndex={-1}>
+              Where each claim comes from
+            </h3>
+            {card?.specification_note && <p className="sheet-caption sheet-caption-first">{card.specification_note}</p>}
+            {/* The legend: what each label on these claims means. */}
+            <dl className="sheet-legend" aria-label="What the labels mean">
+              {labels.map((label) => (
+                <div key={label.basis}>
+                  <dt className="claim-basis" data-basis={label.basis}>
+                    {label.label}
+                  </dt>
+                  <dd>{label.meaning}</dd>
+                </div>
+              ))}
+            </dl>
+            {groups.map((group) => {
+              const first = claimNumbers(group.id).first;
+              return (
+                <div key={group.id}>
+                  {group.title && <p className="sheet-group">{group.title}</p>}
+                  <ol className="sheet-claims" start={first}>
+                    {group.claims.map((claim, n) => (
+                      <ClaimItem key={claim.id ?? n} claim={claim} number={first + n} />
+                    ))}
+                  </ol>
+                </div>
+              );
+            })}
+            {cited && <p className="sheet-caption">{READING_NOTES.pdf_page}</p>}
+          </section>
+        )}
 
-        <section>
-          <h3>Terms</h3>
-          <dl className="sheet-terms">
-            {stageName && (
-              <div>
-                <dt>
-                  {stageName.name} ({stageName.expansion})
-                </dt>
-                <dd>{stageName.attribution}</dd>
-              </div>
-            )}
-            {detail.definitions.map(define).map((entry) => (
-              <div key={entry.term}>
-                <dt>{entry.term}</dt>
-                <dd>{entry.definition}</dd>
-              </div>
-            ))}
-          </dl>
-        </section>
+        {(stageName || detail.definitions.length > 0) && (
+          <section>
+            <h3>Terms</h3>
+            <dl className="sheet-terms">
+              {stageName && (
+                <div>
+                  <dt>
+                    {stageName.name} ({stageName.expansion})
+                  </dt>
+                  <dd>{stageName.attribution}</dd>
+                </div>
+              )}
+              {detail.definitions.map(define).map((entry) => (
+                <div key={entry.term}>
+                  <dt>{entry.term}</dt>
+                  <dd>{entry.definition}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        )}
 
-        {notShown.length > 0 && (
+        {!card && notShown.length > 0 && (
           <section>
             <h3>What the recording does not show</h3>
             {notShown.map((text) => (
@@ -198,11 +289,6 @@ export function EvidencePanel({ screen, atClaims, onClose }: EvidencePanelProps)
       </div>
     </>
   );
-}
-
-/** A run is named wherever its lines or records are shown, so two runs on one screen cannot be confused. */
-function RunName({ run }: { run: string }) {
-  return <p className="sheet-run">Run {run}</p>;
 }
 
 /** The console lines and the lines of the loader's report that a screen names, as they were printed. */
@@ -252,18 +338,6 @@ function Lines({ detail }: { detail: Detail }) {
         </div>
       ))}
     </section>
-  );
-}
-
-/** A long value, shown short, with the whole of it one press away. */
-function Digest({ label, value }: { label: string; value: string }) {
-  return (
-    <details className="digest">
-      <summary>
-        <span className="digest-label">{label}</span> {shortened(value)}
-      </summary>
-      <p>{value}</p>
-    </details>
   );
 }
 
@@ -324,31 +398,5 @@ function Registers({ detail }: { detail: Detail }) {
       ))}
       <p className="sheet-caption">{READING_NOTES.register_values}</p>
     </section>
-  );
-}
-
-/** One claim: its number, the label of its basis, its words, and the line that says where it comes from. */
-function ClaimItem({ claim, number }: { claim: Claim; number: number }) {
-  const basis = basisLabel(claim.basis);
-  const source = claimSource(claim);
-  const file = claim.source_ref ? firmwareSource(claim.source_ref) : null;
-  return (
-    <li value={number}>
-      <p className="claim-basis" data-basis={claim.basis} title={basis.meaning}>
-        {basis.label}
-      </p>
-      <p className="claim-text">{claim.text}</p>
-      {source &&
-        (file ? (
-          <p className="claim-source">
-            <a href={file.url} target="_blank" rel="noreferrer">
-              {source}
-            </a>
-          </p>
-        ) : (
-          <p className="claim-source">{source}</p>
-        ))}
-      {claim.note && <p className="claim-note">{claim.note}</p>}
-    </li>
   );
 }

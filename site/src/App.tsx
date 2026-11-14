@@ -1,21 +1,35 @@
-// The page: the navigation bar, the story in one of its three modes, and the evidence panel.
+// The site: the navigation bar, one of the three pages, and the evidence panel. The story is drawn in one
+// of its three modes; the experiments and the sources are plain pages that scroll.
 import { useEffect, useRef, useState } from "react";
 import { EvidencePanel } from "./components/EvidencePanel";
-import { Nav } from "./components/Nav";
+import { Experiments } from "./components/Experiments";
+import { Nav, PAGE_NAMES } from "./components/Nav";
+import { Overview } from "./components/Overview";
+import { Sources } from "./components/Sources";
 import { Stage, type OpenEvidence } from "./components/Stage";
 import { CLOSED, closePanel, openPanel, openerId } from "./components/panel";
-import { DISCLAIMER, OPENING, allScreens } from "./content/load";
+import { DISCLAIMER, OPENING, findSubject, subjectId } from "./content/load";
+import { STORY, readRoute, sectionId, type Route } from "./model/route";
 import { STEPS, STEP_COUNT } from "./model/scene";
 import type { Mode } from "./model/switches";
 import { useStepScroll } from "./stage/useStepScroll";
 
-export function App({ mode }: { mode: Mode }) {
-  // A frozen step can ask for its evidence to be open from the start (?step=N&evidence), for checks.
+export const SITE_TITLE = "Lux: what your laptop does before it wakes";
+
+export function App({ mode, route: first = STORY }: { mode: Mode; route?: Route }) {
+  const [route, setRoute] = useState(first);
+  const { page } = route;
+  // Evidence can be asked for from the start, for checks: by a frozen step of the story (?step=N&evidence),
+  // or by the address of a section of another page (#/experiments/<section>/evidence).
   const [panel, setPanel] = useState(() => {
+    if (page !== "story") {
+      const id = route.evidence && route.section ? subjectId(route.section, route.card ?? undefined) : null;
+      return id && findSubject(id) ? openPanel(id, openerId(id)) : CLOSED;
+    }
     if (mode.kind !== "frozen" || !mode.evidence || STEPS[mode.step].kind === "opening") return CLOSED;
     return openPanel(STEPS[mode.step].screen.id, openerId(STEPS[mode.step].id));
   });
-  const screen = allScreens().find((s) => s.id === panel.screenId);
+  const subject = findSubject(panel.screenId);
 
   const open: OpenEvidence = (screenId, opener, atClaims) => setPanel(openPanel(screenId, opener, atClaims));
   // The control that focus goes back to once the panel has closed.
@@ -26,41 +40,78 @@ export function App({ mode }: { mode: Mode }) {
     setPanel(state);
   };
 
+  // The address after the hash sign names the page. A panel does not outlive the page it was opened on.
+  useEffect(() => {
+    const onHashChange = () => {
+      setRoute(readRoute(window.location.hash));
+      setPanel(CLOSED);
+    };
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+
+  // A new page starts at its top, or at the section its address names. Within the story the browser and the
+  // scroll hook place the step an address names; the still page and the strip after the story are placed here.
+  const section = route.section;
+  useEffect(() => {
+    document.documentElement.dataset.mode = page === "story" ? mode.kind : "page";
+    document.title = page === "story" ? SITE_TITLE : `${PAGE_NAMES[page]} · Lux`;
+    if (page !== "story") {
+      const target = section ? document.getElementById(sectionId(section)) : null;
+      if (target) target.scrollIntoView({ block: "start", behavior: "instant" });
+      else window.scrollTo({ top: 0, behavior: "instant" });
+      return;
+    }
+    const id = window.location.hash.slice(1);
+    const placedByScroll = mode.kind === "scroll" && id.startsWith("step-");
+    if (id && id !== "top" && !placedByScroll)
+      document.getElementById(id)?.scrollIntoView({ block: "start", behavior: "instant" });
+    else if (!placedByScroll) window.scrollTo({ top: 0, behavior: "instant" });
+  }, [page, section, mode.kind]);
+
   // The page behind an open panel does not scroll, so the step under it cannot change. When the panel has
   // closed and the page is in reach again, focus goes back to the control that opened it, without moving
   // the page. It cannot go back sooner: an inert page refuses focus.
   useEffect(() => {
-    document.documentElement.classList.toggle("panel-open", Boolean(screen));
-    if (screen || !returnTo.current) return;
+    document.documentElement.classList.toggle("panel-open", Boolean(subject));
+    if (subject || !returnTo.current) return;
     document.getElementById(returnTo.current)?.focus({ preventScroll: true });
     returnTo.current = null;
-  }, [screen]);
+  }, [subject]);
 
+  const behind = Boolean(subject);
+  const frozen = page === "story" && mode.kind === "frozen";
   return (
     <>
       {/* Behind an open panel the page is out of reach: no focus, no clicks, not read out. */}
-      <Nav inert={Boolean(screen)} />
-      <main id="top" inert={Boolean(screen)}>
-        {mode.kind === "scroll" && <ScrollScene onOpen={open} />}
-        {mode.kind === "still" &&
+      <Nav page={page} inert={behind} />
+      <main id="top" inert={behind} data-page={page}>
+        {page === "experiments" && <Experiments onOpen={open} />}
+        {page === "sources" && <Sources onOpen={open} />}
+        {page === "story" && mode.kind === "scroll" && <ScrollScene onOpen={open} />}
+        {page === "story" &&
+          mode.kind === "still" &&
           STEPS.map((step, n) => (
             <section key={step.id} className="still-step" id={`step-${n}`}>
               <Stage current={n} solo onOpen={open} />
             </section>
           ))}
-        {mode.kind === "frozen" && (
+        {page === "story" && mode.kind === "frozen" && (
           <section className="frozen-step">
             <Stage current={mode.step} solo anchors={false} onOpen={open} />
           </section>
         )}
+        {page === "story" && !frozen && <Overview />}
       </main>
-      {mode.kind !== "frozen" && (
-        <footer className="closing" inert={Boolean(screen)}>
+      {!frozen && (
+        <footer className="closing" inert={behind}>
           <p>{OPENING.scope_note}</p>
           <p>{DISCLAIMER}</p>
         </footer>
       )}
-      {screen && <EvidencePanel screen={screen} atClaims={panel.atClaims} onClose={close} />}
+      {subject && (
+        <EvidencePanel screen={subject.screen} card={subject.card} atClaims={panel.atClaims} onClose={close} />
+      )}
     </>
   );
 }

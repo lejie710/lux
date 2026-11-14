@@ -1,0 +1,791 @@
+/* The pages beside the story: the experiments, the sources, and the strip of seven stops after the story.
+   They are plain pages that scroll. The grammar is the story's: one statement, at most one supporting
+   sentence, one evidence line, and everything else behind "Open the evidence". Nothing here moves. */
+
+:root {
+  /* The colour of a run that was refused, beside the warm colour of one that went on. */
+  --refused: #ff9d8a;
+  --page-width: 1240px;
+}
+
+/* A screen: about one window tall, its parts in a column, centred. */
+.page-screen {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(26px, 4.4svh, 46px);
+  min-height: 100svh;
+  padding: calc(var(--nav) + clamp(24px, 5svh, 56px)) var(--gutter) clamp(56px, 9svh, 96px);
+}
+.page-screen + .page-screen,
+.page-part,
+.page-part + .page-screen {
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+.page-head {
+  width: 100%;
+  text-align: center;
+}
+.page-head .statement {
+  font-size: clamp(32px, min(4.4vw, 7.2svh), 64px);
+}
+.page-head .aside-pilot {
+  margin-inline: auto;
+}
+.page-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 20px;
+  width: 100%;
+}
+.page-foot .pill {
+  text-align: left;
+}
+/* The part of a line the content asks to have set in colour. */
+.pill-line em {
+  font-style: normal;
+  color: var(--warm);
+}
+.page-note {
+  position: absolute;
+  right: var(--gutter);
+  bottom: 16px;
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--faint);
+}
+.label {
+  margin: 0 0 12px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--grey);
+}
+
+/* The experiments' first screen: the question on the left, the measure and the score on the right. */
+.measure {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(28px, 5vw, 80px);
+  width: min(100%, 1080px);
+}
+.question {
+  margin: 0;
+  font-size: clamp(19px, 1.75vw, 25px);
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -0.015em;
+  text-wrap: pretty;
+}
+.measure-line {
+  margin: 0 0 12px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--soft);
+}
+/* The score. Until one exists it says so, with the dashed edge of something that is not there. */
+.score {
+  margin: 20px 0 0;
+  padding: 12px 18px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--soft);
+}
+.score[data-claimed="false"] {
+  border-style: dashed;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+.score > div,
+.card-result > div,
+.sheet-pairs > div {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding: 5px 0;
+}
+.score dt,
+.card-result dt,
+.sheet-pairs dt {
+  color: var(--grey);
+}
+.score dd,
+.card-result dd,
+.sheet-pairs dd {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 13px;
+  color: var(--text);
+  text-align: right;
+}
+dd[data-outcome="refused"],
+dd[data-outcome="timeout"] {
+  color: var(--refused);
+}
+dd[data-outcome="accepted"] {
+  color: var(--warm);
+}
+
+/* Two runs side by side: the picture, one statement, one line. */
+.page-screen[data-kind="side-by-side"] {
+  gap: clamp(12px, 2.2svh, 26px);
+  padding-top: calc(var(--nav) + clamp(12px, 3svh, 36px));
+  padding-bottom: clamp(44px, 6svh, 64px);
+}
+.page-screen[data-kind="side-by-side"] .statement {
+  max-width: 26em;
+  font-size: clamp(30px, min(3.5vw, 6svh), 52px);
+}
+.page-screen[data-kind="side-by-side"] .eyebrow {
+  margin-bottom: 8px;
+}
+.sides {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(20px, 4vw, 64px);
+  width: min(100%, var(--page-width));
+}
+.side {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  text-align: center;
+}
+.side img {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: clamp(200px, 38svh, 420px);
+  aspect-ratio: 4 / 3;
+  object-fit: contain;
+}
+.side-statement {
+  margin: -6px 0 0;
+  font-size: clamp(19px, 1.7vw, 25px);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.side-statement em {
+  font-style: normal;
+  color: var(--warm);
+}
+.side[data-outcome="refused"] .side-statement em,
+.side[data-outcome="refused"] .pill-line em,
+.side[data-outcome="timeout"] .side-statement em,
+.side[data-outcome="timeout"] .pill-line em {
+  color: var(--refused);
+}
+.side .pill {
+  text-align: left;
+}
+
+/* Cards: one experiment each. */
+.cards,
+.open-items {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+  width: min(100%, var(--page-width));
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.open-items {
+  grid-template-columns: repeat(2, 1fr);
+  width: min(100%, 1040px);
+}
+.card,
+.open-items > li {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 22px 24px 18px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface);
+}
+/* An experiment with no recording has the dashed edge of evidence that does not exist. */
+.card[data-status="not-run"] {
+  border-style: dashed;
+  border-color: rgba(255, 255, 255, 0.24);
+  background: none;
+}
+.card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin: 0;
+}
+.card-label {
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--grey);
+}
+.card-status {
+  padding: 3px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--soft);
+}
+.card[data-status="pilot"] .card-status,
+.card[data-status="not-run"] .card-status {
+  border-style: dashed;
+  border-color: rgba(255, 255, 255, 0.3);
+}
+.card[data-status="scored"] .card-status {
+  border-color: rgba(255, 197, 107, 0.5);
+  color: var(--warm);
+}
+.card-title {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.22;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+.card-change,
+.card-absent,
+.card-note {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--soft);
+}
+.card-absent,
+.card-note {
+  font-size: 13px;
+  color: var(--grey);
+}
+.card-result {
+  width: 100%;
+  margin: 2px 0 0;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 13px;
+  line-height: 1.45;
+}
+.card .open-evidence {
+  margin-top: auto;
+  min-height: 40px;
+  font-size: 14px;
+}
+.open-items .claim-basis,
+.open-items .claim-source {
+  margin: 0;
+}
+.open-items .claim-source {
+  margin-top: auto;
+  padding-top: 6px;
+}
+
+/* The sources page. Its first screen is short: the statement, the line, and the parts of the page. */
+.page-sources > .page-screen:first-child {
+  min-height: 78svh;
+}
+.page-parts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  max-width: 100%;
+}
+.page-parts a {
+  padding: 8px 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 13.5px;
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--soft);
+}
+.page-parts a:hover {
+  border-color: var(--warm);
+  color: var(--warm);
+}
+.page-part {
+  padding: calc(var(--nav) + clamp(20px, 4svh, 40px)) max(var(--gutter), (100% - var(--page-width)) / 2)
+    clamp(56px, 9svh, 96px);
+}
+.part-title {
+  margin: 0 0 clamp(24px, 4svh, 40px);
+  font-size: clamp(26px, 2.6vw, 38px);
+  font-weight: 750;
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+}
+.entries {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  align-items: start;
+  gap: 18px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.entries-small {
+  grid-template-columns: repeat(3, 1fr);
+}
+.entry {
+  min-width: 0;
+  padding: 22px 24px;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  background: var(--surface);
+}
+.entry-kind {
+  margin: 0 0 6px;
+  font-size: 12.5px;
+  font-weight: 550;
+  color: var(--grey);
+}
+.entry-title {
+  margin: 0 0 8px;
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.22;
+  letter-spacing: -0.02em;
+}
+.entries-small .entry-title {
+  font-size: 16.5px;
+}
+.entry-cite,
+.entry-link,
+.entry-files,
+.path {
+  margin: 0 0 4px;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--soft);
+  overflow-wrap: anywhere;
+}
+.entry-link a {
+  color: var(--grey);
+  text-underline-offset: 3px;
+}
+.entry-link a:hover,
+.entry-files a:hover {
+  color: var(--warm);
+}
+/* A document that was not read is marked like evidence that does not exist. */
+.entry-status {
+  width: fit-content;
+  margin: 0 0 4px;
+  padding: 4px 12px;
+  border: 1px dashed rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--soft);
+}
+.entry-fields {
+  margin: 12px 0 0;
+}
+.entry-fields > div {
+  padding: 10px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.entry-fields dt {
+  margin-bottom: 3px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--grey);
+}
+.entry-fields dd,
+.entry-text {
+  margin: 0;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--soft);
+}
+.entry-fields [data-strong] dd {
+  color: var(--text);
+}
+.entry-list {
+  margin: 10px 0 0;
+  padding: 0 0 0 18px;
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--soft);
+}
+.entry-files {
+  padding: 0;
+  list-style: none;
+}
+.entry-files li {
+  padding: 4px 0;
+}
+.entry-files span {
+  display: block;
+  color: var(--faint);
+}
+.entry > .entry-text {
+  margin-top: 12px;
+}
+.entry-claims {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--grey);
+}
+.entry-claims summary {
+  width: fit-content;
+  min-height: 28px;
+  cursor: pointer;
+}
+.entry-claims summary:hover {
+  color: var(--warm);
+}
+.sheet-claims-plain li {
+  padding-left: 0;
+}
+.sheet-claims-plain li::before {
+  content: none;
+}
+.notes {
+  max-width: 62em;
+  margin-top: 36px;
+}
+.notes p,
+.about p {
+  margin: 0 0 10px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--grey);
+}
+.notes-last {
+  margin-top: 0;
+  text-align: center;
+}
+.about {
+  max-width: 46em;
+}
+.about p {
+  margin-bottom: 14px;
+  font-size: 16.5px;
+  color: var(--soft);
+}
+
+/* The glossary and its filter. */
+.filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  margin-bottom: 20px;
+}
+.filter label {
+  font-size: 14px;
+  font-weight: 600;
+}
+.filter input {
+  width: min(100%, 320px);
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+}
+.filter input:focus-visible {
+  border-radius: 999px;
+}
+.filter p {
+  margin: 0;
+  font-size: 13px;
+  color: var(--grey);
+}
+.glossary {
+  columns: 2;
+  column-gap: 48px;
+  margin: 0;
+}
+.glossary > div {
+  break-inside: avoid;
+  padding: 14px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.glossary dt {
+  font-size: 15.5px;
+  font-weight: 650;
+}
+.glossary-also {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--grey);
+}
+.glossary dd {
+  margin: 4px 0 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--soft);
+}
+.glossary-basis {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+}
+.glossary-basis .claim-basis,
+.glossary-basis .claim-source {
+  margin: 4px 0 0;
+}
+
+/* How the recording says it was made: field names as the file has them, values as stored. */
+.provenance {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  column-gap: 48px;
+  margin: 20px 0 0;
+}
+.provenance > div {
+  display: grid;
+  grid-template-columns: minmax(0, 15em) minmax(0, 1fr);
+  gap: 12px;
+  align-items: baseline;
+  padding: 9px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+.provenance dt {
+  color: var(--grey);
+  overflow-wrap: anywhere;
+}
+.provenance dd {
+  margin: 0;
+  color: var(--soft);
+  overflow-wrap: anywhere;
+}
+.provenance .digest {
+  margin: 0;
+  font-size: inherit;
+  color: var(--soft);
+}
+.command {
+  margin-top: 22px;
+}
+.command pre {
+  margin: 0;
+  padding: 12px 14px;
+  max-height: 150px;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #070708;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--soft);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* In the evidence panel: a title over a group of claims, two values side by side, and a row's verdict. */
+.sheet-group {
+  margin: 22px 0 2px;
+  font-size: 14px;
+  font-weight: 650;
+}
+.sheet-pairs {
+  margin: 0 0 6px;
+  font-size: 14px;
+}
+.sheet-caption-first {
+  margin-top: 0;
+}
+.row-verdict {
+  color: var(--refused);
+}
+.row-verdict[data-held="true"] {
+  color: var(--warm);
+}
+.sheet .pill + .sheet-path {
+  margin-top: 8px;
+}
+
+/* After the story: the seven stops in a row, the board waking from left to right. */
+.overview {
+  padding: clamp(64px, 12svh, 120px) var(--gutter) 0;
+  text-align: center;
+}
+.overview-title {
+  margin: 0 0 clamp(24px, 4svh, 40px);
+  font-size: clamp(26px, 2.6vw, 38px);
+  font-weight: 750;
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+}
+.overview-strip {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 12px;
+  width: min(100%, 1400px);
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+}
+.overview-strip a {
+  display: block;
+  padding-bottom: 6px;
+  border-radius: 14px;
+  text-decoration: none;
+}
+/* The board lies in the lower part of its picture: the frame shows that part only. */
+.overview-board {
+  display: block;
+  position: relative;
+  aspect-ratio: 16 / 8;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  background: var(--black);
+}
+.overview-strip a:hover .overview-board,
+.overview-strip a:focus-visible .overview-board {
+  border-color: rgba(255, 197, 107, 0.6);
+}
+.overview-plate {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  aspect-ratio: 16 / 10;
+}
+.overview-plate img,
+.overview-lit {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.overview-lit {
+  background: url("../assets/board-awake.webp") center / 100% 100% no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+.overview-count {
+  display: block;
+  margin-top: 12px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--grey);
+}
+.overview-name {
+  display: block;
+  margin-top: 2px;
+  font-size: 15px;
+  font-weight: 650;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+/* Narrower windows: columns become fewer, then one. */
+@media (max-width: 1040px) {
+  .cards,
+  .entries-small {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .overview-strip {
+    grid-template-columns: repeat(4, 1fr);
+    row-gap: 22px;
+  }
+}
+@media (max-width: 760px) {
+  .page-screen {
+    justify-content: flex-start;
+    min-height: 0;
+    padding-top: calc(var(--nav) + 28px);
+    padding-bottom: 64px;
+  }
+  .page-sources > .page-screen:first-child {
+    min-height: 0;
+  }
+  .page-head .statement {
+    font-size: clamp(29px, 8.2vw, 38px);
+  }
+  .measure,
+  .sides,
+  .cards,
+  .open-items,
+  .entries,
+  .entries-small,
+  .provenance {
+    grid-template-columns: 1fr;
+  }
+  .glossary {
+    columns: 1;
+  }
+  .sides {
+    gap: 36px;
+  }
+  .side img {
+    height: auto;
+    width: min(100%, 340px);
+  }
+  .page-foot {
+    justify-content: flex-start;
+  }
+  .page-note {
+    position: static;
+    align-self: flex-start;
+    font-size: 11px;
+  }
+  .card,
+  .open-items > li,
+  .entry {
+    padding: 18px 18px 16px;
+    border-radius: 16px;
+  }
+  .provenance > div {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+  .overview-strip {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 18px 12px;
+  }
+  .overview-name {
+    font-size: 14px;
+  }
+}
+
+/* One form of an experiment, where a card stands for more than one: its name as the recorder has it. */
+.card-form,
+.sheet-form-name {
+  margin: 6px 0 -6px;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  color: var(--soft);
+}
+.sheet-form-name {
+  margin: 34px 0 -18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+  color: var(--warm);
+}

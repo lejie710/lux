@@ -1,24 +1,29 @@
-// The navigation bar: the mark and name on the left, three places on the right. Two of them are not built
-// yet and say so; they are text, not links, so nothing leads nowhere.
+// The navigation bar: the mark and name on the left, the three pages on the right. The page in view is
+// marked as the current one. The names of the two other pages come from the content.
+import { EXPERIMENTS_LABEL, SOURCE_SCREENS } from "../content/load";
+import { PAGES, hrefOf, type Page } from "../model/route";
 import { Mark } from "./Mark";
 
-export function Nav({ inert = false }: { inert?: boolean }) {
+/** What the navigation calls each page. The story's name is the site's own; the others are the content's. */
+export const PAGE_NAMES: Record<Page, string> = {
+  story: "The boot",
+  experiments: EXPERIMENTS_LABEL,
+  sources: SOURCE_SCREENS[0].title ?? "Sources",
+};
+
+export function Nav({ page = "story", inert = false }: { page?: Page; inert?: boolean }) {
   return (
     <nav className="lnav" aria-label="Site" inert={inert}>
-      <a className="name" href="#top">
+      <a className="name" href={hrefOf("story")}>
         <Mark />
         Lux
       </a>
       <span className="links">
-        <a href="#top" aria-current="location">
-          The boot
-        </a>
-        <span className="soon">
-          Experiments <small>coming</small>
-        </span>
-        <span className="soon">
-          Sources <small>coming</small>
-        </span>
+        {PAGES.map((p) => (
+          <a key={p} href={hrefOf(p)} aria-current={p === page ? "page" : undefined}>
+            {PAGE_NAMES[p]}
+          </a>
+        ))}
       </span>
     </nav>
   );

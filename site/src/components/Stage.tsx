@@ -25,6 +25,8 @@ const maskFiles = import.meta.glob<string>("../assets/masks/*.webp", { eager: tr
 const maskOf = (name: string) => maskFiles[`../assets/masks/${name}.webp`];
 /** The mask picture of each part, by part name. */
 export const MASKS = Object.fromEntries(PARTS.map((part) => [part, maskOf(part)])) as Record<Part, string>;
+/** The mask of the whole board: the ground between the parts. */
+export const WHOLE_MASK = maskOf("whole");
 
 /** Opens the evidence of a screen. `atClaims` asks for its list of claims, as a citation marker does. */
 export type OpenEvidence = (screenId: string, openerId: string, atClaims: boolean) => void;
@@ -189,7 +191,7 @@ function Words({
   );
 }
 
-function Emphasised({ statement }: { statement: Statement }) {
+export function Emphasised({ statement }: { statement: Statement }) {
   const [before, emphasis, after] = splitEmphasis(statement.text, statement.emphasis);
   return (
     <>
@@ -206,9 +208,10 @@ const LINE_KINDS = { console: "Console", loader_report: "Loader report" } as con
 /**
  * The one line of evidence on a screen. A recorded event shows its register and type, read from the
  * recording, then the line itself; a line of the console or of the loader's report says which it is;
- * evidence that does not exist shows the label that says so. The line is never reworded.
+ * evidence that does not exist shows the label that says so. The line is never reworded. With `mark`, the
+ * part of the line the content asks to have set in colour is.
  */
-export function EvidencePill({ evidence }: { evidence: Evidence }) {
+export function EvidencePill({ evidence, mark = false }: { evidence: Evidence; mark?: boolean }) {
   if (!evidence.recorded) return <p className="pill pill-missing">{evidence.label}</p>;
   const event =
     evidence.kind === "event" && evidence.event_index ? recordedEvent(evidence.run, evidence.event_index) : null;
@@ -225,7 +228,13 @@ export function EvidencePill({ evidence }: { evidence: Evidence }) {
           </>
         )
       )}
-      <span className="pill-line">{evidence.text}</span>
+      <span className="pill-line">
+        {mark ? (
+          <Emphasised statement={{ text: evidence.text, emphasis: evidence.highlight ?? null }} />
+        ) : (
+          evidence.text
+        )}
+      </span>
     </p>
   );
 }

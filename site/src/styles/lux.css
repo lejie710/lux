@@ -94,20 +94,16 @@ button {
   font-weight: 550;
 }
 .lnav .links a {
+  padding: 8px 0;
   text-decoration: none;
-}
-.lnav .soon {
   color: var(--grey);
-  cursor: default;
 }
-.lnav .soon small {
-  margin-left: 5px;
-  font-family: var(--mono);
-  font-size: 10px;
-  font-weight: 500;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--faint);
+.lnav .links a:hover {
+  color: var(--text);
+}
+/* The page in view is the one in full white. */
+.lnav .links a[aria-current] {
+  color: var(--text);
 }
 
 /* The scene: a tall section, a pinned stage, and a track of invisible markers that the scroll hook watches. */
@@ -929,16 +925,6 @@ html[data-mode="still"] .stage {
   .lnav .links {
     gap: 16px;
     font-size: 13px;
-  }
-  /* No room for the tag: it stays for a screen reader, and the grey of the name says the rest. */
-  .lnav .soon small {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
   }
   .laptop {
     top: calc(var(--nav) + 5cqh);
