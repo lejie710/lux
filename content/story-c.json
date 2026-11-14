@@ -1,0 +1,1826 @@
+{
+  "format": "lux-content/2",
+  "file": "story-c.json",
+  "language": "en",
+  "stops": [
+    {
+      "number": 6,
+      "of": 7,
+      "id": "stop-6",
+      "label": "Load and verify",
+      "stage_name": null,
+      "label_basis": "This project's own name for the step. UEFI 2.11 has no named phase here; it describes a boot manager that loads an image and, with Secure Boot active, validates it first.",
+      "threads": [
+        "secure-boot",
+        "measured-boot"
+      ],
+      "mapping": {
+        "rules": [
+          "load-verify"
+        ],
+        "events": "The authorising event in TPM register 7 and the loaded image in register 4",
+        "rests_on": "Which events belong to this stop is this project's own rule ('load-verify' in docs/DESIGN.md section 7): the two events that are present when the loader is accepted and absent when it is refused. The event log carries no timestamps and no phase markers."
+      },
+      "not_shown": [
+        "How the firmware checked the signature internally. The recording holds the result and one log record, not the steps.",
+        "The Image Execution Information Table, where UEFI 2.11 says a refused image must be noted. The recorder does not read it.",
+        "The firmware's source code for this step. No source file was confirmed for this project, so nothing here is attributed to one."
+      ],
+      "headline": "s6-verify",
+      "screens": [
+        {
+          "id": "s6-load",
+          "kind": "stop",
+          "stop": 6,
+          "statement": {
+            "text": "Firmware reads the loader from the disk into memory.",
+            "emphasis": "from the disk"
+          },
+          "support": "The loader is the small program that would start an operating system; here it is a stand-in written for this project.",
+          "evidence": {
+            "recorded": true,
+            "kind": "console",
+            "run": "normal-1",
+            "file": "recordings/normal-1/recording.json",
+            "field": "console[0]",
+            "position": 0,
+            "text": "BdsDxe: loading Boot0001 \"UEFI QEMU HARDDISK QM00001 \" from PciRoot(0x0)/Pci(0x1F,0x2)/Sata(0x0,0xFFFF,0x0)"
+          },
+          "detail": {
+            "console_lines": [
+              {
+                "run": "normal-1",
+                "positions": [
+                  0
+                ]
+              }
+            ],
+            "loader_report_lines": [],
+            "events": [],
+            "pcrs": [],
+            "explanation": "The boot manager picked the option named Boot0001 at the stop before. Now it asks the firmware's image loader to copy that file into memory. Loading is not running: the loader has not executed one instruction yet. The line shown is the firmware's own message on the serial console.",
+            "definitions": [
+              {
+                "glossary": "loader"
+              },
+              {
+                "glossary": "image"
+              },
+              {
+                "glossary": "boot-option"
+              },
+              {
+                "term": "BdsDxe",
+                "definition": "The prefix this firmware prints on its boot manager's messages. BDS and DXE are names used by the firmware's own source and by the Platform Initialization specification. They are not UEFI 2.11 terms, and the Platform Initialization specification was not read for this project."
+              },
+              {
+                "term": "PciRoot(...)/Sata(...)",
+                "definition": "A device path: the firmware's written route to the disk, controller by controller."
+              }
+            ]
+          },
+          "claims": [
+            {
+              "text": "Loading an image copies it into memory and returns a handle to it. It does not run it.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "7.4.1",
+                "title": "EFI_BOOT_SERVICES.LoadImage()",
+                "pdf_page": 281,
+                "pdf_pages": [
+                  281,
+                  282,
+                  283
+                ]
+              }
+            },
+            {
+              "text": "The boot manager must use that load service to turn a boot option into a loaded image.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "3.1.2",
+                "title": "Load Option Processing",
+                "pdf_page": 154
+              }
+            },
+            {
+              "text": "This firmware printed a line saying it was loading Boot0001 from a disk on a SATA controller.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "console[0]"
+            },
+            {
+              "text": "The wording of that line is this firmware's own.",
+              "basis": "this-firmware",
+              "source": "observed in recording normal-1 console line 0"
+            },
+            {
+              "text": "The loader in this recording is the project's own stand-in, not an operating system's loader. Its first line on the console says so by name.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "console[2]"
+            }
+          ],
+          "picture": {
+            "plate": "board",
+            "lit": [
+              "power",
+              "firmware",
+              "processor",
+              "memory",
+              "controllers",
+              "storage",
+              "security"
+            ],
+            "newly_lit": [],
+            "screen": "none",
+            "note": "Storage, lit since stop 5, is the part the loader is read from. Illustration only."
+          }
+        },
+        {
+          "id": "s6-verify",
+          "kind": "stop",
+          "stop": 6,
+          "statement": {
+            "text": "Before the loader runs, firmware checks who signed it.",
+            "emphasis": "who signed it"
+          },
+          "support": "At this point the log gains one record about the allowed list, the list called db.",
+          "evidence": {
+            "recorded": true,
+            "kind": "event",
+            "run": "normal-1",
+            "file": "recordings/normal-1/recording.json",
+            "field": "events[24].summary",
+            "position": 24,
+            "text": "variable db, 851 data bytes",
+            "event_index": 25
+          },
+          "detail": {
+            "console_lines": [
+              {
+                "run": "normal-1",
+                "positions": [
+                  0,
+                  1
+                ]
+              }
+            ],
+            "loader_report_lines": [],
+            "events": [
+              {
+                "run": "normal-1",
+                "indexes": [
+                  5,
+                  6,
+                  7,
+                  8,
+                  25
+                ]
+              }
+            ],
+            "pcrs": [
+              {
+                "run": "normal-1",
+                "registers": [
+                  7
+                ],
+                "bank": "sha256"
+              }
+            ],
+            "explanation": "Secure Boot is the check: the loader file carries a signature, and the firmware holds a list of what it accepts, called db, and a list of what it rejects, called dbx. UEFI 2.11 says the lists are consulted when the boot manager is about to start an image. In this recording a new record about db sits in register 7 directly before the loader's fingerprint in the log's order, and it is missing in the pilot run where the loader was refused. What that record must contain would be defined by a Trusted Computing Group document that has not been read for this project.",
+            "definitions": [
+              {
+                "glossary": "signature"
+              },
+              {
+                "glossary": "secure-boot"
+              },
+              {
+                "glossary": "db"
+              },
+              {
+                "glossary": "dbx"
+              },
+              {
+                "glossary": "pk"
+              },
+              {
+                "glossary": "kek"
+              },
+              {
+                "glossary": "tpm"
+              },
+              {
+                "glossary": "pcr"
+              },
+              {
+                "glossary": "event"
+              },
+              {
+                "term": "EV_EFI_VARIABLE_AUTHORITY",
+                "definition": "The name a common decoding tool prints for this kind of record. It is a tool name here, not a citation."
+              }
+            ]
+          },
+          "claims": [
+            {
+              "text": "The allowed and forbidden lists are checked when the boot manager is about to start an image.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "32.5.1",
+                "title": "Overview",
+                "pdf_page": 1633
+              }
+            },
+            {
+              "text": "To pass, the allowed list must hold the image's hash or a certificate that verifies the image's signature, and verification must not succeed if the forbidden list matches.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "32.5.3.3",
+                "title": "Authorization Process",
+                "pdf_page": 1638,
+                "pdf_pages": [
+                  1635,
+                  1638
+                ]
+              }
+            },
+            {
+              "text": "After the comparison, the decision to launch rests on the match or on the firmware's own policy, and a firmware need not support every part of the process.",
+              "basis": "uefi-platform",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "32.5.3.3",
+                "title": "Authorization Process",
+                "pdf_page": 1638,
+                "pdf_pages": [
+                  1635,
+                  1638
+                ]
+              }
+            },
+            {
+              "text": "The signature travels inside the image file itself.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "32.2.2",
+                "title": "Embedded Signatures",
+                "pdf_page": 1616
+              }
+            },
+            {
+              "text": "Event 25 of the normal run is in register 7, has the type name EV_EFI_VARIABLE_AUTHORITY, and is summarised as variable db, 851 data bytes.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "events[24] (index 25): pcr, type, summary"
+            },
+            {
+              "text": "This firmware logged that record when it accepted the loader and did not log it when it refused the changed loader of the pilot run.",
+              "basis": "this-firmware",
+              "source": "observed in recording normal-1 event 25; absent in recording e2 (comparisons/normal-1_vs_e2.json, events_only_in_baseline)"
+            },
+            {
+              "text": "What this record means, when it must be logged and why it goes to register 7 are measured-boot rules. UEFI 2.11 has no sentence on them. The Trusted Computing Group document that would define them has not been read for this project.",
+              "basis": "tcg-unread",
+              "uefi_pointer": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "2.6.4",
+                "title": "Extensions to this Specification Published Elsewhere",
+                "pdf_page": 151,
+                "pdf_pages": [
+                  150,
+                  151
+                ]
+              }
+            },
+            {
+              "text": "Earlier in the same log the whole db variable was recorded with 879 data bytes; this record has 851. The recording does not say why the two sizes differ, and no explanation is offered here.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "events[6] (index 7) and events[24] (index 25): summary"
+            }
+          ],
+          "picture": {
+            "plate": "board",
+            "lit": [
+              "power",
+              "firmware",
+              "processor",
+              "memory",
+              "controllers",
+              "storage",
+              "security"
+            ],
+            "newly_lit": [],
+            "screen": "none",
+            "note": "The security chip, lit since stop 3, is the point of attention while the check and its record happen. Illustration only."
+          }
+        },
+        {
+          "id": "s6-measure",
+          "kind": "stop",
+          "stop": 6,
+          "statement": {
+            "text": "Firmware also puts the loader's fingerprint on record.",
+            "emphasis": "fingerprint"
+          },
+          "support": "The value logged equals the hash the recorder computed from the loader file itself.",
+          "evidence": {
+            "recorded": true,
+            "kind": "event",
+            "run": "normal-1",
+            "file": "recordings/normal-1/recording.json",
+            "field": "events[25].summary",
+            "position": 25,
+            "text": "image loaded at 0x1cde4018, length 0x9d70",
+            "event_index": 26
+          },
+          "detail": {
+            "console_lines": [],
+            "loader_report_lines": [],
+            "events": [
+              {
+                "run": "normal-1",
+                "indexes": [
+                  25,
+                  26
+                ]
+              }
+            ],
+            "pcrs": [
+              {
+                "run": "normal-1",
+                "registers": [
+                  4,
+                  7
+                ],
+                "bank": "sha256"
+              }
+            ],
+            "explanation": "This is the second thread, measured boot, and it decides nothing. The firmware folds a fingerprint of the loader into register 4 of the TPM and writes a matching entry in its log. The recorder computed the same fingerprint on its own from the loader file, and the two are equal. Which register receives it, and whether it must be recorded at all, would be rules of a Trusted Computing Group document that has not been read for this project.",
+            "definitions": [
+              {
+                "glossary": "hash"
+              },
+              {
+                "glossary": "measured-boot"
+              },
+              {
+                "term": "Register 4",
+                "definition": "The register this firmware used for the loader's fingerprint. No purpose is assigned to any register by UEFI 2.11."
+              },
+              {
+                "term": "EV_EFI_BOOT_SERVICES_APPLICATION",
+                "definition": "The decoding tool's name for the record logged when an application image is loaded."
+              }
+            ]
+          },
+          "claims": [
+            {
+              "text": "Event 26 of the normal run is in register 4 and is summarised as an image loaded at an address, with a length of 0x9d70 bytes.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "events[25] (index 26): pcr, type, summary"
+            },
+            {
+              "text": "The SHA-256 digest of that event is letter for letter the value the recorder stored as the signing hash of the loader file, 00c5018d...e50f.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "events[25].digest_sha256 and provenance.loader.authenticode_sha256"
+            },
+            {
+              "text": "This firmware logged the image record when the loader was accepted and logged none for the refused loader of the pilot run.",
+              "basis": "this-firmware",
+              "source": "observed in recording normal-1 event 26; absent in recording e2 (comparisons/normal-1_vs_e2.json, events_only_in_baseline)"
+            },
+            {
+              "text": "Whether a loaded image must be recorded, into which register, and with which digest are measured-boot rules. UEFI 2.11 is silent on all three. The Trusted Computing Group document that would define them has not been read for this project.",
+              "basis": "tcg-unread",
+              "uefi_pointer": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "2.6.4",
+                "title": "Extensions to this Specification Published Elsewhere",
+                "pdf_page": 151,
+                "pdf_pages": [
+                  150,
+                  151
+                ]
+              }
+            },
+            {
+              "text": "UEFI 2.11 defines the image digest used for signing only by pointing to an outside document on the signature format of executable files. That document was not read for this project.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "32.2.3",
+                "title": "Creating Image Digests from Images",
+                "pdf_page": 1617
+              }
+            },
+            {
+              "text": "A hash changes when any bit of its input changes.",
+              "basis": "general"
+            }
+          ],
+          "picture": {
+            "plate": "board",
+            "lit": [
+              "power",
+              "firmware",
+              "processor",
+              "memory",
+              "controllers",
+              "storage",
+              "security"
+            ],
+            "newly_lit": [],
+            "screen": "none",
+            "note": "Same parts as the screen before; the security chip stays the point of attention. Illustration only."
+          }
+        },
+        {
+          "id": "s6-start",
+          "kind": "stop",
+          "stop": 6,
+          "statement": {
+            "text": "The loader is accepted, and firmware starts it.",
+            "emphasis": "starts it"
+          },
+          "support": "These are the loader's first words, printed through the firmware's own console while firmware is still in charge.",
+          "evidence": {
+            "recorded": true,
+            "kind": "console",
+            "run": "normal-1",
+            "file": "recordings/normal-1/recording.json",
+            "field": "console[2]",
+            "position": 2,
+            "text": "LUX-LOADER A: started, boot services active"
+          },
+          "detail": {
+            "console_lines": [
+              {
+                "run": "normal-1",
+                "positions": [
+                  1,
+                  2
+                ]
+              }
+            ],
+            "loader_report_lines": [],
+            "events": [
+              {
+                "run": "normal-1",
+                "indexes": [
+                  25,
+                  26
+                ]
+              }
+            ],
+            "pcrs": [],
+            "explanation": "Starting an image means jumping to its first instruction and handing it two things: a handle that names it, and a pointer to the table of firmware services. From here two programs share the machine. The loader runs, and firmware still owns memory, timers and devices and answers the loader's calls. That shared state is called boot services, and it lasts until the handoff.",
+            "definitions": [
+              {
+                "glossary": "boot-services"
+              },
+              {
+                "term": "system table",
+                "definition": "The table handed to every image when it starts. It points to the firmware's services and to its list of other tables."
+              },
+              {
+                "glossary": "console"
+              },
+              {
+                "term": "accepted",
+                "definition": "The recorder's word for a run in which the loader reached its last line. It is the value of outcome.result."
+              }
+            ]
+          },
+          "claims": [
+            {
+              "text": "Starting an image transfers control to its entry point, and an image may be started only once.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "7.4.2",
+                "title": "StartImage()",
+                "pdf_page": 284
+              }
+            },
+            {
+              "text": "The image is entered with two arguments: its own handle and a pointer to the system table.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "4.1.1",
+                "title": "EFI_IMAGE_ENTRY_POINT",
+                "pdf_page": 171,
+                "pdf_pages": [
+                  171,
+                  172
+                ]
+              }
+            },
+            {
+              "text": "The firmware printed a line that it was starting Boot0001, and the next line is the loader's own.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "console[1] and console[2]"
+            },
+            {
+              "text": "The recorder stored the outcome of this run as accepted, with no refusal line.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "outcome.result and outcome.refusal_lines"
+            },
+            {
+              "text": "The same machine with the same keys refused a loader with one changed byte, so the check was active when this loader was let through.",
+              "basis": "this-firmware",
+              "source": "observed in recording e2 console line 1 (pilot), against recording normal-1 console line 1"
+            }
+          ],
+          "picture": {
+            "plate": "board",
+            "lit": [
+              "power",
+              "firmware",
+              "processor",
+              "memory",
+              "controllers",
+              "storage",
+              "security"
+            ],
+            "newly_lit": [],
+            "screen": "none",
+            "note": "Everything the boot has reached is lit. The screen is still dark. Illustration only."
+          }
+        },
+        {
+          "id": "s6-pilot-refusal",
+          "kind": "pilot",
+          "stop": 6,
+          "pilot_label": "Pilot run. Made before any prediction was written, so it is shown and not counted.",
+          "statement": {
+            "text": "In a pilot run, one changed byte got the loader refused.",
+            "emphasis": "one changed byte"
+          },
+          "support": "Same machine, same keys, one byte of the loader's data changed, in a run made before any prediction and therefore not counted.",
+          "evidence": {
+            "recorded": true,
+            "kind": "console",
+            "run": "e2",
+            "file": "recordings/e2/recording.json",
+            "field": "console[1]",
+            "position": 1,
+            "text": "BdsDxe: failed to load Boot0001 \"UEFI QEMU HARDDISK QM00001 \" from PciRoot(0x0)/Pci(0x1F,0x2)/Sata(0x0,0xFFFF,0x0): Access Denied"
+          },
+          "detail": {
+            "console_lines": [
+              {
+                "run": "e2",
+                "positions": [
+                  0,
+                  1,
+                  2,
+                  3
+                ]
+              }
+            ],
+            "loader_report_lines": [],
+            "events": [
+              {
+                "run": "e2",
+                "indexes": [
+                  17,
+                  25,
+                  26
+                ]
+              }
+            ],
+            "pcrs": [
+              {
+                "run": "e2",
+                "registers": [
+                  4,
+                  5,
+                  7
+                ],
+                "bank": "sha256"
+              }
+            ],
+            "comparison": {
+              "file": "recordings/comparisons/normal-1_vs_e2.json",
+              "baseline": "normal-1",
+              "changed": "e2"
+            },
+            "explanation": "One byte in the loader's data section was changed from 65 to 66, so the signature no longer fits the file. The firmware gave up on the boot option, looked for another, found none and stopped at its menu prompt. The log of this run has no authorising record, no loader fingerprint and no handoff records, and registers 4, 5 and 7 end with other values than in the normal run while every other register is equal. This is one pilot, and no score is drawn from it.",
+            "definitions": [
+              {
+                "glossary": "pilot"
+              },
+              {
+                "glossary": "access-denied"
+              },
+              {
+                "term": "refused",
+                "definition": "The recorder's word for a run in which the firmware printed that it failed to load a boot option. It is the value of outcome.result."
+              },
+              {
+                "glossary": "boot-option"
+              }
+            ]
+          },
+          "claims": [
+            {
+              "text": "The run is marked as a pilot, and its one change is a byte at file offset 2142 in the loader's data section, from 65 to 66.",
+              "basis": "recording",
+              "run": "e2",
+              "field": "run.kind and run.change_detail.loader_byte"
+            },
+            {
+              "text": "The firmware printed that it failed to load Boot0001, ending in the words Access Denied, and the recorder stored the outcome as refused.",
+              "basis": "recording",
+              "run": "e2",
+              "field": "console[1] and outcome.result"
+            },
+            {
+              "text": "A signature is tied to the exact bytes it was made over: the hash must be computed exactly as it was when the signature was created.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "32.2.1",
+                "title": "Digital Signatures",
+                "pdf_page": 1615
+              }
+            },
+            {
+              "text": "Outside audit mode, an image that is not authorised is not started, and information about it goes into the Image Execution Information Table. That table was not read from the machine in this run.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "32.4.2",
+                "title": "Image Execution Information Table",
+                "pdf_page": 1630
+              }
+            },
+            {
+              "text": "When the image is a loader named by a boot option, the next boot option is selected.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "32.5.1",
+                "title": "Overview",
+                "pdf_page": 1633
+              }
+            },
+            {
+              "text": "After the refusal the log shows a return from the boot option and then a second attempt, and the console says no bootable option was found.",
+              "basis": "recording",
+              "run": "e2",
+              "field": "events[24] (index 25), events[25] (index 26), console[2]"
+            },
+            {
+              "text": "Which status code a refusal returns is not fixed. Two codes are defined, and the one sentence about an invalid signature names the security-violation code, not the access-denied one.",
+              "basis": "uefi-platform",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "7.4.1",
+                "title": "EFI_BOOT_SERVICES.LoadImage()",
+                "pdf_page": 281,
+                "pdf_pages": [
+                  281,
+                  282,
+                  283
+                ]
+              }
+            },
+            {
+              "text": "This firmware reported the refusal as Access Denied.",
+              "basis": "this-firmware",
+              "source": "observed in recording e2 console line 1"
+            },
+            {
+              "text": "Against the normal run, registers 4, 5 and 7 differ in all four hash banks, and every other register is the same.",
+              "basis": "recording",
+              "run": "normal-1, e2",
+              "file": "recordings/comparisons/normal-1_vs_e2.json",
+              "field": "pcrs_differing and pcrs_same"
+            },
+            {
+              "text": "The four records found only in the normal run are the authorising record, the loader fingerprint and the two handoff records (events 25 to 28).",
+              "basis": "recording",
+              "run": "normal-1, e2",
+              "file": "recordings/comparisons/normal-1_vs_e2.json",
+              "field": "events_only_in_baseline"
+            },
+            {
+              "text": "Why a refusal leaves exactly these registers changed is a measured-boot question. UEFI 2.11 is silent on it, and the Trusted Computing Group document that would answer it has not been read for this project.",
+              "basis": "tcg-unread",
+              "uefi_pointer": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "2.6.4",
+                "title": "Extensions to this Specification Published Elsewhere",
+                "pdf_page": 151,
+                "pdf_pages": [
+                  150,
+                  151
+                ]
+              }
+            }
+          ],
+          "picture": {
+            "plate": "laptop",
+            "lit": [
+              "power",
+              "firmware",
+              "processor",
+              "memory",
+              "controllers",
+              "storage",
+              "security"
+            ],
+            "newly_lit": [],
+            "screen": "dark",
+            "note": "The inside is awake and nothing goes further: the display cable and the screen stay dark. Illustration only.",
+            "view": "pulled back, inside awake"
+          }
+        }
+      ]
+    },
+    {
+      "number": 7,
+      "of": 7,
+      "id": "stop-7",
+      "label": "Handoff",
+      "stage_name": null,
+      "label_basis": "This project's own name. UEFI 2.11 uses the word for the state an image is entered in (2.3.4.1 Handoff State); here it means the moment the loader calls ExitBootServices.",
+      "threads": [
+        "measured-boot"
+      ],
+      "mapping": {
+        "rules": [
+          "exit-boot-services"
+        ],
+        "events": "The two action events in TPM register 5",
+        "rests_on": "Which events belong to this stop is this project's own rule ('exit-boot-services' in docs/DESIGN.md section 7): the two action records in register 5, observed only in the run where the loader made its exit call. The event log carries no timestamps."
+      },
+      "not_shown": [
+        "An operating system. The loader in this recording is a stand-in written for this project; after the handoff it idles.",
+        "A screen. The virtual machine was run with its display option set to none, so no picture of a screen exists in the recording.",
+        "What the ACPI entries point at. The loader reports the address only, and the ACPI specification was not read for this project."
+      ],
+      "headline": "s7-exit-call",
+      "screens": [
+        {
+          "id": "s7-memory-map",
+          "kind": "stop",
+          "stop": 7,
+          "statement": {
+            "text": "The loader asks firmware for a map of memory.",
+            "emphasis": "a map of memory"
+          },
+          "support": "The map lists 135 blocks of memory and what each one is used for.",
+          "evidence": {
+            "recorded": true,
+            "kind": "console",
+            "run": "normal-1",
+            "file": "recordings/normal-1/recording.json",
+            "field": "console[3]",
+            "position": 3,
+            "text": "LUX GetMemoryMap status=0000000000000000"
+          },
+          "detail": {
+            "console_lines": [
+              {
+                "run": "normal-1",
+                "positions": [
+                  3,
+                  5,
+                  6,
+                  7
+                ]
+              }
+            ],
+            "loader_report_lines": [
+              {
+                "run": "normal-1",
+                "positions": [
+                  13,
+                  14,
+                  15,
+                  16,
+                  17,
+                  18,
+                  19,
+                  20,
+                  21,
+                  22,
+                  23,
+                  24,
+                  25,
+                  26,
+                  27,
+                  28,
+                  29,
+                  30,
+                  31,
+                  32,
+                  33,
+                  34,
+                  35,
+                  36,
+                  37,
+                  38,
+                  39,
+                  40,
+                  41,
+                  42,
+                  43,
+                  44,
+                  45,
+                  46,
+                  47,
+                  48,
+                  49,
+                  50,
+                  51,
+                  52,
+                  53,
+                  54,
+                  55,
+                  56,
+                  57,
+                  58,
+                  59,
+                  60,
+                  61,
+                  62,
+                  63,
+                  64,
+                  65,
+                  66,
+                  67,
+                  68,
+                  69,
+                  70,
+                  71,
+                  72,
+                  73,
+                  74,
+                  75,
+                  76,
+                  77,
+                  78,
+                  79,
+                  80,
+                  81,
+                  82,
+                  83,
+                  84,
+                  85,
+                  86,
+                  87,
+                  88,
+                  89,
+                  90,
+                  91,
+                  92,
+                  93,
+                  94,
+                  95,
+                  96,
+                  97,
+                  98,
+                  99,
+                  100,
+                  101,
+                  102,
+                  103,
+                  104,
+                  105,
+                  106,
+                  107,
+                  108,
+                  109,
+                  110,
+                  111,
+                  112,
+                  113,
+                  114,
+                  115,
+                  116,
+                  117,
+                  118,
+                  119,
+                  120,
+                  121,
+                  122,
+                  123,
+                  124,
+                  125,
+                  126,
+                  127,
+                  128,
+                  129,
+                  130,
+                  131,
+                  132,
+                  133,
+                  134,
+                  135,
+                  136,
+                  137,
+                  138,
+                  139,
+                  140,
+                  141,
+                  142,
+                  143,
+                  144,
+                  145,
+                  146,
+                  147
+                ],
+                "prefix": "LUX MM "
+              }
+            ],
+            "events": [],
+            "pcrs": [],
+            "explanation": "An operating system must know which memory is free, which holds firmware code that has to stay, and which it must never touch. Firmware keeps that list and hands out a copy on request, together with a key that stands for this exact version of the map. The report shows a map of 0x1950 bytes in steps of 0x30 bytes, which is 135 blocks, and 135 lines follow, one per block. The loader printed its report after the handoff, straight to the serial port, because the firmware's console is not usable by then.",
+            "definitions": [
+              {
+                "glossary": "memory-map"
+              },
+              {
+                "term": "descriptor",
+                "definition": "One row of the memory map. Software must step from row to row by the size firmware reports, not by a size it assumes."
+              },
+              {
+                "glossary": "map-key"
+              },
+              {
+                "term": "Status",
+                "definition": "The result value a firmware service returns to its caller. Error codes have their highest bit set."
+              },
+              {
+                "term": "LUX MM line",
+                "definition": "One block as the loader printed it: type, start address, number of 4 KiB pages, attributes, all in hexadecimal."
+              }
+            ]
+          },
+          "claims": [
+            {
+              "text": "The memory map call returns a copy of the current map as an array of descriptors, the size of one descriptor, and a key for this exact map.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "7.2.3",
+                "title": "EFI_BOOT_SERVICES.GetMemoryMap()",
+                "pdf_page": 244,
+                "pdf_pages": [
+                  240,
+                  244
+                ]
+              }
+            },
+            {
+              "text": "The loader reported status zero for the call, a map size of 0x1950 bytes, a descriptor size of 0x30 bytes and the key 0x98C.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "console[3], console[5], console[6], console[7]"
+            },
+            {
+              "text": "The loader's report holds 135 lines that begin LUX MM, which is the map size divided by the descriptor size.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "loader_report[13] to loader_report[147]"
+            },
+            {
+              "text": "Error status codes have their highest bit set, so a status of all zeros is not an error.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "Appendix D",
+                "title": "Status Codes",
+                "pdf_page": 2068,
+                "pdf_pages": [
+                  2068,
+                  2069
+                ]
+              }
+            },
+            {
+              "text": "Of the 135 blocks, 51 carry type 3 and 56 carry type 4.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "loader_report[13] to loader_report[147], first value of each line"
+            },
+            {
+              "text": "Counting the specification's list of memory types from zero, 3 is boot services code and 4 is boot services data. The numbers are derived from the order of the list; the specification prints the list without numbers.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "7.2.1",
+                "title": "AllocatePages()",
+                "pdf_page": 239
+              },
+              "derived": true
+            },
+            {
+              "text": "After the handoff the console fields of the system table are no longer valid, which is why a loader cannot print through firmware afterwards.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "4.3",
+                "title": "EFI System Table",
+                "pdf_page": 174
+              }
+            },
+            {
+              "text": "The order of the entries in the map, and whether the map is the same on two boots, are not promised by UEFI 2.11. That the two normal runs printed the same report is an observation.",
+              "basis": "this-firmware",
+              "source": "observed in recordings normal-1 and normal-2 (comparisons/normal-1_vs_normal-2.json, loader_report_first_differing_line is null)"
+            }
+          ],
+          "picture": {
+            "plate": "board",
+            "lit": [
+              "power",
+              "firmware",
+              "processor",
+              "memory",
+              "controllers",
+              "storage",
+              "security"
+            ],
+            "newly_lit": [],
+            "screen": "none",
+            "note": "The whole board stays lit; memory is the point of attention. Illustration only."
+          }
+        },
+        {
+          "id": "s7-tables",
+          "kind": "stop",
+          "stop": 7,
+          "statement": {
+            "text": "The loader reads the list of tables firmware leaves behind.",
+            "emphasis": "leaves behind"
+          },
+          "support": "Two of the 13 entries carry the identifiers UEFI 2.11 defines for ACPI tables.",
+          "evidence": {
+            "recorded": true,
+            "kind": "loader_report",
+            "run": "normal-1",
+            "file": "recordings/normal-1/recording.json",
+            "field": "loader_report[10]",
+            "position": 10,
+            "text": "LUX CFG 71E86888F1E4D311BC220080C73C8881 000000001E77E014"
+          },
+          "detail": {
+            "console_lines": [
+              {
+                "run": "normal-1",
+                "positions": [
+                  8
+                ]
+              }
+            ],
+            "loader_report_lines": [
+              {
+                "run": "normal-1",
+                "positions": [
+                  0,
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6,
+                  7,
+                  8,
+                  9,
+                  10,
+                  11,
+                  12
+                ],
+                "prefix": "LUX CFG ",
+                "highlight": [
+                  9,
+                  10
+                ]
+              }
+            ],
+            "events": [],
+            "pcrs": [],
+            "explanation": "Firmware does not explain the machine to the operating system in words: it leaves tables in memory and a short list of identifiers and addresses that says where each one is. The loader printed all 13 entries. Lines 9 and 10 carry the two identifiers UEFI 2.11 defines for ACPI, the older and the newer form, in the byte order they have in memory. What sits at those addresses is defined by the ACPI specification, which was not read for this project.",
+            "definitions": [
+              {
+                "glossary": "configuration-table"
+              },
+              {
+                "term": "GUID",
+                "definition": "A 128-bit identifier. Here each one names a kind of table."
+              },
+              {
+                "glossary": "acpi-tables"
+              },
+              {
+                "term": "LUX CFG line",
+                "definition": "One entry as the loader printed it: the 16 bytes of the identifier as stored in memory, then the address."
+              }
+            ]
+          },
+          "claims": [
+            {
+              "text": "The configuration table is an array of pairs, each an identifier and a pointer.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "4.6",
+                "title": "EFI Configuration Table & Properties Table",
+                "pdf_page": 182
+              }
+            },
+            {
+              "text": "Two identifiers are defined for ACPI tables: eb9d2d30-2d88-11d3-9a16-0090273fc14d for the first version and 8868e871-e4f1-11d3-bc22-0080c73c8881 for version 2.0 or newer.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "4.6.1.1",
+                "title": "Industry Standard Configuration Tables",
+                "pdf_page": 183,
+                "pdf_pages": [
+                  183,
+                  184
+                ]
+              }
+            },
+            {
+              "text": "The loader reported 0xD, that is 13, entries, and its report holds 13 lines that begin LUX CFG.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "console[8] and loader_report[0] to loader_report[12]"
+            },
+            {
+              "text": "Lines 9 and 10 of the report hold the bytes of those two identifiers, with the first three groups byte-reversed as a little-endian machine stores them. That reading of the byte order is this project's own.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "loader_report[9] and loader_report[10]"
+            },
+            {
+              "text": "The listing notes that ACPI 2.0 or newer tables should use the newer identifier.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "4.6.1.1",
+                "title": "Industry Standard Configuration Tables",
+                "pdf_page": 183
+              }
+            },
+            {
+              "text": "This firmware published both identifiers. UEFI 2.11 has no sentence on whether the older one must, may or must not also be present.",
+              "basis": "this-firmware",
+              "source": "observed in recording normal-1 loader_report lines 9 and 10"
+            },
+            {
+              "text": "The addresses in these entries are physical addresses and are not adjusted when the system moves on to run time.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "4.6.1.1",
+                "title": "Industry Standard Configuration Tables",
+                "pdf_page": 183
+              }
+            },
+            {
+              "text": "UEFI 2.11 does not say what the ACPI entry points at. The recording holds the address only, and nothing is claimed here about the bytes behind it.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "loader_report[10], second value"
+            }
+          ],
+          "picture": {
+            "plate": "board",
+            "lit": [
+              "power",
+              "firmware",
+              "processor",
+              "memory",
+              "controllers",
+              "storage",
+              "security"
+            ],
+            "newly_lit": [],
+            "screen": "none",
+            "note": "Whole board lit. Illustration only."
+          }
+        },
+        {
+          "id": "s7-exit-call",
+          "kind": "stop",
+          "stop": 7,
+          "statement": {
+            "text": "Then one call: the loader takes over the machine.",
+            "emphasis": "the loader takes over"
+          },
+          "support": "The call is named ExitBootServices, and it succeeds only if the loader holds the current memory map.",
+          "evidence": {
+            "recorded": true,
+            "kind": "console",
+            "run": "normal-1",
+            "file": "recordings/normal-1/recording.json",
+            "field": "console[4]",
+            "position": 4,
+            "text": "LUX ExitBootServices status=0000000000000000"
+          },
+          "detail": {
+            "console_lines": [
+              {
+                "run": "normal-1",
+                "positions": [
+                  3,
+                  4,
+                  7
+                ]
+              }
+            ],
+            "loader_report_lines": [],
+            "events": [
+              {
+                "run": "normal-1",
+                "indexes": [
+                  27,
+                  28
+                ]
+              }
+            ],
+            "pcrs": [
+              {
+                "run": "normal-1",
+                "registers": [
+                  5
+                ],
+                "bank": "sha256"
+              }
+            ],
+            "explanation": "This is the handoff. The loader passes its own handle and the key it received with the memory map, which shows that its picture of memory is current. Had anything changed the map in between, the key would be stale, the call would fail, and the loader would have to fetch the map and try again. Here the call returned zero, and from that moment the loader is responsible for the machine.",
+            "definitions": [
+              {
+                "glossary": "exitbootservices"
+              },
+              {
+                "glossary": "map-key"
+              },
+              {
+                "term": "handle",
+                "definition": "An opaque reference firmware gives out. Here it names the loader's own image."
+              }
+            ]
+          },
+          "claims": [
+            {
+              "text": "The call is made by the running loader to end all boot services. On success the loader is responsible for the machine.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "7.4.6",
+                "title": "EFI_BOOT_SERVICES.ExitBootServices()",
+                "pdf_page": 287,
+                "pdf_pages": [
+                  287,
+                  288
+                ]
+              }
+            },
+            {
+              "text": "The loader must pass the key of the current memory map. With a stale key the call returns an invalid-parameter error, and the map must be fetched and the call made again.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "7.4.6",
+                "title": "EFI_BOOT_SERVICES.ExitBootServices()",
+                "pdf_page": 287,
+                "pdf_pages": [
+                  287,
+                  288
+                ]
+              }
+            },
+            {
+              "text": "The key changes every time something in the memory map changes.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "7.2.3",
+                "title": "EFI_BOOT_SERVICES.GetMemoryMap()",
+                "pdf_page": 244,
+                "pdf_pages": [
+                  240,
+                  244
+                ]
+              }
+            },
+            {
+              "text": "The loader reported status zero for the call, and the key it held was 0x98C.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "console[4] and console[7]"
+            },
+            {
+              "text": "Error status codes have their highest bit set, so a status of all zeros is not an error.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "Appendix D",
+                "title": "Status Codes",
+                "pdf_page": 2068,
+                "pdf_pages": [
+                  2068,
+                  2069
+                ]
+              }
+            },
+            {
+              "text": "The value of the key is not specified, only that it changes with the map. The same key in both normal runs is an observation.",
+              "basis": "this-firmware",
+              "source": "observed in recordings normal-1 and normal-2 (comparisons/normal-1_vs_normal-2.json, console_first_differing_line is null)"
+            }
+          ],
+          "picture": {
+            "plate": "board",
+            "lit": [
+              "power",
+              "firmware",
+              "processor",
+              "memory",
+              "controllers",
+              "storage",
+              "security",
+              "ribbon"
+            ],
+            "newly_lit": [
+              "ribbon"
+            ],
+            "screen": "none",
+            "note": "The display cable lights: the way out of the board. Illustration only."
+          }
+        },
+        {
+          "id": "s7-exit-events",
+          "kind": "stop",
+          "stop": 7,
+          "statement": {
+            "text": "Firmware logs the handoff twice: asked, then done.",
+            "emphasis": "twice"
+          },
+          "support": "These two records come from the firmware, not from the loader, so the handoff does not rest on the loader's word.",
+          "evidence": {
+            "recorded": true,
+            "kind": "event",
+            "run": "normal-1",
+            "file": "recordings/normal-1/recording.json",
+            "field": "events[26].summary",
+            "position": 26,
+            "text": "action: Exit Boot Services Invocation",
+            "event_index": 27
+          },
+          "detail": {
+            "console_lines": [
+              {
+                "run": "normal-1",
+                "positions": [
+                  4
+                ]
+              }
+            ],
+            "loader_report_lines": [],
+            "events": [
+              {
+                "run": "normal-1",
+                "indexes": [
+                  27,
+                  28
+                ]
+              }
+            ],
+            "pcrs": [
+              {
+                "run": "normal-1",
+                "registers": [
+                  5
+                ],
+                "bank": "sha256"
+              }
+            ],
+            "comparison": {
+              "file": "recordings/comparisons/normal-1_vs_e2.json",
+              "baseline": "normal-1",
+              "changed": "e2"
+            },
+            "explanation": "The loader's status line is the loader speaking about itself; these two records are a second witness. This firmware folded two short texts into register 5 of the TPM and logged both, and they are the last two of the 28 records. In the pilot run where the loader was refused and never ran, neither is there and register 5 ends with a different value. Why these texts and why register 5 would be answered by a Trusted Computing Group document that has not been read for this project.",
+            "definitions": [
+              {
+                "term": "EV_EFI_ACTION",
+                "definition": "The decoding tool's name for a record whose content is a short text naming something the firmware did."
+              },
+              {
+                "term": "Register 5",
+                "definition": "The register this firmware used for the two handoff records. No purpose is assigned to any register by UEFI 2.11."
+              },
+              {
+                "glossary": "event-log"
+              }
+            ]
+          },
+          "claims": [
+            {
+              "text": "Events 27 and 28 of the normal run are both in register 5, both of type EV_EFI_ACTION, with the texts Exit Boot Services Invocation and Exit Boot Services Returned with Success. They are the last two of 28 events.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "events[26] (index 27), events[27] (index 28), event_log.events"
+            },
+            {
+              "text": "The recorder recomputed the digest of every record whose digest is defined by its own content, these two included, and all matched.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "gate.checks.content_digests_match and gate.counts.content_digests_recomputed"
+            },
+            {
+              "text": "This firmware logged the two records in the run where the loader made the call, and neither in the pilot run where the loader was refused and never ran.",
+              "basis": "this-firmware",
+              "source": "observed in recording normal-1 events 27 and 28; absent in recording e2 (comparisons/normal-1_vs_e2.json, events_only_in_baseline)"
+            },
+            {
+              "text": "Register 5 differs between the normal run and that pilot run.",
+              "basis": "recording",
+              "run": "normal-1, e2",
+              "file": "recordings/comparisons/normal-1_vs_e2.json",
+              "field": "pcrs_differing"
+            },
+            {
+              "text": "Neither text occurs anywhere in UEFI 2.11, and UEFI 2.11 assigns no purpose to register 5. Which records a handoff must leave, and where, would be defined by a Trusted Computing Group document that has not been read for this project.",
+              "basis": "tcg-unread",
+              "uefi_pointer": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "2.6.4",
+                "title": "Extensions to this Specification Published Elsewhere",
+                "pdf_page": 151,
+                "pdf_pages": [
+                  150,
+                  151
+                ]
+              }
+            },
+            {
+              "text": "Placing these two records at stop 7 is this project's own mapping. Its basis is the observation above, not a specification.",
+              "basis": "this-firmware",
+              "source": "observed in recording normal-1 events 27 and 28 (stop_rule exit-boot-services)"
+            }
+          ],
+          "picture": {
+            "plate": "board",
+            "lit": [
+              "power",
+              "firmware",
+              "processor",
+              "memory",
+              "controllers",
+              "storage",
+              "security",
+              "ribbon"
+            ],
+            "newly_lit": [],
+            "screen": "none",
+            "note": "Whole board and display cable lit. Illustration only."
+          }
+        },
+        {
+          "id": "s7-no-return",
+          "kind": "stop",
+          "stop": 7,
+          "statement": {
+            "text": "After this, firmware does not get control back until a reset.",
+            "emphasis": "until a reset"
+          },
+          "support": "Most of what firmware offered is gone, and a small set of runtime services stays for the operating system.",
+          "evidence": {
+            "recorded": true,
+            "kind": "console",
+            "run": "normal-1",
+            "file": "recordings/normal-1/recording.json",
+            "field": "console[9]",
+            "position": 9,
+            "text": "LUX-FINAL-MARKER loader idle after ExitBootServices"
+          },
+          "detail": {
+            "console_lines": [
+              {
+                "run": "normal-1",
+                "positions": [
+                  2,
+                  9
+                ]
+              }
+            ],
+            "loader_report_lines": [],
+            "events": [],
+            "pcrs": [
+              {
+                "run": "normal-1",
+                "registers": [
+                  0,
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6,
+                  7
+                ],
+                "bank": "sha256"
+              }
+            ],
+            "explanation": "The handoff is one way. The loader now owns all free memory, and the console, the boot services and every service reached through a handle are no longer usable; a small set of runtime services and the list of tables stay. This loader then prints a last line directly to the serial port and idles. The eight registers shown are the boot's final values, the same in both normal runs.",
+            "definitions": [
+              {
+                "term": "runtime services",
+                "definition": "The few firmware services that stay callable after the handoff, for example reading and writing firmware variables."
+              },
+              {
+                "glossary": "reset"
+              },
+              {
+                "term": "final marker",
+                "definition": "The loader's last line. The recorder waits for it before it pauses the virtual machine and reads the TPM."
+              }
+            ]
+          },
+          "claims": [
+            {
+              "text": "If a loader calls ExitBootServices, firmware does not regain control until the platform is reset. If instead it returns, the load has failed.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "4.1.1",
+                "title": "EFI_IMAGE_ENTRY_POINT",
+                "pdf_page": 171,
+                "pdf_pages": [
+                  171,
+                  172
+                ]
+              }
+            },
+            {
+              "text": "After the call only the header, the firmware vendor and revision, the runtime services pointer and the configuration table fields of the system table remain valid.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "4.3",
+                "title": "EFI System Table",
+                "pdf_page": 174
+              }
+            },
+            {
+              "text": "On success the loader owns all available memory and may treat boot services code and data as free. No boot service may be used, and the watchdog timer is disabled.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "7.4.6",
+                "title": "EFI_BOOT_SERVICES.ExitBootServices()",
+                "pdf_page": 287,
+                "pdf_pages": [
+                  287,
+                  288
+                ]
+              }
+            },
+            {
+              "text": "Runtime services pointers stay valid after the call.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "4.5",
+                "title": "EFI Runtime Services Table",
+                "pdf_page": 180
+              }
+            },
+            {
+              "text": "After the handoff, the memory types that hold runtime services code and data and the ACPI memory types are to be kept as the specification's after-handoff table says.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "7.2",
+                "title": "Memory Allocation Services",
+                "pdf_page": 237,
+                "pdf_pages": [
+                  235,
+                  237
+                ]
+              }
+            },
+            {
+              "text": "The loader's last line says it is idle after ExitBootServices. No console line follows it.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "console[9]"
+            },
+            {
+              "text": "A second recording of the same boot is identical on every compared field, all 24 registers in all four hash banks included.",
+              "basis": "recording",
+              "run": "normal-1, normal-2",
+              "file": "recordings/comparisons/normal-1_vs_normal-2.json",
+              "field": "identical and pcrs_differing"
+            }
+          ],
+          "picture": {
+            "plate": "laptop",
+            "lit": [
+              "power",
+              "firmware",
+              "processor",
+              "memory",
+              "controllers",
+              "storage",
+              "security",
+              "ribbon"
+            ],
+            "newly_lit": [],
+            "screen": "dark",
+            "note": "The view pulls back to the whole laptop: inside awake, screen not yet lit. Illustration only.",
+            "view": "pulled back, inside awake"
+          }
+        },
+        {
+          "id": "s7-screen-lights",
+          "kind": "closing",
+          "stop": 7,
+          "statement": {
+            "text": "Here firmware steps back, and an operating system would light the screen.",
+            "emphasis": "light the screen"
+          },
+          "support": "This recording ends here: its loader is a stand-in that idles, and no screen was recorded.",
+          "evidence": {
+            "recorded": true,
+            "kind": "event",
+            "run": "normal-1",
+            "file": "recordings/normal-1/recording.json",
+            "field": "events[27].summary",
+            "position": 27,
+            "text": "action: Exit Boot Services Returned with Success",
+            "event_index": 28
+          },
+          "picture_caption": "Illustration, not a recording. The evidence is the last record of the firmware's log.",
+          "handover": {
+            "to": "nox",
+            "text": "What happens once the operating system is running, through one night of sleep and waking, is the subject of Nox.",
+            "link_label": "Continue in Nox",
+            "note": "Nox is the earlier site. The tables this loader found at the handoff are the kind Nox's last chapter reads."
+          },
+          "detail": {
+            "console_lines": [
+              {
+                "run": "normal-1",
+                "positions": [
+                  9
+                ]
+              }
+            ],
+            "loader_report_lines": [],
+            "events": [
+              {
+                "run": "normal-1",
+                "indexes": [
+                  28
+                ]
+              }
+            ],
+            "pcrs": [
+              {
+                "run": "normal-1",
+                "registers": [
+                  0,
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6,
+                  7
+                ],
+                "bank": "sha256"
+              }
+            ],
+            "explanation": "The last thing the firmware wrote in its record is that the handoff returned with success. On a real machine the loader would now start an operating system, which takes over the display. This project stops at the handoff on purpose: its loader starts nothing, the virtual machine was run with its display switched off, and everything after this point is outside what was recorded.",
+            "definitions": [
+              {
+                "glossary": "handoff"
+              },
+              {
+                "term": "operating system",
+                "definition": "The software that runs the machine once it is up. None runs in this recording."
+              },
+              {
+                "glossary": "loader"
+              }
+            ]
+          },
+          "claims": [
+            {
+              "text": "The last event of the normal run, number 28 of 28, is the text Exit Boot Services Returned with Success, in register 5.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "events[27] (index 28) and event_log.events"
+            },
+            {
+              "text": "On success of the call the loader, not firmware, is responsible for the machine.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "7.4.6",
+                "title": "EFI_BOOT_SERVICES.ExitBootServices()",
+                "pdf_page": 287,
+                "pdf_pages": [
+                  287,
+                  288
+                ]
+              }
+            },
+            {
+              "text": "The virtual machine was started with its display option set to none, so the recording contains no picture of a screen.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "provenance.qemu_command_line (the display option is set to none)"
+            },
+            {
+              "text": "The loader in this recording starts no operating system. After the handoff it prints its report and its last line, and idles.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "console[9]"
+            },
+            {
+              "text": "On an ordinary machine an operating system takes over the display after the handoff. Firmware may already have shown something before it. Neither was recorded here.",
+              "basis": "general"
+            }
+          ],
+          "picture": {
+            "plate": "laptop",
+            "lit": [
+              "power",
+              "firmware",
+              "processor",
+              "memory",
+              "controllers",
+              "storage",
+              "security",
+              "ribbon"
+            ],
+            "newly_lit": [],
+            "screen": "dawn",
+            "note": "The only daylight colour on the site: the screen lights with the dawn picture that ends Nox. It shows where a real boot goes next. It was not recorded and is not evidence.",
+            "view": "pulled back"
+          }
+        }
+      ]
+    }
+  ]
+}

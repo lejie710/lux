@@ -1,0 +1,1595 @@
+{
+  "format": "lux-content/2",
+  "file": "sources.json",
+  "language": "en",
+  "disclaimer": "A personal project based on public specifications. Not affiliated with or endorsed by any employer or vendor.",
+  "trademark_note": "Names of specifications, standards bodies and software projects belong to their owners and are used here only to say where a statement comes from.",
+  "picture_note": "The pictures are illustrations of a fictional board. The evidence is the recording.",
+  "names_kept_out_of_statements": [
+    "OVMF",
+    "EDK II",
+    "TianoCore",
+    "QEMU",
+    "swtpm",
+    "tpm2-tools",
+    "binutils",
+    "OpenSSL",
+    "sbsigntool",
+    "efitools",
+    "Ubuntu",
+    "Python"
+  ],
+  "basis_labels": [
+    {
+      "basis": "uefi-required",
+      "label": "Required by UEFI 2.11",
+      "meaning": "The UEFI Specification, version 2.11, has a sentence that requires this. The section, its title and the page of the published PDF are given."
+    },
+    {
+      "basis": "uefi-platform",
+      "label": "Left to the platform by UEFI 2.11",
+      "meaning": "The UEFI Specification, version 2.11, has a sentence on this and hands the choice to whoever builds the firmware. The section, its title and the page are given."
+    },
+    {
+      "basis": "tcg-unread",
+      "label": "Trusted Computing Group, not read",
+      "meaning": "This belongs to a Trusted Computing Group document. That document has not been read for this project, so nothing here says what it requires."
+    },
+    {
+      "basis": "this-firmware",
+      "label": "This firmware",
+      "meaning": "What this one firmware build did or how its own source names things. The source file or the recorded event is given. Another firmware may differ."
+    },
+    {
+      "basis": "recording",
+      "label": "Recording",
+      "meaning": "Read directly from a committed recording of this project. The run and the field are given."
+    },
+    {
+      "basis": "general",
+      "label": "General background",
+      "meaning": "Uncontroversial background, such as what a hash is. Used rarely."
+    }
+  ],
+  "reading_notes": {
+    "pdf_page": "Page numbers are pages of the published PDF file. The number printed at the foot of a page is the PDF page minus 84.",
+    "event_type_names": "Event type names such as EV_EFI_ACTION are the names a common open-source decoding tool prints. They are not cited from any specification.",
+    "register_values": "The recording holds each register's value at the end of the run only. A register shown at a stop is the final value, not the value at that moment.",
+    "stops": "The stop given to an event is this project's own mapping, declared rule by rule in recorder/storymap.py. No specification assigns it.",
+    "process_statements": "Statements about this project's own process (what is a pilot, what has not been run) carry a status_source that names a file in this repository. They are not specification claims."
+  },
+  "stage_names": {
+    "text": "SEC, PEI, DXE and BDS are not terms of the UEFI Specification 2.11. They are the names used by the firmware's own source and by the Platform Initialization specification. The Platform Initialization specification was not read for this project, so no stage is cited to it or to UEFI 2.11. Which logged event belongs to which stop is this project's own mapping, and each mapping rule states what it rests on.",
+    "claims": [
+      {
+        "text": "UEFI 2.11 describes the point where firmware is already initialised: once that is so, control passes to the boot manager. It does not describe the stages before that.",
+        "basis": "uefi-required",
+        "citation": {
+          "document": "UEFI Specification",
+          "version": "2.11",
+          "section": "3.1",
+          "title": "Firmware Boot Manager",
+          "pdf_page": 152
+        }
+      },
+      {
+        "text": "The firmware names its own modules with these letters: the console prefix of the boot manager's lines is BdsDxe.",
+        "basis": "this-firmware",
+        "source": "observed in recording normal-1 console line 0"
+      },
+      {
+        "text": "The assignment of each logged event to a stop is made by this project's own rules, and the recording stores the rule name beside every event.",
+        "basis": "recording",
+        "run": "normal-1",
+        "field": "events[*].stop and events[*].stop_rule"
+      }
+    ]
+  },
+  "screens": [
+    {
+      "id": "sources",
+      "kind": "sources-page",
+      "stop": null,
+      "title": "Sources",
+      "statement": {
+        "text": "Every claim here names where it comes from.",
+        "emphasis": "where it comes from"
+      },
+      "support": "One specification was read, the documents it points to were not, and the rest is what one firmware did in a virtual machine, as recorded.",
+      "evidence": {
+        "recorded": true,
+        "kind": "event",
+        "run": "normal-1",
+        "file": "recordings/normal-1/recording.json",
+        "field": "events[0].summary",
+        "position": 0,
+        "text": "firmware version string 2024.02-2ubuntu0.10",
+        "event_index": 1,
+        "caption": "The firmware names its own build in the first event of its log. The event type name shown with it, EV_S_CRTM_VERSION, is the name the decoding tool prints."
+      },
+      "detail": {
+        "console_lines": [],
+        "loader_report_lines": [],
+        "events": [
+          {
+            "run": "normal-1",
+            "indexes": [
+              1,
+              2,
+              3
+            ]
+          }
+        ],
+        "pcrs": [
+          {
+            "run": "normal-1",
+            "registers": [
+              0
+            ],
+            "bank": "sha256"
+          }
+        ],
+        "explanation": "The first three events of the log are a version string and two blocks of firmware, all logged against register 0. They are the earliest thing this recording holds, so they are how the recording itself says which firmware ran. The version string matches the firmware package version stored in the recording's provenance block. Why these events exist, and why register 0, is defined by a Trusted Computing Group document that has not been read for this project.",
+        "definitions": [
+          {
+            "glossary": "event"
+          },
+          {
+            "glossary": "event-log"
+          },
+          {
+            "glossary": "pcr"
+          },
+          {
+            "glossary": "firmware"
+          },
+          {
+            "glossary": "provenance"
+          }
+        ]
+      },
+      "claims": [
+        {
+          "text": "The first event of the normal run's log carries the firmware version string 2024.02-2ubuntu0.10.",
+          "basis": "recording",
+          "run": "normal-1",
+          "field": "events[0].summary (index 1)"
+        },
+        {
+          "text": "The same version is stored as the firmware package version in the recording's provenance.",
+          "basis": "recording",
+          "run": "normal-1",
+          "field": "provenance.tools.ovmf"
+        },
+        {
+          "text": "Which events firmware must log, and against which register, is defined by a Trusted Computing Group document. That document has not been read for this project.",
+          "basis": "tcg-unread",
+          "reason": "UEFI 2.11 points to a Trusted Computing Group document for these rules and states none itself.",
+          "uefi_pointer": {
+            "document": "UEFI Specification",
+            "version": "2.11",
+            "section": "2.6.4",
+            "title": "Extensions to this Specification Published Elsewhere",
+            "pdf_page": 151
+          }
+        }
+      ],
+      "picture": null
+    },
+    {
+      "id": "about",
+      "kind": "about",
+      "stop": null,
+      "title": "About",
+      "statement": {
+        "text": "One boot was recorded, then one thing was changed.",
+        "emphasis": "one thing was changed"
+      },
+      "support": "Lux asks what the specification requires, what it leaves open and what this firmware does, and so far it shows one pilot and claims no score.",
+      "evidence": {
+        "recorded": true,
+        "kind": "console",
+        "run": "normal-1",
+        "file": "recordings/normal-1/recording.json",
+        "field": "console[9]",
+        "position": 9,
+        "text": "LUX-FINAL-MARKER loader idle after ExitBootServices",
+        "caption": "The last console line of the normal run, printed by the project's own small loader after firmware stepped back."
+      },
+      "paragraphs": [
+        "Lux follows one PC boot from the reset to the moment firmware hands the machine to an operating system loader. The boot is real, but the machine is not: open-source firmware runs in a virtual machine with a software TPM.",
+        "After the normal boot, one thing is changed and the machine boots again. The two recordings are put side by side.",
+        "The project's measure is a prediction committed before a run. The changed run shown here was made before any prediction existed, so it is a pilot: shown, not counted. The counted experiments have not yet been run.",
+        "Every statement carries a label that says where it comes from. Where the specification that was read is silent, the site says so and does not fill the gap from memory.",
+        "The story ends where the earlier project, Nox, picks up: with an operating system in charge of the machine."
+      ],
+      "detail": {
+        "console_lines": [
+          {
+            "run": "normal-1",
+            "positions": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              9
+            ]
+          },
+          {
+            "run": "e2",
+            "positions": [
+              0,
+              1,
+              2,
+              3
+            ]
+          }
+        ],
+        "loader_report_lines": [],
+        "events": [],
+        "pcrs": [],
+        "explanation": "The normal run ends with a line from the project's own loader, printed after it asked firmware to end its boot services. The changed run shown on this site, a pilot, ends with the firmware's own lines saying it found nothing it would boot. Two recordings of the normal run were compared first and are identical on every compared field. No experiment with a prediction committed in advance has been run, so there is no result to report yet.",
+        "definitions": [
+          {
+            "glossary": "loader"
+          },
+          {
+            "glossary": "boot-services"
+          },
+          {
+            "glossary": "exitbootservices"
+          },
+          {
+            "glossary": "pilot"
+          },
+          {
+            "glossary": "counted-experiment"
+          },
+          {
+            "glossary": "recording"
+          }
+        ]
+      },
+      "claims": [
+        {
+          "text": "The normal run's last console line is the loader's final marker, printed after its call to end boot services returned status zero.",
+          "basis": "recording",
+          "run": "normal-1",
+          "field": "console[4] and console[9]"
+        },
+        {
+          "text": "Two recordings of the normal run are identical on every compared field.",
+          "basis": "recording",
+          "run": "normal-1, normal-2",
+          "field": "recordings/comparisons/normal-1_vs_normal-2.json, identical"
+        },
+        {
+          "text": "The changed run on this site is a pilot.",
+          "basis": "recording",
+          "run": "e2",
+          "field": "run.kind"
+        },
+        {
+          "text": "In the pilot the firmware printed that it failed to load the boot option, and then that no bootable option was found.",
+          "basis": "recording",
+          "run": "e2",
+          "field": "console[1] and console[2]"
+        },
+        {
+          "text": "No prediction was attached to either recording shown, so neither is a counted experiment.",
+          "basis": "recording",
+          "run": "normal-1, e2",
+          "field": "provenance.prediction"
+        }
+      ],
+      "picture": null
+    }
+  ],
+  "sources": [
+    {
+      "id": "uefi-2-11",
+      "kind": "specification",
+      "read": "The chapters this story needs were read page by page, and all 2301 pages of the published PDF were searched by keyword. Some chapters were not read, and figures have no text to read.",
+      "title": "Unified Extensible Firmware Interface (UEFI) Specification",
+      "document": "UEFI Specification",
+      "version": "2.11",
+      "publisher": "UEFI Forum, Inc.",
+      "url": "https://uefi.org/specs/UEFI/2.11/",
+      "citation_line": "UEFI Specification, version 2.11. Copyright UEFI Forum, Inc. All rights reserved.",
+      "citation_line_note": "The copyright line is given as a citation. Its exact printed wording should be checked against the publisher's page before publication.",
+      "rights": "All rights reserved. The publisher grants readers no licence to reproduce the text.",
+      "how_used": "Paraphrased and cited by section, title and PDF page. No table or figure is reproduced. Page numbers are pages of the published PDF, not the numbers printed at the foot of a page.",
+      "used_for": "What Secure Boot must do with a boot image, how the boot manager chooses a boot option, and what happens at the handoff to the loader.",
+      "not_used_for": "Measured boot, and the firmware's internal phases. The document is silent on both.",
+      "claims": [
+        {
+          "text": "Once firmware has initialised the machine, it passes control to the boot manager.",
+          "basis": "uefi-required",
+          "citation": {
+            "document": "UEFI Specification",
+            "version": "2.11",
+            "section": "3.1",
+            "title": "Firmware Boot Manager",
+            "pdf_page": 152
+          }
+        },
+        {
+          "text": "For a normal boot, firmware must use the boot order stored in its variables.",
+          "basis": "uefi-required",
+          "citation": {
+            "document": "UEFI Specification",
+            "version": "2.11",
+            "section": "3",
+            "title": "Boot Manager",
+            "pdf_page": 152
+          }
+        },
+        {
+          "text": "Firmware may add boot options or remove invalid ones from the boot order by itself.",
+          "basis": "uefi-platform",
+          "citation": {
+            "document": "UEFI Specification",
+            "version": "2.11",
+            "section": "3",
+            "title": "Boot Manager",
+            "pdf_page": 152
+          }
+        },
+        {
+          "text": "An image whose signature is not in the allowed list, or is in the forbidden list, is deferred, and for a loader the next boot option is selected.",
+          "basis": "uefi-required",
+          "citation": {
+            "document": "UEFI Specification",
+            "version": "2.11",
+            "section": "32.5.1",
+            "title": "Overview",
+            "pdf_page": 1633
+          }
+        },
+        {
+          "text": "Verification must not succeed when the forbidden list holds a matching record, even if the allowed list also matches.",
+          "basis": "uefi-required",
+          "citation": {
+            "document": "UEFI Specification",
+            "version": "2.11",
+            "section": "32.5.3.3",
+            "title": "Authorization Process",
+            "pdf_page": 1638
+          }
+        },
+        {
+          "text": "Which of two status codes firmware returns when it will not load an image is not fixed. Both are defined, and the choice is the platform's.",
+          "basis": "uefi-platform",
+          "citation": {
+            "document": "UEFI Specification",
+            "version": "2.11",
+            "section": "7.4.1",
+            "title": "EFI_BOOT_SERVICES.LoadImage()",
+            "pdf_page": 283
+          }
+        },
+        {
+          "text": "The starting value of the variable that says whether Secure Boot is active is decided by platform policy.",
+          "basis": "uefi-platform",
+          "citation": {
+            "document": "UEFI Specification",
+            "version": "2.11",
+            "section": "3.3",
+            "title": "Globally Defined Variables",
+            "pdf_page": 166
+          }
+        },
+        {
+          "text": "After the loader takes over, firmware does not regain control until the machine is reset.",
+          "basis": "uefi-required",
+          "citation": {
+            "document": "UEFI Specification",
+            "version": "2.11",
+            "section": "4.1.1",
+            "title": "EFI_IMAGE_ENTRY_POINT",
+            "pdf_page": 172
+          }
+        },
+        {
+          "text": "Rules for measuring boot events into TPM registers are not in UEFI 2.11. It points to a Trusted Computing Group document for them, and that document has not been read for this project.",
+          "basis": "tcg-unread",
+          "reason": "UEFI 2.11 names the other standards body and states no measurement rule of its own.",
+          "uefi_pointer": {
+            "document": "UEFI Specification",
+            "version": "2.11",
+            "section": "2.6.4",
+            "title": "Extensions to this Specification Published Elsewhere",
+            "pdf_page": 151
+          }
+        }
+      ]
+    },
+    {
+      "id": "firmware",
+      "kind": "open-source-software",
+      "role": "The firmware that was booted",
+      "title": "OVMF, built from EDK II",
+      "version": "Distribution package ovmf 2024.02-2ubuntu0.10, file OVMF_CODE_4M.secboot.fd",
+      "sha256": "1286f2a3217d09b374d05951355d7a561c8bacecd74845c8a1fbb71a48c0de8d",
+      "url": "https://github.com/tianocore/edk2",
+      "licence": "BSD-2-Clause-Patent",
+      "licence_url": "https://github.com/tianocore/edk2/blob/master/License.txt",
+      "how_used": "Run unmodified as packaged. Its console lines and its event log are the evidence. No firmware file is published by this project, only its hash. Source files are named as the basis for a few terms. No source code is reproduced.",
+      "caveats": [
+        "It is a release build. It prints no log of its early phases.",
+        "The package carries the distribution's own patches on top of the upstream release, so upstream source lines may not match it exactly.",
+        "Source paths named on this site were confirmed on the project's main branch, not at the exact release the package was built from."
+      ],
+      "claims": [
+        {
+          "text": "Both recordings were made with the same firmware file, identified by its SHA-256.",
+          "basis": "recording",
+          "run": "normal-1, e2",
+          "field": "provenance.firmware.sha256"
+        },
+        {
+          "text": "The firmware's console lines begin with the name of its own boot module, BdsDxe.",
+          "basis": "recording",
+          "run": "normal-1",
+          "field": "console[0]"
+        }
+      ],
+      "source_files_note": "Each file below is named as the basis of a claim. Each was read on the project's main branch, not at the release the recorded package was built from."
+    },
+    {
+      "id": "emulator",
+      "kind": "open-source-software",
+      "role": "The virtual machine",
+      "title": "QEMU",
+      "version": "8.2.2, distribution package 1:8.2.2+ds-0ubuntu1.18",
+      "url": "https://www.qemu.org/docs/master/",
+      "licence": "GNU General Public License, version 2. Licensing is stated per file in its source tree.",
+      "licence_url": "https://www.qemu.org/docs/master/about/license.html",
+      "how_used": "Run unmodified, in software emulation. The full command line is stored in each recording. Its documentation is not quoted.",
+      "claims": [
+        {
+          "text": "The virtual machine ran in software emulation with one processor, 512 MiB of memory and its clock fixed at 1 January 2026.",
+          "basis": "recording",
+          "run": "normal-1",
+          "field": "provenance.qemu_command_line"
+        }
+      ]
+    },
+    {
+      "id": "software-tpm",
+      "kind": "open-source-software",
+      "role": "The software TPM",
+      "title": "swtpm",
+      "version": "0.7.3, distribution package 0.7.3-0ubuntu5.24.04.1",
+      "url": "https://github.com/stefanberger/swtpm",
+      "licence": "BSD-3-Clause",
+      "licence_url": "https://github.com/stefanberger/swtpm/blob/master/LICENSE",
+      "how_used": "Run unmodified. The register values in each recording were read from it, and its own log of extend commands is one of the three readings that must agree. Its documentation is not quoted.",
+      "claims": [
+        {
+          "text": "Three readings of the same boot agreed on all 24 registers in all four hash banks before the recording was written.",
+          "basis": "recording",
+          "run": "normal-1",
+          "field": "gate.passed, gate.banks, gate.pcrs_per_bank, gate.checks"
+        }
+      ]
+    },
+    {
+      "id": "event-log-decoder",
+      "kind": "open-source-software",
+      "role": "Names of event types",
+      "title": "tpm2-tools",
+      "version": "5.6",
+      "url": null,
+      "licence": "Not recorded in this project's research.",
+      "how_used": "The event type names shown on this site, such as EV_SEPARATOR, are the names this tool prints for the type codes in the log. They are tool names. They are not citations of a specification.",
+      "claims": [
+        {
+          "text": "Each event in a recording stores its numeric type code beside the type name.",
+          "basis": "recording",
+          "run": "normal-1",
+          "field": "events[].type_code and events[].type"
+        }
+      ]
+    },
+    {
+      "id": "build-tools",
+      "kind": "open-source-software",
+      "role": "Tools that built the loader and ran the recorder",
+      "title": "GNU binutils and Python",
+      "version": "binutils 2.42 (package 2.42-4ubuntu2.10), Python 3.12.3, on Ubuntu 24.04",
+      "url": null,
+      "licence": "Not recorded in this project's research.",
+      "how_used": "binutils assembled and linked the project's own small loader. Python ran the recorder, using its standard library only. The test keys and the signed loader were created once with OpenSSL 3.0.13, sbsigntool 0.9.4 and efitools 1.9.2.",
+      "claims": [
+        {
+          "text": "The versions of the tools each run used are stored in its recording.",
+          "basis": "recording",
+          "run": "normal-1",
+          "field": "provenance.tools and provenance.host_os"
+        }
+      ]
+    },
+    {
+      "id": "recordings",
+      "kind": "own-evidence",
+      "role": "The evidence",
+      "title": "The committed recordings of this project",
+      "version": "Format lux-recording/1 and lux-comparison/1",
+      "url": null,
+      "licence": "Program output recorded by this project. No licence has been chosen for the repository yet.",
+      "files": [
+        "recordings/normal-1/recording.json",
+        "recordings/normal-2/recording.json",
+        "recordings/e2/recording.json",
+        "recordings/comparisons/normal-1_vs_normal-2.json",
+        "recordings/comparisons/normal-1_vs_e2.json"
+      ],
+      "how_used": "Every evidence line on the site is copied from one of these files, with the file, the field and the index given. The raw event log each recording was built from is stored beside it, so it can be decoded with another tool.",
+      "claims": [
+        {
+          "text": "The normal run logged 28 events and was accepted.",
+          "basis": "recording",
+          "run": "normal-1",
+          "field": "event_log.events and outcome.result"
+        },
+        {
+          "text": "The pilot run logged 26 events and was refused.",
+          "basis": "recording",
+          "run": "e2",
+          "field": "event_log.events and outcome.result"
+        },
+        {
+          "text": "The pilot differs from the normal run in registers 4, 5 and 7, and in no other register.",
+          "basis": "recording",
+          "run": "normal-1, e2",
+          "field": "recordings/comparisons/normal-1_vs_e2.json, pcrs_differing and pcrs_same"
+        }
+      ]
+    }
+  ],
+  "firmware_sources": [
+    {
+      "id": "fw-reset-vector",
+      "kind": "firmware source",
+      "project": "EDK II (TianoCore), OvmfPkg",
+      "path": "OvmfPkg/ResetVector/Ia16/ResetVectorVtf0.asm",
+      "url": "https://github.com/tianocore/edk2/blob/master/OvmfPkg/ResetVector/Ia16/ResetVectorVtf0.asm",
+      "read_at": "master branch, not the tag the recorded package was built from",
+      "licence": "BSD-2-Clause-Patent"
+    },
+    {
+      "id": "fw-sec",
+      "kind": "firmware source",
+      "project": "EDK II (TianoCore), OvmfPkg",
+      "path": "OvmfPkg/Sec/SecMain.c",
+      "url": "https://github.com/tianocore/edk2/blob/master/OvmfPkg/Sec/SecMain.c",
+      "read_at": "master branch, not the tag the recorded package was built from",
+      "licence": "BSD-2-Clause-Patent"
+    },
+    {
+      "id": "fw-readme",
+      "kind": "firmware documentation",
+      "project": "EDK II (TianoCore), OvmfPkg",
+      "path": "OvmfPkg/README",
+      "url": "https://github.com/tianocore/edk2/blob/master/OvmfPkg/README",
+      "read_at": "master branch",
+      "licence": "BSD-2-Clause-Patent"
+    },
+    {
+      "id": "fw-build-description",
+      "kind": "firmware source",
+      "project": "EDK II (TianoCore), OvmfPkg",
+      "path": "OvmfPkg/OvmfPkgX64.dsc",
+      "url": "https://github.com/tianocore/edk2/blob/master/OvmfPkg/OvmfPkgX64.dsc",
+      "read_at": "master branch; whether the recorded package was built from this file was not confirmed",
+      "licence": "BSD-2-Clause-Patent"
+    },
+    {
+      "id": "fw-tcg2pei",
+      "kind": "firmware source",
+      "project": "EDK II (TianoCore), SecurityPkg",
+      "path": "SecurityPkg/Tcg/Tcg2Pei/Tcg2Pei.c",
+      "url": "https://github.com/tianocore/edk2/blob/master/SecurityPkg/Tcg/Tcg2Pei/Tcg2Pei.c",
+      "read_at": "master branch, not the tag the recorded package was built from; the package's build settings were not confirmed",
+      "licence": "BSD-2-Clause-Patent"
+    },
+    {
+      "id": "fw-tcg-header",
+      "kind": "firmware source",
+      "project": "EDK II (TianoCore), MdePkg",
+      "path": "MdePkg/Include/IndustryStandard/UefiTcgPlatform.h",
+      "url": "https://github.com/tianocore/edk2/blob/master/MdePkg/Include/IndustryStandard/UefiTcgPlatform.h",
+      "read_at": "master branch, not the tag the recorded package was built from",
+      "licence": "BSD-2-Clause-Patent"
+    }
+  ],
+  "not_read": [
+    {
+      "id": "tcg-firmware-profile",
+      "title": "The Trusted Computing Group firmware profile for PC platforms",
+      "publisher": "Trusted Computing Group",
+      "known_as": "Found by search as the PC Client Platform Firmware Profile Specification. UEFI 2.11 refers to Trusted Computing Group documents under more than one title and gives no version.",
+      "status": "Not read. The document could not be obtained for this project.",
+      "what_it_defines": "As far as UEFI 2.11 points: what firmware must measure during boot, into which TPM register, and how the event log records it.",
+      "cost_to_reader": "Nothing on this site can tell you that a measured-boot behaviour is required. Which register an event went to, which events appear, and what a refused loader leaves behind are shown only as what this firmware did. You cannot use this site to judge whether the firmware followed the measured-boot rules.",
+      "site_rule": "Every measured-boot statement is labelled 'Trusted Computing Group, not read' or 'this firmware'. None says a specification requires it.",
+      "claims": [
+        {
+          "text": "UEFI 2.11 states no rule for measuring boot events into TPM registers and points to Trusted Computing Group documents for it. Those documents have not been read for this project.",
+          "basis": "tcg-unread",
+          "reason": "UEFI 2.11 was searched in full for measurement rules, and only the pointer was found.",
+          "uefi_pointer": {
+            "document": "UEFI Specification",
+            "version": "2.11",
+            "section": "2.6.4",
+            "title": "Extensions to this Specification Published Elsewhere",
+            "pdf_page": 151
+          }
+        }
+      ]
+    },
+    {
+      "id": "platform-initialization",
+      "title": "The Platform Initialization specification",
+      "publisher": "UEFI Forum, Inc.",
+      "status": "Not read for this project.",
+      "what_it_defines": "Not known from reading. By reputation only: the firmware's internal start-up phases, which the firmware source calls SEC, PEI, DXE and BDS.",
+      "cost_to_reader": "The four phase names on this site are not UEFI 2.11 terms, and no specification sentence is offered for what happens inside a phase. The names are taken from the firmware's own source. Which stop of the story an event belongs to is this project's own mapping, not a rule from any document.",
+      "site_rule": "UEFI 2.11 is never cited for a phase. Stops 2 and 3 show only the first events of the TPM log and say what is not shown.",
+      "claims": [
+        {
+          "text": "UEFI 2.11 treats the interfaces firmware uses inside itself during start-up as outside what an operating system may rely on.",
+          "basis": "uefi-platform",
+          "citation": {
+            "document": "UEFI Specification",
+            "version": "2.11",
+            "section": "1.4",
+            "title": "Goals",
+            "pdf_page": 89
+          },
+          "citation_note": "The section heading is on PDF page 89. The sentence itself is on page 90."
+        },
+        {
+          "text": "The firmware's own source uses the phase names. Its console lines carry the prefix BdsDxe, and its source has a folder named Sec.",
+          "basis": "this-firmware",
+          "source": "observed in recording normal-1 console line 0",
+          "source_ref": "fw-sec"
+        }
+      ]
+    },
+    {
+      "id": "authenticode-format",
+      "title": "The Authenticode signature format document",
+      "publisher": "Named in UEFI 2.11 section 32.2.3",
+      "status": "Not read for this project.",
+      "what_it_defines": "Which bytes of a boot image are covered by the hash that its signature signs.",
+      "cost_to_reader": "The site can say that the firmware refused a loader with one changed byte. It cannot cite a document for exactly which bytes of a file the signature protects.",
+      "claims": [
+        {
+          "text": "The hash of an image must be calculated exactly as it was when the signature was created.",
+          "basis": "uefi-required",
+          "citation": {
+            "document": "UEFI Specification",
+            "version": "2.11",
+            "section": "32.2.1",
+            "title": "Digital Signatures",
+            "pdf_page": 1615
+          }
+        }
+      ]
+    },
+    {
+      "id": "acpi-specification",
+      "title": "The ACPI specification",
+      "publisher": "UEFI Forum, Inc.",
+      "status": "Not read for this project.",
+      "what_it_defines": "The hardware description tables that firmware hands to the operating system.",
+      "cost_to_reader": "The handoff stop shows that the loader was given a table of pointers. It does not explain what the ACPI entries point at.",
+      "claims": [
+        {
+          "text": "The loader in the normal run reported thirteen entries in the configuration table it was handed.",
+          "basis": "recording",
+          "run": "normal-1",
+          "field": "console[8]"
+        }
+      ]
+    },
+    {
+      "id": "uefi-figures",
+      "title": "Two figures inside UEFI 2.11",
+      "publisher": "UEFI Forum, Inc.",
+      "status": "Not read. The specification was read as text, and figures have no text.",
+      "what_it_defines": "A drawing of the boot sequence and a drawing of the image authorisation flow.",
+      "cost_to_reader": "The site states that the text fixes no order in which the allowed and forbidden lists are consulted. A figure might draw an order that the text does not state.",
+      "claims": []
+    }
+  ],
+  "limits": [
+    {
+      "id": "virtual-machine",
+      "title": "A virtual machine, not a real one",
+      "text": "The boot ran in an emulator, in software emulation. Nothing here shows what any firmware does on real hardware.",
+      "claims": [
+        {
+          "text": "The machine was emulated in software.",
+          "basis": "recording",
+          "run": "normal-1",
+          "field": "provenance.qemu_command_line"
+        }
+      ]
+    },
+    {
+      "id": "no-power-sequencing",
+      "title": "Power and reset are described, not recorded",
+      "text": "Described, not recorded: a virtual machine has no power sequencing. The first stop is told in plain words, with no timings.",
+      "claims": [
+        {
+          "text": "The recording begins with the firmware's first logged event. It holds nothing from before that.",
+          "basis": "recording",
+          "run": "normal-1",
+          "field": "events[0] and console[0]"
+        }
+      ]
+    },
+    {
+      "id": "software-tpm",
+      "title": "A software TPM, not a chip",
+      "text": "The TPM is a program beside the virtual machine. Its registers behave like a TPM's, but nothing here is a statement about a hardware TPM.",
+      "claims": [
+        {
+          "text": "The TPM was a separate program connected to the virtual machine.",
+          "basis": "recording",
+          "run": "normal-1",
+          "field": "provenance.swtpm_command_line"
+        }
+      ]
+    },
+    {
+      "id": "open-source-firmware",
+      "title": "One open-source firmware build",
+      "text": "One build of one open-source firmware, as packaged by a distribution. Another firmware may make every platform choice differently.",
+      "claims": [
+        {
+          "text": "Every recording was made with one firmware file.",
+          "basis": "recording",
+          "run": "normal-1, e2",
+          "field": "provenance.firmware"
+        }
+      ]
+    },
+    {
+      "id": "no-early-log",
+      "title": "No log of the earliest phases",
+      "text": "The packaged firmware prints nothing during its early phases. For those stops the recording holds only the first events of the TPM log. What the firmware did internally is not shown.",
+      "claims": [
+        {
+          "text": "The first console line of the normal run is already the boot module loading a boot option.",
+          "basis": "recording",
+          "run": "normal-1",
+          "field": "console[0]"
+        }
+      ]
+    },
+    {
+      "id": "no-driver-list",
+      "title": "No list of drivers",
+      "text": "The recordings do not contain the list of drivers the firmware loaded. The site does not show one. For that stop it shows the Secure Boot policy events that are in the log.",
+      "claims": [
+        {
+          "text": "Events 4 to 8 of the normal run log the Secure Boot variables: SecureBoot, PK, KEK, db and dbx.",
+          "basis": "recording",
+          "run": "normal-1",
+          "field": "events[3..7].summary (indexes 4 to 8)"
+        }
+      ]
+    },
+    {
+      "id": "pilots",
+      "title": "Pilots, not results",
+      "text": "The changed run shown here was made before any prediction was committed. It is a pilot: shown, never counted. No score is claimed. The counted experiments are not yet run.",
+      "claims": [
+        {
+          "text": "The changed run is marked as a pilot in its own recording and carries no prediction.",
+          "basis": "recording",
+          "run": "e2",
+          "field": "run.kind and provenance.prediction"
+        }
+      ]
+    },
+    {
+      "id": "own-mapping",
+      "title": "Stops are this project's own mapping",
+      "text": "The event log carries no times and no phase markers. Which stop an event belongs to is decided by this project's own declared rules, and each event stores the rule that placed it.",
+      "claims": [
+        {
+          "text": "Every event in a recording stores a stop number and the name of the rule that assigned it.",
+          "basis": "recording",
+          "run": "normal-1",
+          "field": "events[].stop and events[].stop_rule"
+        }
+      ]
+    },
+    {
+      "id": "event-names",
+      "title": "Event names are tool names",
+      "text": "Names such as EV_EFI_VARIABLE_AUTHORITY are what the decoding tool prints. They are shown because they are what you will see if you decode the log yourself. They are not quoted from a specification.",
+      "claims": [
+        {
+          "text": "Event 25 of the normal run is stored with the type name EV_EFI_VARIABLE_AUTHORITY against register 7.",
+          "basis": "recording",
+          "run": "normal-1",
+          "field": "events[24].type and events[24].pcr (index 25)"
+        }
+      ]
+    },
+    {
+      "id": "one-machine",
+      "title": "One machine, one set of tool versions",
+      "text": "The recordings were reproduced on the machine that made them. Another emulator version or firmware package may give other register values.",
+      "claims": [
+        {
+          "text": "The second recording of the normal run matches the first on every compared field.",
+          "basis": "recording",
+          "run": "normal-1, normal-2",
+          "field": "recordings/comparisons/normal-1_vs_normal-2.json, identical"
+        }
+      ]
+    },
+    {
+      "id": "certificate-validity",
+      "title": "The test certificates are not yet valid at the machine's clock",
+      "text": "The test certificates are valid from the day they were made, 14 November 2026. The virtual machine's clock is fixed at 1 January 2026. This firmware accepted the signed loader all the same. A firmware that compares validity dates with the clock would refuse it.",
+      "claims": [
+        {
+          "text": "The virtual machine's clock was fixed at 1 January 2026.",
+          "basis": "recording",
+          "run": "normal-1",
+          "field": "provenance.qemu_command_line"
+        },
+        {
+          "text": "This firmware accepted a loader signed with a certificate that was not yet valid at the machine's clock.",
+          "basis": "this-firmware",
+          "source": "observed in recording normal-1 event 25"
+        }
+      ]
+    },
+    {
+      "id": "test-keys",
+      "title": "The test keys are public",
+      "text": "The Secure Boot keys used here are test keys, published on purpose so the recordings can be reproduced. They must never be trusted anywhere.",
+      "claims": [
+        {
+          "text": "Each recording stores the fingerprints of the three test certificates it ran with.",
+          "basis": "recording",
+          "run": "normal-1",
+          "field": "provenance.keys"
+        }
+      ]
+    },
+    {
+      "id": "pictures",
+      "title": "The pictures are illustrations",
+      "text": "The board and the laptop in the pictures are fictional. They show where the story is. They prove nothing.",
+      "claims": []
+    }
+  ],
+  "glossary": [
+    {
+      "id": "firmware",
+      "term": "Firmware",
+      "also": [],
+      "definition": "The software built into a machine that runs first when it is switched on and prepares it for an operating system.",
+      "basis": "general"
+    },
+    {
+      "id": "uefi",
+      "term": "UEFI",
+      "also": [],
+      "definition": "The published interface between firmware and the software it starts. This project cites version 2.11 of its specification.",
+      "basis": "general",
+      "uefi_pointer": {
+        "document": "UEFI Specification",
+        "version": "2.11",
+        "section": "1",
+        "title": "Introduction",
+        "pdf_page": 85
+      },
+      "note": "The pointer is to the opening text, where the document describes itself as an interface specification. That is a description of scope, not a requirement."
+    },
+    {
+      "id": "virtual-machine",
+      "term": "Virtual machine",
+      "also": [],
+      "definition": "A computer imitated by a program. Here the processor, memory and disk are all emulated in software.",
+      "basis": "recording",
+      "run": "normal-1",
+      "field": "provenance.qemu_command_line"
+    },
+    {
+      "id": "reset",
+      "term": "Reset",
+      "also": [],
+      "definition": "The signal that puts a processor into a known starting state, from which it runs its first instruction.",
+      "basis": "general"
+    },
+    {
+      "id": "sec",
+      "term": "SEC",
+      "also": [],
+      "definition": "Security phase. A phase name the firmware's own source uses: it has a source folder named Sec. It is not a UEFI 2.11 term. It comes from the Platform Initialization specification, which was not read for this project.",
+      "basis": "this-firmware",
+      "source": "OvmfPkg/Sec/SecMain.c",
+      "source_ref": "fw-sec"
+    },
+    {
+      "id": "pei",
+      "term": "PEI",
+      "also": [],
+      "definition": "Pre-EFI Initialization. A phase name the firmware's own source uses: its build file lists a module named PeiMain. It is not a UEFI 2.11 term. It comes from the Platform Initialization specification, which was not read for this project.",
+      "basis": "this-firmware",
+      "source": "OvmfPkg/OvmfPkgX64.dsc",
+      "source_ref": "fw-build-description",
+      "note": "The build file lists MdeModulePkg/Core/Pei/PeiMain.inf."
+    },
+    {
+      "id": "dxe",
+      "term": "DXE",
+      "also": [],
+      "definition": "Driver Execution Environment. A phase name that shows in this firmware's own module name, BdsDxe, printed at the start of its console lines. It is not a UEFI 2.11 term. It comes from the Platform Initialization specification, which was not read for this project.",
+      "basis": "this-firmware",
+      "source": "observed in recording normal-1 console line 0 (the prefix BdsDxe)"
+    },
+    {
+      "id": "bds",
+      "term": "BDS",
+      "also": [],
+      "definition": "Boot Device Selection. A phase name that shows in this firmware's own module name, BdsDxe, printed at the start of its console lines. UEFI 2.11 does not define the term, and its own word for the job of choosing what to boot is the boot manager. The name comes from the Platform Initialization specification, which was not read for this project.",
+      "basis": "this-firmware",
+      "source": "observed in recording normal-1 console line 0 (the prefix BdsDxe)"
+    },
+    {
+      "id": "platform-initialization-specification",
+      "term": "Platform Initialization specification",
+      "also": [],
+      "definition": "A separate specification. UEFI 2.11 names it only as the home of interfaces that firmware uses inside itself and that an operating system may not rely on. It was not read for this project.",
+      "basis": "uefi-platform",
+      "citation": {
+        "document": "UEFI Specification",
+        "version": "2.11",
+        "section": "1.4",
+        "title": "Goals",
+        "pdf_page": 89
+      },
+      "note": "The section heading is on PDF page 89. The sentence itself is on page 90."
+    },
+    {
+      "id": "stop",
+      "term": "Stop",
+      "also": [],
+      "definition": "One of the seven steps this site divides the boot into. The division, and the stop each recorded event is placed at, are this project's own. The recorder stores the stop, and the rule that chose it, beside each event.",
+      "basis": "recording",
+      "run": "normal-1",
+      "field": "events[].stop and events[].stop_rule"
+    },
+    {
+      "id": "boot-manager",
+      "term": "Boot manager",
+      "also": [],
+      "definition": "The part of firmware that takes over once the machine is initialised and decides what to start.",
+      "basis": "uefi-required",
+      "citation": {
+        "document": "UEFI Specification",
+        "version": "2.11",
+        "section": "3.1",
+        "title": "Firmware Boot Manager",
+        "pdf_page": 152
+      }
+    },
+    {
+      "id": "uefi-variable",
+      "term": "UEFI variable",
+      "also": [
+        "variable"
+      ],
+      "definition": "A named setting that firmware keeps in storage that survives power off. The boot order and the Secure Boot lists are variables.",
+      "basis": "uefi-required",
+      "citation": {
+        "document": "UEFI Specification",
+        "version": "2.11",
+        "section": "3",
+        "title": "Boot Manager",
+        "pdf_page": 152
+      }
+    },
+    {
+      "id": "variable-store",
+      "term": "Variable store",
+      "also": [],
+      "definition": "The file that holds the virtual machine's UEFI variables. Every recorded run starts from the same one.",
+      "basis": "recording",
+      "run": "normal-1",
+      "field": "provenance.vars_template_sha256"
+    },
+    {
+      "id": "boot-option",
+      "term": "Boot option",
+      "also": [
+        "Boot0000",
+        "Boot0001"
+      ],
+      "definition": "One stored entry that names something firmware can try to start. In the recordings the entries are called Boot0000 and Boot0001.",
+      "basis": "uefi-required",
+      "citation": {
+        "document": "UEFI Specification",
+        "version": "2.11",
+        "section": "3.1.3",
+        "title": "Load Options",
+        "pdf_page": 155
+      }
+    },
+    {
+      "id": "bootorder",
+      "term": "BootOrder",
+      "also": [],
+      "definition": "The variable that lists the boot options, as 16-bit numbers, in the order firmware should try them. The first one is tried first.",
+      "basis": "uefi-required",
+      "citation": {
+        "document": "UEFI Specification",
+        "version": "2.11",
+        "section": "3.3",
+        "title": "Globally Defined Variables",
+        "pdf_page": 165
+      }
+    },
+    {
+      "id": "loader",
+      "term": "Loader",
+      "also": [
+        "OS loader",
+        "stand-in loader"
+      ],
+      "definition": "The first program firmware starts from disk, whose job is to start an operating system. In this project it is a small stand-in that prints what it was handed and then idles.",
+      "basis": "recording",
+      "run": "normal-1",
+      "field": "console[2] to console[9]"
+    },
+    {
+      "id": "image",
+      "term": "Image",
+      "also": [],
+      "definition": "A program file in the format firmware can load and start. The loader is an image.",
+      "basis": "uefi-required",
+      "citation": {
+        "document": "UEFI Specification",
+        "version": "2.11",
+        "section": "7.4.1",
+        "title": "EFI_BOOT_SERVICES.LoadImage()",
+        "pdf_page": 281
+      }
+    },
+    {
+      "id": "loadimage",
+      "term": "LoadImage",
+      "also": [],
+      "definition": "The firmware service that reads an image into memory. With Secure Boot active, this is where an image can be turned away.",
+      "basis": "uefi-required",
+      "citation": {
+        "document": "UEFI Specification",
+        "version": "2.11",
+        "section": "7.4.1",
+        "title": "EFI_BOOT_SERVICES.LoadImage()",
+        "pdf_page": 282
+      }
+    },
+    {
+      "id": "access-denied",
+      "term": "Access Denied",
+      "also": [],
+      "definition": "The words this firmware printed when it would not load the changed loader. UEFI 2.11 defines two status codes for this situation and does not say which one a platform must use.",
+      "basis": "uefi-platform",
+      "citation": {
+        "document": "UEFI Specification",
+        "version": "2.11",
+        "section": "7.4.1",
+        "title": "EFI_BOOT_SERVICES.LoadImage()",
+        "pdf_page": 283
+      },
+      "evidence": {
+        "run": "e2",
+        "field": "console[1]"
+      }
+    },
+    {
+      "id": "hash",
+      "term": "Hash",
+      "also": [
+        "digest",
+        "fingerprint"
+      ],
+      "definition": "A short fixed-length fingerprint computed from data. Change one byte of the data and the fingerprint changes.",
+      "basis": "general"
+    },
+    {
+      "id": "signature",
+      "term": "Signature",
+      "also": [],
+      "definition": "A value attached to a file that lets anyone holding the matching certificate check who signed it and that it has not changed since.",
+      "basis": "general"
+    },
+    {
+      "id": "embedded-signature",
+      "term": "Embedded signature",
+      "also": [],
+      "definition": "A signature stored inside the image file itself, in an area the file's own header points to.",
+      "basis": "uefi-required",
+      "citation": {
+        "document": "UEFI Specification",
+        "version": "2.11",
+        "section": "32.2.2",
+        "title": "Embedded Signatures",
+        "pdf_page": 1616
+      }
+    },
+    {
+      "id": "certificate",
+      "term": "Certificate",
+      "also": [],
+      "definition": "A public statement of a signer's identity and key, used to check that signer's signatures.",
+      "basis": "general"
+    },
+    {
+      "id": "secure-boot",
+      "term": "Secure Boot",
+      "also": [],
+      "definition": "The firmware check that decides whether an image may be started, by looking for its signature or hash in an allowed list and a forbidden list. It blocks.",
+      "basis": "uefi-required",
+      "citation": {
+        "document": "UEFI Specification",
+        "version": "2.11",
+        "section": "32.5.1",
+        "title": "Overview",
+        "pdf_page": 1633
+      }
+    },
+    {
+      "id": "secureboot-variable",
+      "term": "SecureBoot (the variable)",
+      "also": [],
+      "definition": "A one-byte variable that says whether signature checking is active for this boot. Its starting value is the platform's own policy.",
+      "basis": "uefi-platform",
+      "citation": {
+        "document": "UEFI Specification",
+        "version": "2.11",
+        "section": "3.3",
+        "title": "Globally Defined Variables",
+        "pdf_page": 166
+      }
+    },
+    {
+      "id": "pk",
+      "term": "PK",
+      "also": [
+        "Platform Key"
+      ],
+      "definition": "The top key of Secure Boot. While none is enrolled, the machine is in setup mode.",
+      "basis": "uefi-required",
+      "citation": {
+        "document": "UEFI Specification",
+        "version": "2.11",
+        "section": "32.3",
+        "title": "Firmware/OS Key Exchange: Creating Trust Relationships",
+        "pdf_page": 1621
+      }
+    },
+    {
+      "id": "kek",
+      "term": "KEK",
+      "also": [
+        "Key Exchange Key"
+      ],
+      "definition": "The middle level of keys. An update to the allowed or forbidden list is accepted only from a signer that traces back to a KEK certificate or to the Platform Key.",
+      "basis": "uefi-required",
+      "citation": {
+        "document": "UEFI Specification",
+        "version": "2.11",
+        "section": "8.2.6",
+        "title": "Using the EFI_VARIABLE_AUTHENTICATION_2 descriptor",
+        "pdf_page": 312
+      }
+    },
+    {
+      "id": "db",
+      "term": "db",
+      "also": [
+        "allowed list"
+      ],
+      "definition": "The list of certificates and hashes that Secure Boot accepts. An image can pass the check only if this list holds its hash, or a certificate that verifies its signature.",
+      "basis": "uefi-required",
+      "citation": {
+        "document": "UEFI Specification",
+        "version": "2.11",
+        "section": "32.5.3.3",
+        "title": "Authorization Process",
+        "pdf_page": 1638
+      }
+    },
+    {
+      "id": "dbx",
+      "term": "dbx",
+      "also": [
+        "forbidden list",
+        "revocation list"
+      ],
+      "definition": "The list of certificates and hashes that Secure Boot refuses. A match here overrides a match in the allowed list. In the recordings it is empty.",
+      "basis": "uefi-required",
+      "citation": {
+        "document": "UEFI Specification",
+        "version": "2.11",
+        "section": "32.5.3.3",
+        "title": "Authorization Process",
+        "pdf_page": 1638
+      },
+      "evidence": {
+        "run": "normal-1",
+        "field": "events[7].summary (index 8)"
+      }
+    },
+    {
+      "id": "deferred",
+      "term": "Deferred",
+      "also": [],
+      "definition": "The specification's own word for an image that did not pass the check: it is not started, and for a loader the next boot option is selected. This site also says refused.",
+      "basis": "uefi-required",
+      "citation": {
+        "document": "UEFI Specification",
+        "version": "2.11",
+        "section": "32.5.1",
+        "title": "Overview",
+        "pdf_page": 1633
+      }
+    },
+    {
+      "id": "image-execution-information-table",
+      "term": "Image Execution Information Table",
+      "also": [],
+      "definition": "A table in which firmware records images it did not start, with a reason. This project has not read that table from the machine.",
+      "basis": "uefi-required",
+      "citation": {
+        "document": "UEFI Specification",
+        "version": "2.11",
+        "section": "32.4.2",
+        "title": "Image Execution Information Table",
+        "pdf_page": 1630
+      }
+    },
+    {
+      "id": "tpm",
+      "term": "TPM",
+      "also": [],
+      "definition": "Trusted Platform Module. A small separate device that keeps a set of registers no software can simply overwrite. Here it is a program, not a chip.",
+      "basis": "recording",
+      "run": "normal-1",
+      "field": "provenance.swtpm_command_line"
+    },
+    {
+      "id": "pcr",
+      "term": "Register (PCR)",
+      "also": [
+        "PCR",
+        "TPM register",
+        "Platform Configuration Register"
+      ],
+      "definition": "One of the TPM's registers. It cannot be written directly, only extended, so its value depends on everything put into it and in what order. Each recording holds 24 of them in each of four hash banks. What each register is for is defined by a Trusted Computing Group document that was not read for this project.",
+      "basis": "recording",
+      "run": "normal-1",
+      "field": "pcrs and gate.pcrs_per_bank"
+    },
+    {
+      "id": "extend",
+      "term": "Extend",
+      "also": [],
+      "definition": "The only way a register changes: its new value is the hash of its old value followed by the new digest. So a register depends on everything put into it, in order.",
+      "basis": "recording",
+      "run": "normal-1",
+      "field": "gate.checks.event_log_replay_equals_live",
+      "note": "The recorder replays every event with this rule and requires the result to equal the values read from the TPM."
+    },
+    {
+      "id": "hash-bank",
+      "term": "Hash bank",
+      "also": [],
+      "definition": "One full set of registers kept with one hash method. The recordings hold four banks. This site shows the SHA-256 one.",
+      "basis": "recording",
+      "run": "normal-1",
+      "field": "pcrs and gate.banks"
+    },
+    {
+      "id": "measured-boot",
+      "term": "Measured boot",
+      "also": [
+        "measure"
+      ],
+      "definition": "Firmware extending a register with a digest of something and noting it in a log. It records. It does not block. Its rules are in a Trusted Computing Group document that was not read for this project.",
+      "basis": "tcg-unread",
+      "reason": "UEFI 2.11 does not define it and points to the other standards body.",
+      "uefi_pointer": {
+        "document": "UEFI Specification",
+        "version": "2.11",
+        "section": "2.6.4",
+        "title": "Extensions to this Specification Published Elsewhere",
+        "pdf_page": 151
+      }
+    },
+    {
+      "id": "event-log",
+      "term": "Event log",
+      "also": [
+        "TPM log",
+        "the log"
+      ],
+      "definition": "The list firmware keeps of what it extended into the registers, in order. The recorder cuts it out of the paused machine's memory, and replaying it must reproduce the register values.",
+      "basis": "recording",
+      "run": "normal-1",
+      "field": "event_log and events"
+    },
+    {
+      "id": "event",
+      "term": "Event",
+      "also": [
+        "record"
+      ],
+      "definition": "One entry of the event log: a register number, a type, a digest and some data. Events are numbered in the order they were logged. The story also calls an event a record.",
+      "basis": "recording",
+      "run": "normal-1",
+      "field": "events[].index, events[].pcr, events[].type, events[].digest_sha256"
+    },
+    {
+      "id": "event-type-name",
+      "term": "Event type name",
+      "also": [],
+      "definition": "A name such as EV_SEPARATOR or EV_EFI_ACTION. These are the names a common decoding tool prints for the type codes in the log. They are not cited from a specification.",
+      "basis": "recording",
+      "run": "normal-1",
+      "field": "events[].type and events[].type_code"
+    },
+    {
+      "id": "separator",
+      "term": "Separator",
+      "also": [],
+      "definition": "An event the decoding tool names EV_SEPARATOR. In the normal run one is logged against register 7 at event 9, and one against each of registers 0 to 6 at events 18 to 24. What rule asks for them was not read.",
+      "basis": "recording",
+      "run": "normal-1",
+      "field": "events[8] and events[17..23] (indexes 9 and 18 to 24)"
+    },
+    {
+      "id": "authority-record",
+      "term": "Authority record",
+      "also": [],
+      "definition": "An event this firmware logged against register 7 in the run where it accepted the loader. Its summary names the allowed list, db. It is in the normal run and absent from the refused pilot.",
+      "basis": "this-firmware",
+      "source": "observed in recording normal-1 event 25; absent in recording e2"
+    },
+    {
+      "id": "boot-services",
+      "term": "Boot services",
+      "also": [],
+      "definition": "The services firmware offers to the program it started, such as memory allocation. They end when the loader calls ExitBootServices.",
+      "basis": "uefi-required",
+      "citation": {
+        "document": "UEFI Specification",
+        "version": "2.11",
+        "section": "7.4.6",
+        "title": "EFI_BOOT_SERVICES.ExitBootServices()",
+        "pdf_page": 288
+      }
+    },
+    {
+      "id": "exitbootservices",
+      "term": "ExitBootServices",
+      "also": [],
+      "definition": "The call by which a loader tells firmware to step back. After it, firmware does not get control again until a reset.",
+      "basis": "uefi-required",
+      "citation": {
+        "document": "UEFI Specification",
+        "version": "2.11",
+        "section": "4.1.1",
+        "title": "EFI_IMAGE_ENTRY_POINT",
+        "pdf_page": 172
+      },
+      "evidence": {
+        "run": "normal-1",
+        "field": "console[4]"
+      }
+    },
+    {
+      "id": "memory-map",
+      "term": "Memory map",
+      "also": [],
+      "definition": "The list firmware gives the loader of which parts of memory are in use and for what.",
+      "basis": "uefi-required",
+      "citation": {
+        "document": "UEFI Specification",
+        "version": "2.11",
+        "section": "7.2.3",
+        "title": "EFI_BOOT_SERVICES.GetMemoryMap()",
+        "pdf_page": 244
+      },
+      "evidence": {
+        "run": "normal-1",
+        "field": "console[3] and console[5]"
+      }
+    },
+    {
+      "id": "map-key",
+      "term": "Map key",
+      "also": [],
+      "definition": "A number that identifies one version of the memory map. The loader must present the current one when it calls ExitBootServices, or the call fails.",
+      "basis": "uefi-required",
+      "citation": {
+        "document": "UEFI Specification",
+        "version": "2.11",
+        "section": "7.4.6",
+        "title": "EFI_BOOT_SERVICES.ExitBootServices()",
+        "pdf_page": 288
+      },
+      "evidence": {
+        "run": "normal-1",
+        "field": "console[7]"
+      }
+    },
+    {
+      "id": "configuration-table",
+      "term": "Configuration table",
+      "also": [],
+      "definition": "A list of pointers firmware hands to the loader, each tagged with an identifier. Two of the identifiers UEFI 2.11 lists are for ACPI tables.",
+      "basis": "uefi-required",
+      "citation": {
+        "document": "UEFI Specification",
+        "version": "2.11",
+        "section": "4.6",
+        "title": "EFI Configuration Table & Properties Table",
+        "pdf_page": 182
+      },
+      "evidence": {
+        "run": "normal-1",
+        "field": "console[8]"
+      }
+    },
+    {
+      "id": "acpi-tables",
+      "term": "ACPI tables",
+      "also": [],
+      "definition": "Tables that describe the machine's hardware to an operating system. Their own specification was not read for this project, so this site only shows that pointers were handed over.",
+      "basis": "uefi-required",
+      "citation": {
+        "document": "UEFI Specification",
+        "version": "2.11",
+        "section": "4.6.1.1",
+        "title": "Industry Standard Configuration Tables",
+        "pdf_page": 183
+      }
+    },
+    {
+      "id": "handoff",
+      "term": "Handoff",
+      "also": [],
+      "definition": "The moment the loader has the memory map, has called ExitBootServices, and firmware is no longer in charge. The story ends here.",
+      "basis": "recording",
+      "run": "normal-1",
+      "field": "console[4] and console[9]; events[26] and events[27] (indexes 27 and 28)"
+    },
+    {
+      "id": "recording",
+      "term": "Recording",
+      "also": [],
+      "definition": "One file per boot, written by this project's recorder: what was changed, the console lines, every logged event, every register value, and the tool versions.",
+      "basis": "recording",
+      "run": "normal-1",
+      "field": "format"
+    },
+    {
+      "id": "console",
+      "term": "Console",
+      "also": [
+        "console line"
+      ],
+      "definition": "The text the machine printed on its serial port during the run. The recorder saves it line by line.",
+      "basis": "recording",
+      "run": "normal-1",
+      "field": "console"
+    },
+    {
+      "id": "provenance",
+      "term": "Provenance",
+      "also": [],
+      "definition": "The part of a recording that says what produced it: tool versions, the firmware file's hash, the key fingerprints and the full command lines.",
+      "basis": "recording",
+      "run": "normal-1",
+      "field": "provenance"
+    },
+    {
+      "id": "agreement-gate",
+      "term": "Agreement gate",
+      "also": [],
+      "definition": "The recorder's rule that three readings of one boot must agree on every register before a recording is written. A run that fails it leaves no recording.",
+      "basis": "recording",
+      "run": "normal-1",
+      "field": "gate"
+    },
+    {
+      "id": "comparison",
+      "term": "Comparison",
+      "also": [],
+      "definition": "A file that sets a changed run beside the normal run: the first event that differs, the registers that differ and the ones that do not.",
+      "basis": "recording",
+      "run": "normal-1, e2",
+      "file": "recordings/comparisons/normal-1_vs_e2.json",
+      "field": "first_differing_event, pcrs_differing, pcrs_same"
+    },
+    {
+      "id": "pilot",
+      "term": "Pilot",
+      "also": [],
+      "definition": "A changed run made before any prediction was committed. It is shown and never counted.",
+      "basis": "recording",
+      "run": "e2",
+      "field": "run.kind"
+    },
+    {
+      "id": "counted-experiment",
+      "term": "Counted experiment",
+      "also": [],
+      "definition": "A changed run whose prediction was committed before it ran. None has been run yet.",
+      "basis": "recording",
+      "run": "normal-1, e2",
+      "field": "provenance.prediction (empty in every committed recording)"
+    },
+    {
+      "id": "prediction",
+      "term": "Prediction",
+      "also": [],
+      "definition": "A dated list, committed before a run, of what the changed boot is expected to do. Each line carries one of the basis labels.",
+      "basis": "recording",
+      "run": "normal-1, e2",
+      "field": "provenance.prediction (empty in every committed recording)"
+    },
+    {
+      "id": "basis",
+      "term": "Basis",
+      "also": [],
+      "definition": "The label on every claim that says where it comes from: required by UEFI 2.11, left to the platform by UEFI 2.11, a Trusted Computing Group document not read, this firmware, the recording, or general background.",
+      "basis": "general"
+    },
+    {
+      "id": "platform-policy",
+      "term": "Platform policy",
+      "also": [],
+      "definition": "A choice the specification leaves to whoever builds the firmware. Two firmwares can both follow the specification and still differ here.",
+      "basis": "uefi-platform",
+      "citation": {
+        "document": "UEFI Specification",
+        "version": "2.11",
+        "section": "3.3",
+        "title": "Globally Defined Variables",
+        "pdf_page": 166
+      }
+    },
+    {
+      "id": "trusted-computing-group",
+      "term": "Trusted Computing Group",
+      "also": [],
+      "definition": "The standards body that UEFI 2.11 points to for measured boot. None of its documents was read for this project.",
+      "basis": "tcg-unread",
+      "reason": "Named by UEFI 2.11 as the publisher of the measurement rules.",
+      "uefi_pointer": {
+        "document": "UEFI Specification",
+        "version": "2.11",
+        "section": "2.6.4",
+        "title": "Extensions to this Specification Published Elsewhere",
+        "pdf_page": 151
+      }
+    }
+  ]
+}

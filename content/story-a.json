@@ -1,0 +1,779 @@
+{
+  "format": "lux-content/2",
+  "file": "story-a.json",
+  "language": "en",
+  "opening": {
+    "id": "opening",
+    "kind": "opening",
+    "stop": null,
+    "eyebrow": "Lux",
+    "title": {
+      "text": "Before light.",
+      "emphasis": "light."
+    },
+    "statement": {
+      "text": "What your laptop does before it wakes.",
+      "emphasis": null
+    },
+    "support": "One recorded boot of open-source UEFI firmware in a virtual machine, followed to the moment firmware hands the machine over.",
+    "evidence": {
+      "recorded": true,
+      "kind": "event",
+      "run": "normal-1",
+      "file": "recordings/normal-1/recording.json",
+      "field": "events[27].summary",
+      "position": 27,
+      "text": "action: Exit Boot Services Returned with Success",
+      "event_index": 28,
+      "caption": "The last of 28 records in the log of this boot. The story ends here."
+    },
+    "invitation": {
+      "label": "Scroll to follow one boot",
+      "line": "Seven stops. Every claim says where it comes from."
+    },
+    "scope_note": "This is open-source firmware in a virtual machine with a software TPM. It does not show what any maker's firmware does on real hardware.",
+    "detail": {
+      "console_lines": [],
+      "loader_report_lines": [],
+      "events": [
+        {
+          "run": "normal-1",
+          "indexes": [
+            1
+          ],
+          "note": "The first record of the boot."
+        },
+        {
+          "run": "normal-1",
+          "indexes": [
+            28
+          ],
+          "note": "The last record of the boot."
+        }
+      ],
+      "pcrs": [],
+      "other_fields": [
+        {
+          "file": "recordings/normal-1/recording.json",
+          "field": "event_log.events",
+          "value": 28,
+          "why": "How many records the log holds."
+        },
+        {
+          "file": "recordings/normal-1/recording.json",
+          "field": "outcome.result",
+          "value": "accepted",
+          "why": "How the boot ended."
+        },
+        {
+          "file": "recordings/normal-1/recording.json",
+          "field": "gate.passed",
+          "value": true,
+          "why": "Three readings of the same boot agreed before the recording was written."
+        },
+        {
+          "file": "recordings/comparisons/normal-1_vs_normal-2.json",
+          "field": "identical",
+          "value": true,
+          "why": "A second normal boot matched the first."
+        }
+      ],
+      "explanation": "The story follows one boot that was recorded and then recorded again. The two recordings match on every compared field, so what follows is not a lucky run. Only the fields named in the recording's own may_vary list are left out of that comparison: the date, the run's name and two durations. After the seven stops come experiments, where one thing is changed and the machine boots again; the changed run committed so far is a pilot, made before any prediction was written, and no score is claimed.",
+      "definitions": [
+        {
+          "glossary": "firmware"
+        },
+        {
+          "glossary": "uefi"
+        },
+        {
+          "glossary": "virtual-machine"
+        },
+        {
+          "glossary": "tpm"
+        },
+        {
+          "glossary": "event"
+        },
+        {
+          "glossary": "loader"
+        }
+      ],
+      "not_shown": [
+        "Nothing in this story was recorded on a physical machine. Power and reset, the first stop, cannot be recorded in a virtual machine at all."
+      ]
+    },
+    "claims": [
+      {
+        "id": "opening-one-boot",
+        "text": "The story follows one boot of open-source UEFI firmware in a virtual machine with a software TPM, running under software emulation.",
+        "basis": "recording",
+        "run": "normal-1",
+        "field": "provenance.qemu_command_line, provenance.swtpm_command_line, provenance.firmware"
+      },
+      {
+        "id": "opening-accepted",
+        "text": "The recorded boot was accepted: the loader ran to its final marker.",
+        "basis": "recording",
+        "run": "normal-1",
+        "field": "outcome.result, outcome.trigger, console[9]"
+      },
+      {
+        "id": "opening-28-records",
+        "text": "The log of this boot holds 28 records. The last one reads \"action: Exit Boot Services Returned with Success\".",
+        "basis": "recording",
+        "run": "normal-1",
+        "field": "event_log.events, events[27].summary"
+      },
+      {
+        "id": "opening-repeat",
+        "text": "A second normal boot matched the first on every compared field, in all 24 registers of all four hash banks.",
+        "basis": "recording",
+        "run": "normal-1, normal-2",
+        "file": "recordings/comparisons/normal-1_vs_normal-2.json",
+        "field": "identical, pcrs_differing, other_fields_differing"
+      },
+      {
+        "id": "opening-may-vary",
+        "text": "The comparison leaves out four fields only: the recording date, the run's name and two durations.",
+        "basis": "recording",
+        "run": "normal-1",
+        "field": "may_vary"
+      },
+      {
+        "id": "opening-gate",
+        "text": "Before the recording was written, the event log, the list of TPM commands and a live read of the TPM agreed on every register.",
+        "basis": "recording",
+        "run": "normal-1",
+        "field": "gate.passed, gate.checks"
+      },
+      {
+        "id": "opening-pilot",
+        "text": "The changed run committed so far is labelled a pilot. It is shown and not counted, and no score is claimed.",
+        "basis": "recording",
+        "run": "normal-1, e2",
+        "file": "recordings/comparisons/normal-1_vs_e2.json",
+        "field": "changed.kind"
+      }
+    ],
+    "picture": {
+      "plate": "laptop",
+      "lit": [],
+      "newly_lit": [],
+      "screen": "dark",
+      "note": "Nothing has happened yet. The machine is dark before power, and the page stays black. Illustration only.",
+      "view": "closed in on darkness; the board is not yet shown"
+    }
+  },
+  "stops": [
+    {
+      "number": 1,
+      "of": 7,
+      "id": "stop-1",
+      "label": "Power and reset",
+      "stage_name": null,
+      "threads": [],
+      "mapping": {
+        "rules": [],
+        "events": "None. No event is placed at this stop.",
+        "rests_on": "A virtual machine has no power sequencing, and the event log begins later."
+      },
+      "not_shown": [
+        "No power rail, no reset signal, no timing and no first instruction is in any recording. This stop is a description, kept qualitative on purpose."
+      ],
+      "headline": "s1-power-reset",
+      "screens": [
+        {
+          "id": "s1-power-reset",
+          "kind": "stop",
+          "stop": 1,
+          "statement": {
+            "text": "Power settles, reset lets go, and the processor fetches its first instruction.",
+            "emphasis": "its first instruction"
+          },
+          "support": "Described, not recorded: a virtual machine has no power sequencing, so no timing is given.",
+          "evidence": {
+            "recorded": false,
+            "kind": "not-recorded",
+            "label": "Described, not recorded: a virtual machine has no power sequencing.",
+            "caption": "No committed recording holds a line or a record for this stop."
+          },
+          "detail": {
+            "console_lines": [],
+            "loader_report_lines": [],
+            "events": [],
+            "pcrs": [],
+            "other_fields": [
+              {
+                "file": "recordings/normal-1/recording.json",
+                "field": "provenance.qemu_command_line",
+                "why": "The nearest thing the recording has: the command that started the virtual machine. It shows a machine made in software, with no power supply to sequence."
+              },
+              {
+                "file": "recordings/normal-1/recording.json",
+                "field": "provenance.firmware",
+                "why": "The firmware file the machine started from, pinned by its hash."
+              },
+              {
+                "file": "recordings/normal-1/recording.json",
+                "field": "events[0]",
+                "why": "The first record of the boot. This project places it at stop 3, so nothing is recorded for stops 1 and 2."
+              }
+            ],
+            "explanation": "A processor cannot run until its power is steady, so it is held in reset and then released. On release it starts at a fixed place, and in this firmware's source the code it reaches first is a small piece at the very end of the firmware image. None of this is recorded here: a virtual machine starts its processor directly and has no power to settle. The UEFI specification does not describe this step either, because it describes the interface firmware offers and leaves how firmware is built inside to its maker.",
+            "definitions": [
+              {
+                "glossary": "reset"
+              },
+              {
+                "term": "power sequencing",
+                "definition": "Bringing up a board's supply voltages in a set order and waiting until each is steady before the next part is allowed to start."
+              },
+              {
+                "term": "first instruction",
+                "definition": "The first step of a program the processor carries out after reset. Where it is read from is fixed by the processor's design."
+              },
+              {
+                "term": "firmware image",
+                "definition": "The file that holds the firmware, as it sits in the board's storage chip. In the virtual machine it is an ordinary file."
+              },
+              {
+                "glossary": "virtual-machine"
+              }
+            ]
+          },
+          "claims": [
+            {
+              "id": "s1-reset-background",
+              "text": "A processor is held in reset until its power is steady, and when released it starts from a fixed place.",
+              "basis": "general"
+            },
+            {
+              "id": "s1-not-recorded",
+              "text": "No committed recording holds a line or a record of power or reset. The log's first record is placed at stop 3 by this project, and no record carries stop 1.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "events[0].index, events[0].stop, events[*].stop"
+            },
+            {
+              "id": "s1-virtual-machine",
+              "text": "The recorded machine is a virtual machine under software emulation, started by a command line, from a firmware file pinned by its hash.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "provenance.qemu_command_line, provenance.firmware.file, provenance.firmware.sha256"
+            },
+            {
+              "id": "s1-uefi-interface-only",
+              "text": "UEFI 2.11 describes itself as an interface specification and leaves how firmware is built inside to the implementer. A search of its text found no sentence on power sequencing, the reset that starts a boot, the reset vector or the first instruction.",
+              "basis": "uefi-platform",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "1",
+                "title": "Introduction (opening text before 1.1)",
+                "pdf_page": 85
+              },
+              "note": "The silence was established by a text search of all 2301 pages in this project's reading notes. Figures have no text layer and were not read."
+            },
+            {
+              "id": "s1-reset-vector-source",
+              "text": "In this firmware's source, the code the processor reaches first is a small piece placed at the very end of the firmware image.",
+              "basis": "this-firmware",
+              "source": "OvmfPkg/ResetVector/Ia16/ResetVectorVtf0.asm",
+              "source_ref": "fw-reset-vector",
+              "note": "Read on the master branch, not at the tag the recorded package was built from. Not observed in the recording."
+            }
+          ],
+          "picture": {
+            "plate": "board",
+            "lit": [
+              "power",
+              "processor"
+            ],
+            "newly_lit": [
+              "power",
+              "processor"
+            ],
+            "screen": "none",
+            "note": "An illustration choice that follows the statement. It is not evidence, and no recording supports it.",
+            "reasons": {
+              "power": "Lights first. The statement begins with power becoming steady, and nothing else can start before it.",
+              "processor": "Lights second, as the stop ends: it is released from reset and fetches its first instruction.",
+              "firmware": "Stays dark until stop 2. This stop ends at the first fetch; firmware code doing work is the next stop.",
+              "memory": "Dark. Nothing in this stop uses it.",
+              "controllers": "Dark. No device has been reached.",
+              "storage": "Dark. The disk is not touched until the boot manager, several stops later.",
+              "security": "Dark. The recording holds no TPM record for this stop.",
+              "ribbon": "Dark. The screen stays black until the last stop."
+            }
+          }
+        }
+      ]
+    },
+    {
+      "number": 2,
+      "of": 7,
+      "id": "stop-2",
+      "label": "The earliest code",
+      "stage_name": {
+        "name": "SEC",
+        "expansion": "Security phase",
+        "attribution": "SEC is not a term of the UEFI specification. It is the name this firmware's source uses, and the Platform Initialization specification is where such stage names are defined. That specification was not read for this project.",
+        "claims": []
+      },
+      "threads": [],
+      "mapping": {
+        "rules": [],
+        "events": "None. No event is placed at this stop.",
+        "rests_on": "The packaged firmware prints no early log, and the first event of the log is placed at stop 3."
+      },
+      "not_shown": [
+        "No console line and no TPM record belongs to this stop. The recording does not show whether this earliest code was itself measured: no record names it. What a physical machine must do at this point is not shown and not claimed."
+      ],
+      "headline": "s2-earliest-code",
+      "screens": [
+        {
+          "id": "s2-earliest-code",
+          "kind": "stop",
+          "stop": 2,
+          "statement": {
+            "text": "The earliest firmware code runs, and this recording cannot see it.",
+            "emphasis": "cannot see it"
+          },
+          "support": "The packaged firmware prints no early log, so the first record of the whole boot, shown here, is one this project places at the next stop.",
+          "evidence": {
+            "recorded": true,
+            "kind": "event",
+            "run": "normal-1",
+            "file": "recordings/normal-1/recording.json",
+            "field": "events[0].summary",
+            "position": 0,
+            "text": "firmware version string 2024.02-2ubuntu0.10",
+            "event_index": 1,
+            "caption": "Record 1 of 28, the first thing the recording holds. Its own stop field is 3, not 2."
+          },
+          "detail": {
+            "console_lines": [
+              {
+                "run": "normal-1",
+                "positions": [
+                  0
+                ],
+                "note": "The first line on the console. It is about loading a boot option, which is the boot manager's work, much later in the boot. No earlier line exists."
+              }
+            ],
+            "loader_report_lines": [],
+            "events": [
+              {
+                "run": "normal-1",
+                "indexes": [
+                  1
+                ],
+                "note": "The first record in the log. Its stop field is 3 and its stop_rule field is pcr0-firmware. No record carries stop 2."
+              }
+            ],
+            "pcrs": [],
+            "other_fields": [
+              {
+                "file": "docs/DESIGN.md",
+                "field": "section 7",
+                "why": "The recorder's own statement that stops 1 and 2 have no events."
+              }
+            ],
+            "explanation": "This stop is the short stretch of firmware code that runs straight after reset. By this firmware's source, it sets up a small working area, unpacks the main body of the firmware and jumps to the next stage. The recording holds nothing from it: the packaged firmware prints no log this early, and the first record in the TPM log is one this project places at the next stop. So this screen shows the edge of the evidence, not the stop itself.",
+            "definitions": [
+              {
+                "glossary": "sec"
+              },
+              {
+                "glossary": "platform-initialization-specification"
+              },
+              {
+                "term": "early log",
+                "definition": "Text a specially built firmware can print while it starts. The packaged firmware used here prints none."
+              },
+              {
+                "glossary": "console"
+              },
+              {
+                "glossary": "event"
+              },
+              {
+                "glossary": "stop"
+              }
+            ]
+          },
+          "claims": [
+            {
+              "id": "s2-name-source",
+              "text": "This firmware's source keeps the code that runs straight after reset under the name SEC.",
+              "basis": "this-firmware",
+              "source": "OvmfPkg/Sec/SecMain.c",
+              "source_ref": "fw-sec",
+              "note": "The Platform Initialization specification, where such stage names are defined, was not read for this project, and nothing is cited from it."
+            },
+            {
+              "id": "s2-not-uefi-term",
+              "text": "UEFI 2.11 does not define SEC. It says the Platform Initialization interfaces are internal to firmware, and an operating system cannot rely on them.",
+              "basis": "uefi-platform",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "1.4",
+                "title": "Goals",
+                "pdf_page": 89,
+                "pdf_pages": [
+                  89,
+                  90
+                ]
+              },
+              "note": "A whole-word search for SEC across the 2301 pages returned no line."
+            },
+            {
+              "id": "s2-what-it-does",
+              "text": "By its source, this code sets up a small stack and heap, unpacks the main firmware volumes, finds the core of the next stage and jumps to it.",
+              "basis": "this-firmware",
+              "source": "OvmfPkg/Sec/SecMain.c",
+              "source_ref": "fw-sec",
+              "note": "Read on the master branch, not at the tag the recorded package was built from. Not observed in the recording."
+            },
+            {
+              "id": "s2-no-console",
+              "text": "The recording's first console line is about loading a boot option. No earlier line exists.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "console[0]"
+            },
+            {
+              "id": "s2-release-build",
+              "text": "The firmware's own documentation says a release build writes no debug log. The absence of early lines is consistent with that.",
+              "basis": "this-firmware",
+              "source": "OvmfPkg/README",
+              "source_ref": "fw-readme",
+              "note": "How the package was built was not checked against its packaging files. The recorded command line captures the serial port only, not the firmware's separate debug port, so the recording alone cannot show what a debug build would have printed there."
+            },
+            {
+              "id": "s2-no-events",
+              "text": "No record in the log carries stop 2. The first record carries stop 3 under the rule pcr0-firmware.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "events[0].stop, events[0].stop_rule, events[*].stop"
+            },
+            {
+              "id": "s2-first-record",
+              "text": "The first record of the boot is in register 0 and holds a firmware version string.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "events[0].pcr, events[0].type, events[0].summary"
+            },
+            {
+              "id": "s2-self-measurement-unknown",
+              "text": "No record in the log names this earliest code, so the recording does not show whether it was measured.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "events[0..2].summary"
+            }
+          ],
+          "picture": {
+            "plate": "board",
+            "lit": [
+              "power",
+              "firmware",
+              "processor"
+            ],
+            "newly_lit": [
+              "firmware"
+            ],
+            "screen": "none",
+            "note": "An illustration choice. The firmware light follows this firmware's source, not the recording, which holds nothing for this stop.",
+            "reasons": {
+              "power": "Stays lit from stop 1.",
+              "processor": "Stays lit. It is now running firmware code.",
+              "firmware": "Lights here. This stop is the first firmware code doing work, read from the firmware chip.",
+              "memory": "Dark until stop 3. In the story, memory is handed forward by the next stage. This is an illustration choice: by its source this code already uses a small working area, and the virtual machine's memory works from the start.",
+              "controllers": "Dark. No device has been reached.",
+              "storage": "Dark. The disk is not touched yet.",
+              "security": "Dark. The recording holds no TPM record for this stop.",
+              "ribbon": "Dark. The screen stays black until the last stop."
+            }
+          }
+        }
+      ]
+    },
+    {
+      "number": 3,
+      "of": 7,
+      "id": "stop-3",
+      "label": "The first records",
+      "stage_name": {
+        "name": "PEI",
+        "expansion": "Pre-EFI Initialization",
+        "attribution": "PEI is not a term of the UEFI specification. It is the name this firmware's source uses, and the Platform Initialization specification is where such stage names are defined. That specification was not read for this project.",
+        "claims": []
+      },
+      "threads": [
+        "measured-boot"
+      ],
+      "mapping": {
+        "rules": [
+          "pcr0-firmware"
+        ],
+        "events": "The version string and the firmware blocks in TPM register 0",
+        "rests_on": "Log order observed on this firmware, and a source file read on the main branch. docs/DESIGN.md section 7 marks the link from these events to this stage as not yet confirmed in source."
+      },
+      "not_shown": [
+        "No console line belongs to this stop, and nothing about memory being found or set up is recorded. The recorder did not recompute the two block fingerprints from the firmware file. It checked that replaying the whole log gives the registers read from the TPM. Placing these three records at this stop is this project's own mapping."
+      ],
+      "headline": "s3-first-records",
+      "screens": [
+        {
+          "id": "s3-first-records",
+          "kind": "stop",
+          "stop": 3,
+          "statement": {
+            "text": "The record begins: firmware logs a fingerprint of its own code.",
+            "emphasis": "a fingerprint of its own code"
+          },
+          "support": "Three records open the log, all in register 0: a version string and two blocks of firmware code, and nothing else from this stop is recorded.",
+          "evidence": {
+            "recorded": true,
+            "kind": "event",
+            "run": "normal-1",
+            "file": "recordings/normal-1/recording.json",
+            "field": "events[1].summary",
+            "position": 1,
+            "text": "firmware blob at 0x820000, length 0xe0000",
+            "event_index": 2,
+            "caption": "Record 2 of 28: the first of two blocks of firmware code added to register 0."
+          },
+          "detail": {
+            "console_lines": [],
+            "loader_report_lines": [],
+            "events": [
+              {
+                "run": "normal-1",
+                "indexes": [
+                  1
+                ],
+                "note": "Register 0. The firmware's version string."
+              },
+              {
+                "run": "normal-1",
+                "indexes": [
+                  2
+                ],
+                "note": "Register 0. The first block of firmware code."
+              },
+              {
+                "run": "normal-1",
+                "indexes": [
+                  3
+                ],
+                "note": "Register 0. The second, larger block of firmware code."
+              }
+            ],
+            "pcrs": [
+              {
+                "run": "normal-1",
+                "registers": [
+                  0
+                ],
+                "bank": "sha256",
+                "note": "The register these three records were added to. The value shown is the one read at the end of the boot, so it also includes one later record in register 0, record 18."
+              }
+            ],
+            "other_fields": [
+              {
+                "file": "recordings/normal-1/recording.json",
+                "field": "gate.checks.event_log_replay_equals_live",
+                "value": true,
+                "why": "Replaying the log record by record gives the register values read from the TPM."
+              },
+              {
+                "file": "recordings/normal-1/recording.json",
+                "field": "gate.counts.content_digests_recomputed",
+                "value": 21,
+                "why": "How many of the 28 fingerprints the recorder could recompute from the record's own data. The version string is one of them. The two firmware blocks are not."
+              }
+            ],
+            "explanation": "A fingerprint here is a hash: a short value worked out from data, which changes if the data changes. The first three records of the boot add a version string and two blocks of firmware code to register 0 of the TPM, and this firmware's source, read on its main branch, shows a module of this stage making records of these kinds in register 0. Which register firmware code belongs in, and what these record types mean, is defined by a Trusted Computing Group document that has not been read for this project, so the type names are shown as a common decoding tool prints them. The UEFI specification states no rule for it.",
+            "definitions": [
+              {
+                "glossary": "pei"
+              },
+              {
+                "glossary": "hash"
+              },
+              {
+                "glossary": "pcr"
+              },
+              {
+                "glossary": "event"
+              },
+              {
+                "term": "firmware blob",
+                "definition": "A block of firmware code, named in the record by where it sits in memory and how long it is. The word is the decoding tool's, not a specification's."
+              },
+              {
+                "glossary": "measured-boot"
+              },
+              {
+                "glossary": "trusted-computing-group"
+              },
+              {
+                "glossary": "stop"
+              }
+            ]
+          },
+          "claims": [
+            {
+              "id": "s3-name-source",
+              "text": "This firmware's build description lists a core module for the stage after SEC under the name PEI.",
+              "basis": "this-firmware",
+              "source": "OvmfPkg/OvmfPkgX64.dsc",
+              "source_ref": "fw-build-description",
+              "note": "The entry is MdeModulePkg/Core/Pei/PeiMain.inf, seen in that file on the master branch. The Platform Initialization specification, where such stage names are defined, was not read for this project."
+            },
+            {
+              "id": "s3-not-uefi-term",
+              "text": "UEFI 2.11 does not define PEI as a stage of the boot. It says the Platform Initialization interfaces are internal to firmware.",
+              "basis": "uefi-platform",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "1.4",
+                "title": "Goals",
+                "pdf_page": 89,
+                "pdf_pages": [
+                  89,
+                  90
+                ]
+              },
+              "note": "A whole-word search for PEI across the 2301 pages returned four lines, none of which defines a boot stage."
+            },
+            {
+              "id": "s3-handover-sentence",
+              "text": "One sentence found in UEFI 2.11 states the hand-over: once compliant firmware is initialised, it passes control to the boot manager. It does not say how firmware gets there.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "3.1",
+                "title": "Firmware Boot Manager",
+                "pdf_page": 152
+              }
+            },
+            {
+              "id": "s3-three-records",
+              "text": "The first three records of the boot are all in register 0: a firmware version string, then two firmware blocks, one of length 0xe0000 and one of length 0xe80000.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "events[0..2].pcr, events[0..2].type, events[0..2].summary"
+            },
+            {
+              "id": "s3-own-code-source",
+              "text": "In this firmware's source, a module of this stage measures the firmware version string and the firmware's own volumes into register 0, with the record types seen here.",
+              "basis": "this-firmware",
+              "source": "SecurityPkg/Tcg/Tcg2Pei/Tcg2Pei.c",
+              "source_ref": "fw-tcg2pei",
+              "note": "Read on the master branch, not at the tag the recorded package was built from. The package's build settings were not confirmed. The recording agrees with it: three records of these types, in this order, in register 0."
+            },
+            {
+              "id": "s3-mapping-is-ours",
+              "text": "Placing these three records at this stop is this project's own rule, named pcr0-firmware. The log itself carries no stage marker and no time.",
+              "basis": "this-firmware",
+              "source": "observed in recording normal-1 events 1 to 3",
+              "note": "The rule rests on the order of the log and on the source file cited in the claim above, which was read on the master branch and not at the recorded package's tag. The rule is stated in docs/DESIGN.md section 7, which itself marks the stage attribution as not yet confirmed in source."
+            },
+            {
+              "id": "s3-which-register-tcg",
+              "text": "Which register firmware code must be measured into, and which record types must be used, is defined by a Trusted Computing Group document. That document has not been read for this project.",
+              "basis": "tcg-unread",
+              "uefi_pointer": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "2.6.4",
+                "title": "Extensions to this Specification Published Elsewhere",
+                "pdf_page": 151,
+                "pdf_pages": [
+                  150,
+                  151
+                ],
+                "says": "Points to Trusted Computing Group documents for measuring boot events. States no rule of its own."
+              }
+            },
+            {
+              "id": "s3-type-names-are-tool-names",
+              "text": "The record type names shown are the names a common open-source decoding tool prints. They are not citations of a specification.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "events[0..2].type, events[0..2].type_code",
+              "note": "The recorder's names follow tpm2-tools, as stated in docs/DESIGN.md section 3. The numeric type codes are what the log itself holds."
+            },
+            {
+              "id": "s3-hash-background",
+              "text": "A hash is a short fixed-length value worked out from data. Changing the data changes the value.",
+              "basis": "general"
+            },
+            {
+              "id": "s3-replay",
+              "text": "Replaying the log record by record, each time hashing the old register value followed by the new fingerprint, gives exactly the register values read from the TPM.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "gate.checks.event_log_replay_equals_live, gate.passed"
+            },
+            {
+              "id": "s3-recomputed",
+              "text": "The recorder recomputed 21 of the 28 fingerprints from the records' own data. The version string is among them. The two firmware blocks are not, because their data is not in the log.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "gate.counts.content_digests_recomputed, gate.checks.content_digests_match",
+              "note": "Which kinds of record are recomputed is stated in docs/DESIGN.md section 4.2."
+            },
+            {
+              "id": "s3-pcr0-value",
+              "text": "Register 0 as read at the end of the boot holds these three records and one later record, number 18.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "pcrs.sha256.0, events[*].pcr"
+            },
+            {
+              "id": "s3-memory-not-recorded",
+              "text": "This firmware's build description lists a platform module for this stage. The recording holds no record of memory being found or set up.",
+              "basis": "this-firmware",
+              "source": "OvmfPkg/OvmfPkgX64.dsc",
+              "source_ref": "fw-build-description",
+              "note": "The entry is OvmfPkg/PlatformPei/PlatformPei.inf. Research notes describe it as the module that finds the machine's memory size, but its source files were not opened, so that description is not claimed here."
+            }
+          ],
+          "picture": {
+            "plate": "board",
+            "lit": [
+              "power",
+              "firmware",
+              "processor",
+              "memory",
+              "security"
+            ],
+            "newly_lit": [
+              "memory",
+              "security"
+            ],
+            "screen": "none",
+            "note": "The security light follows records 1 to 3 of the recording. The memory light is an illustration choice.",
+            "reasons": {
+              "power": "Stays lit from stop 1.",
+              "processor": "Stays lit.",
+              "firmware": "Stays lit. It is also the thing being fingerprinted.",
+              "memory": "Lights here as an illustration of the stage's usual role, handing memory forward. It is not evidence: the recording holds no record about memory at this stop.",
+              "security": "Lights here, and this one is backed by the recording: the first three records of the TPM log, numbers 1 to 3, are placed at this stop.",
+              "controllers": "Dark until stop 4. No driver has been loaded and no device reached.",
+              "storage": "Dark. The disk is not touched until the boot manager.",
+              "ribbon": "Dark. The screen stays black until the last stop."
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

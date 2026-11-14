@@ -1,0 +1,1138 @@
+{
+  "format": "lux-content/2",
+  "file": "experiments.json",
+  "language": "en",
+  "section": {
+    "id": "experiments",
+    "nav_label": "Experiments"
+  },
+  "screens": [
+    {
+      "id": "experiments-intro",
+      "kind": "intro",
+      "stop": null,
+      "eyebrow": "Experiments",
+      "statement": {
+        "text": "Change one thing, boot again, and compare the two runs.",
+        "emphasis": "one thing"
+      },
+      "support": "The normal run was recorded twice and the two recordings match, so each changed run is set beside it.",
+      "evidence": {
+        "recorded": true,
+        "kind": "console",
+        "run": "normal-1",
+        "file": "recordings/normal-1/recording.json",
+        "field": "console[9]",
+        "position": 9,
+        "text": "LUX-FINAL-MARKER loader idle after ExitBootServices",
+        "caption": "The last line of the normal run. The second normal recording ends with the same line."
+      },
+      "question": "When one thing in a PC's boot chain is changed, what does the specification require, what does it leave open, and what does this firmware actually do?",
+      "measure": [
+        "Before a counted experiment is run, a prediction is committed: the first stop that differs, which TPM registers change, and whether the boot continues, each row labelled with where it comes from.",
+        "The result is two numbers, specification-required behaviours met and open behaviours predicted correctly, and it counts only if two normal runs first match on every compared field."
+      ],
+      "score": {
+        "claimed": false,
+        "text": "No score yet. No prediction has been committed, so no counted experiment has been run.",
+        "status_source": "README.md, section 'What exists so far'; predictions/README.md"
+      },
+      "detail": {
+        "console_lines": [
+          {
+            "run": "normal-1",
+            "positions": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          },
+          {
+            "run": "normal-2",
+            "positions": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          }
+        ],
+        "loader_report_lines": [],
+        "events": [],
+        "pcrs": [
+          {
+            "run": "normal-1",
+            "registers": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7
+            ],
+            "bank": "sha256"
+          }
+        ],
+        "comparison": {
+          "file": "recordings/comparisons/normal-1_vs_normal-2.json",
+          "baseline": "normal-1",
+          "changed": "normal-2"
+        },
+        "basis_labels": [
+          "uefi-required",
+          "uefi-platform",
+          "tcg-unread",
+          "this-firmware"
+        ],
+        "explanation": "A changed run only means something if the unchanged run repeats. The normal run was recorded twice, and the comparison file reports the two recordings identical: same console lines, same events, same value in all 24 registers of all four hash banks. Four fields are allowed to vary and are named in each recording: the recording time, the run name and two timings. The runs shown in this section so far are pilots, made before any prediction existed, and they are not counted.",
+        "definitions": [
+          {
+            "glossary": "tpm"
+          },
+          {
+            "glossary": "pcr"
+          },
+          {
+            "glossary": "hash"
+          },
+          {
+            "glossary": "prediction"
+          },
+          {
+            "glossary": "pilot"
+          },
+          {
+            "term": "Normal run",
+            "definition": "The boot with nothing changed: the signed loader, Secure Boot on."
+          }
+        ]
+      },
+      "claims": [
+        {
+          "text": "Two recordings of the normal run are identical on every compared field.",
+          "basis": "recording",
+          "run": "normal-1, normal-2",
+          "file": "recordings/comparisons/normal-1_vs_normal-2.json",
+          "field": "identical"
+        },
+        {
+          "text": "The two normal runs have the same value in every register of every hash bank.",
+          "basis": "recording",
+          "run": "normal-1, normal-2",
+          "file": "recordings/comparisons/normal-1_vs_normal-2.json",
+          "field": "pcrs_differing"
+        },
+        {
+          "text": "The normal run ends with the loader's final marker line.",
+          "basis": "recording",
+          "run": "normal-1",
+          "file": "recordings/normal-1/recording.json",
+          "field": "console[9]"
+        },
+        {
+          "text": "No prediction is stored in any committed recording.",
+          "basis": "recording",
+          "run": "normal-1, normal-2, e2",
+          "field": "provenance.prediction"
+        },
+        {
+          "text": "A hash is a fixed-length fingerprint of data that changes when the data changes.",
+          "basis": "general"
+        }
+      ],
+      "picture": null
+    },
+    {
+      "id": "experiment-e2",
+      "kind": "side-by-side",
+      "stop": null,
+      "eyebrow": "Experiment, pilot run",
+      "status": {
+        "label": "Pilot",
+        "text": "Pilot. This run was made before any prediction was committed. It is shown, not counted.",
+        "counted": false
+      },
+      "statement": {
+        "text": "Change one byte of the loader, with Secure Boot on.",
+        "emphasis": "one byte"
+      },
+      "support": "The signed loader was copied and one byte of its data was changed, and nothing else differs between the two runs.",
+      "evidence": null,
+      "experiment": "e2",
+      "change": {
+        "text": "One byte of the loader's content changed, from 65 to 66, at file offset 2142 in the .data section. Secure Boot on.",
+        "file": "recordings/e2/recording.json",
+        "field": "run.change_detail.loader_byte"
+      },
+      "sides": [
+        {
+          "id": "baseline",
+          "run": "normal-1",
+          "label": "Untouched",
+          "statement": {
+            "text": "Untouched, the loader is started.",
+            "emphasis": "started"
+          },
+          "outcome": "accepted",
+          "picture": "awake, screen lit",
+          "evidence": {
+            "recorded": true,
+            "kind": "console",
+            "run": "normal-1",
+            "file": "recordings/normal-1/recording.json",
+            "field": "console[2]",
+            "position": 2,
+            "text": "LUX-LOADER A: started, boot services active",
+            "highlight": "started"
+          }
+        },
+        {
+          "id": "changed",
+          "run": "e2",
+          "label": "Changed",
+          "statement": {
+            "text": "With one byte changed, the loader is never started.",
+            "emphasis": "never started"
+          },
+          "outcome": "refused",
+          "picture": "inside awake, screen black",
+          "evidence": {
+            "recorded": true,
+            "kind": "console",
+            "run": "e2",
+            "file": "recordings/e2/recording.json",
+            "field": "console[1]",
+            "position": 1,
+            "text": "BdsDxe: failed to load Boot0001 \"UEFI QEMU HARDDISK QM00001 \" from PciRoot(0x0)/Pci(0x1F,0x2)/Sata(0x0,0xFFFF,0x0): Access Denied",
+            "highlight": "Access Denied"
+          }
+        }
+      ],
+      "detail": {
+        "console_lines": [
+          {
+            "run": "normal-1",
+            "positions": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5,
+              6,
+              7,
+              8,
+              9
+            ]
+          },
+          {
+            "run": "e2",
+            "positions": [
+              0,
+              1,
+              2,
+              3
+            ]
+          }
+        ],
+        "loader_report_lines": [],
+        "events": [
+          {
+            "run": "normal-1",
+            "indexes": [
+              17,
+              25,
+              26,
+              27,
+              28
+            ]
+          },
+          {
+            "run": "e2",
+            "indexes": [
+              17,
+              25,
+              26
+            ]
+          }
+        ],
+        "pcrs": [
+          {
+            "run": "normal-1",
+            "registers": [
+              4,
+              5,
+              7
+            ],
+            "bank": "sha256"
+          },
+          {
+            "run": "e2",
+            "registers": [
+              4,
+              5,
+              7
+            ],
+            "bank": "sha256"
+          }
+        ],
+        "comparison": {
+          "file": "recordings/comparisons/normal-1_vs_e2.json",
+          "baseline": "normal-1",
+          "changed": "e2"
+        },
+        "console_first_differing_line": {
+          "line": 2,
+          "array_index": 1,
+          "baseline": "BdsDxe: starting Boot0001 \"UEFI QEMU HARDDISK QM00001 \" from PciRoot(0x0)/Pci(0x1F,0x2)/Sata(0x0,0xFFFF,0x0)",
+          "changed": "BdsDxe: failed to load Boot0001 \"UEFI QEMU HARDDISK QM00001 \" from PciRoot(0x0)/Pci(0x1F,0x2)/Sata(0x0,0xFFFF,0x0): Access Denied",
+          "file": "recordings/comparisons/normal-1_vs_e2.json",
+          "field": "console_first_differing_line"
+        },
+        "first_differing_event": {
+          "index": 25,
+          "stop": 6,
+          "stop_name": "Load and verify the loader",
+          "stop_basis": "This project's own mapping. The comparison file stores the stop; no specification assigns it.",
+          "baseline": {
+            "pcr": 7,
+            "type": "EV_EFI_VARIABLE_AUTHORITY",
+            "summary": "variable db, 851 data bytes",
+            "digest_sha256": "3af949760de8f2194b4046474edc565c6361dd881b99dfc2b744908e75c19ece"
+          },
+          "changed": {
+            "pcr": 4,
+            "type": "EV_EFI_ACTION",
+            "summary": "action: Returning from EFI Application from Boot Option",
+            "digest_sha256": "7044f06303e54fa96c3fcd1a0f11047c03d209074470b1fd60460c9f007e28a6"
+          },
+          "before_it": "Events 1 to 24 are the same in both runs.",
+          "file": "recordings/comparisons/normal-1_vs_e2.json",
+          "field": "first_differing_event"
+        },
+        "pcrs_differing": {
+          "indexes": [
+            4,
+            5,
+            7
+          ],
+          "banks": [
+            "sha1",
+            "sha256",
+            "sha384",
+            "sha512"
+          ],
+          "file": "recordings/comparisons/normal-1_vs_e2.json",
+          "field": "pcrs_differing",
+          "sha256_values": [
+            {
+              "pcr": 4,
+              "baseline": "2b5fceeac897b316d889f3864ae65b4f7297d0aa5dc3ac7bb20cf8fe068dc1b7",
+              "changed": "21dbf976ed3f5117e4f7713285f4be3492d6af568d8e4b25744f5c760496f09b"
+            },
+            {
+              "pcr": 5,
+              "baseline": "a5ceb755d043f32431d63e39f5161464620a3437280494b5850dc1b47cc074e0",
+              "changed": "3d458cfe55cc03ea1f443f1562beec8df51c75e14a9fcf9a7234a13f198e7969"
+            },
+            {
+              "pcr": 7,
+              "baseline": "47ddbef5cff1e8670634ff5c7e07a453fcfd4de2f053055f3e95289a1254a7c9",
+              "changed": "d08f3531a551357cf76be8bb649ed2209a9be9610f2f9b432d4fab37fc124a79"
+            }
+          ]
+        },
+        "pcrs_same": {
+          "indexes": [
+            0,
+            1,
+            2,
+            3,
+            6,
+            8,
+            9,
+            10,
+            11,
+            12,
+            13,
+            14,
+            15,
+            16,
+            17,
+            18,
+            19,
+            20,
+            21,
+            22,
+            23
+          ],
+          "file": "recordings/comparisons/normal-1_vs_e2.json",
+          "field": "pcrs_same"
+        },
+        "events_only_in_baseline": [
+          {
+            "index": 25,
+            "pcr": 7,
+            "type": "EV_EFI_VARIABLE_AUTHORITY",
+            "summary": "variable db, 851 data bytes",
+            "plain": "A record naming the allowed list, db. This project reads it as the record that authorised the loader; the document that defines the record has not been read."
+          },
+          {
+            "index": 26,
+            "pcr": 4,
+            "type": "EV_EFI_BOOT_SERVICES_APPLICATION",
+            "summary": "image loaded at 0x1cde4018, length 0x9d70",
+            "plain": "The measurement of the loader itself."
+          },
+          {
+            "index": 27,
+            "pcr": 5,
+            "type": "EV_EFI_ACTION",
+            "summary": "action: Exit Boot Services Invocation",
+            "plain": "The loader asked firmware to step back."
+          },
+          {
+            "index": 28,
+            "pcr": 5,
+            "type": "EV_EFI_ACTION",
+            "summary": "action: Exit Boot Services Returned with Success",
+            "plain": "Firmware stepped back."
+          }
+        ],
+        "events_only_in_changed": [
+          {
+            "index": 25,
+            "pcr": 4,
+            "type": "EV_EFI_ACTION",
+            "summary": "action: Returning from EFI Application from Boot Option",
+            "plain": "Firmware logged a return from the boot option. No line from the loader appears in this run."
+          },
+          {
+            "index": 26,
+            "pcr": 4,
+            "type": "EV_EFI_ACTION",
+            "summary": "action: Calling EFI Application from Boot Option",
+            "plain": "Firmware logged the calling action a second time. The same action is event 17 in both runs. What was being called is not in the recording."
+          }
+        ],
+        "status_mismatch": {
+          "title": "The status the text names, and the words the firmware printed",
+          "specification": "For an image whose signature is not valid, the description of the load service names the security violation status. The access denied status appears only in its status table, for an image that platform policy prohibits from being loaded.",
+          "recording": "The firmware printed \"Access Denied\".",
+          "reading": "The two do not match, and no sentence is broken: both statuses are defined, and no sentence says which one a platform must use. The choice is the platform's.",
+          "limit": "The recording holds the printed words, not the returned status value. The table in which firmware records a refused image was not read from the machine.",
+          "citation": {
+            "document": "UEFI Specification",
+            "version": "2.11",
+            "section": "7.4.1",
+            "title": "EFI_BOOT_SERVICES.LoadImage()",
+            "pdf_page": 282,
+            "pdf_pages": [
+              282,
+              283
+            ]
+          },
+          "evidence": {
+            "file": "recordings/e2/recording.json",
+            "field": "console",
+            "array_index": 1,
+            "line": 2
+          }
+        },
+        "explanation": "The signature on the loader covers a hash of its content, so one changed byte means the signature no longer matches. Firmware printed that it failed to load the boot option, never printed that it started it, and none of the loader's own lines appear. The two event logs are the same up to event 24 and differ from event 25: the normal run records the authorising record, the loader's measurement and the two exit records, and the changed run records none of them. Registers 4, 5 and 7 differ in all four hash banks, and every other register is the same.",
+        "not_shown": [
+          "Whether a refused loader must be left out of the TPM record is not something UEFI 2.11 says. The Trusted Computing Group document that would define it has not been read for this project.",
+          "The table in which firmware records a refused image was not read from the machine.",
+          "This is one firmware in a virtual machine with a software TPM. It does not show what other firmware does."
+        ],
+        "definitions": [
+          {
+            "glossary": "loader"
+          },
+          {
+            "glossary": "secure-boot"
+          },
+          {
+            "glossary": "signature"
+          },
+          {
+            "glossary": "db"
+          },
+          {
+            "glossary": "pcr"
+          },
+          {
+            "glossary": "event"
+          },
+          {
+            "glossary": "event-log"
+          },
+          {
+            "glossary": "hash-bank"
+          },
+          {
+            "glossary": "boot-option"
+          },
+          {
+            "glossary": "stop"
+          },
+          {
+            "term": "Status",
+            "definition": "The result value a firmware service returns to its caller. Error codes have their highest bit set."
+          }
+        ]
+      },
+      "claims": [
+        {
+          "text": "The changed run differs from the normal run by one byte of the loader's data: offset 2142, value 65 changed to 66, in the .data section.",
+          "basis": "recording",
+          "run": "e2",
+          "file": "recordings/e2/recording.json",
+          "field": "run.change_detail.loader_byte"
+        },
+        {
+          "text": "This run is a pilot: it was made before any prediction was committed.",
+          "basis": "recording",
+          "run": "e2",
+          "file": "recordings/e2/recording.json",
+          "field": "run.kind, provenance.prediction"
+        },
+        {
+          "text": "In the normal run the loader printed that it had started.",
+          "basis": "recording",
+          "run": "normal-1",
+          "file": "recordings/normal-1/recording.json",
+          "field": "console[2]"
+        },
+        {
+          "text": "In the changed run firmware printed that it failed to load the boot option, with the words Access Denied.",
+          "basis": "recording",
+          "run": "e2",
+          "file": "recordings/e2/recording.json",
+          "field": "console[1]"
+        },
+        {
+          "text": "In the changed run firmware never printed that it was starting the boot option, and no line from the loader appears.",
+          "basis": "recording",
+          "run": "e2",
+          "file": "recordings/e2/recording.json",
+          "field": "console, loader_report"
+        },
+        {
+          "text": "The recorded outcome is accepted for the normal run and refused for the changed run.",
+          "basis": "recording",
+          "run": "normal-1, e2",
+          "file": "recordings/comparisons/normal-1_vs_e2.json",
+          "field": "outcome"
+        },
+        {
+          "text": "The first event that differs is event 25. Events 1 to 24 are the same in both runs.",
+          "basis": "recording",
+          "run": "normal-1, e2",
+          "file": "recordings/comparisons/normal-1_vs_e2.json",
+          "field": "first_differing_event.index"
+        },
+        {
+          "text": "Event 25 is placed at stop 6, loading and verifying the loader. That placement is this project's own mapping.",
+          "basis": "recording",
+          "run": "normal-1, e2",
+          "file": "recordings/comparisons/normal-1_vs_e2.json",
+          "field": "first_differing_event.stop"
+        },
+        {
+          "text": "Registers 4, 5 and 7 differ between the two runs in all four hash banks. Every other register is the same.",
+          "basis": "recording",
+          "run": "normal-1, e2",
+          "file": "recordings/comparisons/normal-1_vs_e2.json",
+          "field": "pcrs_differing, pcrs_same"
+        },
+        {
+          "text": "Four events are only in the normal run: the authorising record in register 7, the loader's measurement in register 4, and two exit records in register 5.",
+          "basis": "recording",
+          "run": "normal-1",
+          "file": "recordings/comparisons/normal-1_vs_e2.json",
+          "field": "events_only_in_baseline"
+        },
+        {
+          "text": "Two events are only in the changed run, both in register 4: a return from the boot option and a second call of a boot option.",
+          "basis": "recording",
+          "run": "e2",
+          "file": "recordings/comparisons/normal-1_vs_e2.json",
+          "field": "events_only_in_changed"
+        },
+        {
+          "text": "In the normal run the digest of the loader's measurement equals the digest the loader was signed over.",
+          "basis": "recording",
+          "run": "normal-1",
+          "file": "recordings/normal-1/recording.json",
+          "field": "events (index 26) digest_sha256, provenance.loader.authenticode_sha256"
+        },
+        {
+          "text": "This firmware logged no measurement of the refused loader: the changed loader's signing digest is not among the 26 event digests of the changed run.",
+          "basis": "this-firmware",
+          "source": "observed in recording e2 events 1 to 26"
+        },
+        {
+          "text": "This firmware logged the authorising record only when the loader was accepted.",
+          "basis": "this-firmware",
+          "source": "observed in recording normal-1 event 25; absent from recording e2"
+        },
+        {
+          "text": "After the return record, this firmware logged the calling action a second time. It also printed that no bootable option was found.",
+          "basis": "this-firmware",
+          "source": "observed in recording e2 events 25 and 26, and console[2]"
+        },
+        {
+          "text": "Which register records a loader, an authorising record or the exit, and whether a refused loader is recorded at all, is not stated in UEFI 2.11. UEFI points to a Trusted Computing Group document for measuring boot events, and that document has not been read for this project.",
+          "basis": "tcg-unread",
+          "uefi_pointer": {
+            "document": "UEFI Specification",
+            "version": "2.11",
+            "section": "2.6.4",
+            "title": "Extensions to this Specification Published Elsewhere",
+            "pdf_page": 151,
+            "pdf_pages": [
+              150,
+              151
+            ]
+          }
+        },
+        {
+          "text": "A signature is checked against a hash that must be computed exactly as it was when the image was signed.",
+          "basis": "uefi-required",
+          "citation": {
+            "document": "UEFI Specification",
+            "version": "2.11",
+            "section": "32.2.1",
+            "title": "Digital Signatures",
+            "pdf_page": 1615
+          }
+        },
+        {
+          "text": "To pass, the allowed list must hold the image's hash or a certificate that verifies its signature. A changed byte changes the hash, so by this project's reading the changed loader meets neither condition.",
+          "basis": "uefi-required",
+          "citation": {
+            "document": "UEFI Specification",
+            "version": "2.11",
+            "section": "32.5.3.3",
+            "title": "Authorization Process",
+            "pdf_page": 1638,
+            "pdf_pages": [
+              1635,
+              1638
+            ]
+          }
+        },
+        {
+          "text": "An image that fails the check is not started, and information about it is placed in a table kept by firmware.",
+          "basis": "uefi-required",
+          "citation": {
+            "document": "UEFI Specification",
+            "version": "2.11",
+            "section": "32.4.2",
+            "title": "Image Execution Information Table",
+            "pdf_page": 1630
+          }
+        },
+        {
+          "text": "When the image that fails is an operating system loader, the next boot option is selected.",
+          "basis": "uefi-required",
+          "citation": {
+            "document": "UEFI Specification",
+            "version": "2.11",
+            "section": "32.5.1",
+            "title": "Overview",
+            "pdf_page": 1633
+          }
+        },
+        {
+          "text": "Which status the load service returns for a failed signature check is left to the platform. The description names the security violation status for an invalid signature; the access denied status is the table row for an image that platform policy prohibits from loading.",
+          "basis": "uefi-platform",
+          "citation": {
+            "document": "UEFI Specification",
+            "version": "2.11",
+            "section": "7.4.1",
+            "title": "EFI_BOOT_SERVICES.LoadImage()",
+            "pdf_page": 282,
+            "pdf_pages": [
+              282,
+              283
+            ]
+          }
+        },
+        {
+          "text": "The decision to launch an image is left to the firmware: it decides on the match or on its own policy.",
+          "basis": "uefi-platform",
+          "citation": {
+            "document": "UEFI Specification",
+            "version": "2.11",
+            "section": "32.5.3.3",
+            "title": "Authorization Process",
+            "pdf_page": 1638,
+            "pdf_pages": [
+              1635,
+              1638
+            ]
+          }
+        }
+      ],
+      "picture": null
+    },
+    {
+      "id": "experiments-pilots",
+      "kind": "cards",
+      "stop": null,
+      "eyebrow": "Experiments, other pilots",
+      "statement": {
+        "text": "Three more pilots were run before any prediction existed.",
+        "emphasis": "before any prediction"
+      },
+      "support": "They were run during research with other tooling and other keys, and none has been recorded again with this recorder, so no result is shown.",
+      "evidence": {
+        "recorded": false,
+        "kind": "not-recorded",
+        "label": "No committed recording exists for these three pilots. Nothing is shown as evidence here."
+      },
+      "status_source": "README.md, section 'Pilots and counted experiments'",
+      "cards": [
+        {
+          "id": "e1",
+          "label": "E1",
+          "title": "One byte of the loader, Secure Boot off",
+          "change": "The same byte as in the pilot above, with Secure Boot switched off.",
+          "status": "pilot, recorded during research, not yet re-recorded with this recorder",
+          "counted": false,
+          "result": null,
+          "result_note": "No result is shown until this run is recorded with this recorder.",
+          "status_source": "README.md, section 'Pilots and counted experiments'",
+          "specification_note": "What the UEFI text covers, not a result of this run.",
+          "claims": [
+            {
+              "text": "When the Secure Boot variable reads 0, signature verification of drivers and boot applications is not active during that boot.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "3.3",
+                "title": "Globally Defined Variables",
+                "pdf_page": 166
+              }
+            },
+            {
+              "text": "What the TPM record must show for a changed loader is not stated in UEFI 2.11. The Trusted Computing Group document that defines it has not been read for this project.",
+              "basis": "tcg-unread",
+              "uefi_pointer": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "2.6.4",
+                "title": "Extensions to this Specification Published Elsewhere",
+                "pdf_page": 151,
+                "pdf_pages": [
+                  150,
+                  151
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "e4",
+          "label": "E4",
+          "title": "Secure Boot switched off, nothing else",
+          "change": "The loader is untouched and the keys stay enrolled. Only the Secure Boot switch is turned off.",
+          "status": "pilot, recorded during research, not yet re-recorded with this recorder",
+          "counted": false,
+          "result": null,
+          "result_note": "No result is shown until this run is recorded with this recorder.",
+          "status_source": "README.md, section 'Pilots and counted experiments'",
+          "specification_note": "What the UEFI text covers, not a result of this run.",
+          "claims": [
+            {
+              "text": "UEFI 2.11 defines no switch that turns checking off while the keys stay enrolled. The starting value of the Secure Boot variable is set by platform policy.",
+              "basis": "uefi-platform",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "3.3",
+                "title": "Globally Defined Variables",
+                "pdf_page": 166
+              }
+            },
+            {
+              "text": "Whether and where a change of Secure Boot policy is recorded in the TPM is not stated in UEFI 2.11. The Trusted Computing Group document that defines it has not been read for this project.",
+              "basis": "tcg-unread",
+              "uefi_pointer": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "2.6.4",
+                "title": "Extensions to this Specification Published Elsewhere",
+                "pdf_page": 151,
+                "pdf_pages": [
+                  150,
+                  151
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "id": "e5",
+          "label": "E5",
+          "title": "A signed loader whose hash is on the forbidden list",
+          "change": "The loader is untouched and correctly signed. Its hash is added to the forbidden list, dbx.",
+          "status": "pilot, recorded during research, not yet re-recorded with this recorder",
+          "counted": false,
+          "result": null,
+          "result_note": "No result is shown until this run is recorded with this recorder.",
+          "status_source": "README.md, section 'Pilots and counted experiments'",
+          "specification_note": "What the UEFI text covers, not a result of this run.",
+          "claims": [
+            {
+              "text": "Verification must not succeed when the forbidden list holds the hash of the image, even if the allowed list would accept it.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "32.5.3.3",
+                "title": "Authorization Process",
+                "pdf_page": 1638
+              }
+            },
+            {
+              "text": "The text fixes that outcome and states no order for the two lookups.",
+              "basis": "uefi-platform",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "32.5.3.3",
+                "title": "Authorization Process",
+                "pdf_page": 1638
+              }
+            },
+            {
+              "text": "What the TPM record must show for a loader on the forbidden list is not stated in UEFI 2.11. The Trusted Computing Group document that defines it has not been read for this project.",
+              "basis": "tcg-unread",
+              "uefi_pointer": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "2.6.4",
+                "title": "Extensions to this Specification Published Elsewhere",
+                "pdf_page": 151,
+                "pdf_pages": [
+                  150,
+                  151
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "detail": {
+        "console_lines": [],
+        "loader_report_lines": [],
+        "events": [],
+        "pcrs": [],
+        "explanation": "These three experiments were tried during the early research, before this recorder existed and before any prediction was written. That makes them pilots: they can be shown, and they can never be counted. This recorder can stage all three, and it has not booted any of them, so there is no committed recording to show. Each card gives the change and what the UEFI text covers, and no result.",
+        "definitions": [
+          {
+            "glossary": "pilot"
+          },
+          {
+            "glossary": "secure-boot"
+          },
+          {
+            "term": "Keys",
+            "definition": "The certificates enrolled in firmware that decide whose signatures are trusted."
+          },
+          {
+            "glossary": "dbx"
+          },
+          {
+            "term": "TPM record",
+            "definition": "The register values in the TPM and the event log that explains them."
+          }
+        ]
+      },
+      "claims": [
+        {
+          "text": "Only the pilot with one byte changed and Secure Boot on has a committed recording. Its recording is marked as a pilot.",
+          "basis": "recording",
+          "run": "e2",
+          "file": "recordings/e2/recording.json",
+          "field": "run.kind"
+        }
+      ],
+      "picture": null
+    },
+    {
+      "id": "experiments-blind",
+      "kind": "cards",
+      "stop": null,
+      "eyebrow": "Experiments, counted set",
+      "statement": {
+        "text": "The counted experiments have not been run.",
+        "emphasis": "not been run"
+      },
+      "support": "Each one waits for a prediction that is committed first, and the recorder refuses to run it without one.",
+      "evidence": {
+        "recorded": false,
+        "kind": "not-recorded",
+        "label": "Not yet run. There is no recording and nothing is shown as evidence here."
+      },
+      "status_source": "README.md, section 'Pilots and counted experiments'; predictions/README.md",
+      "cards": [
+        {
+          "id": "boot-order",
+          "label": "E3",
+          "title": "The boot order is changed",
+          "status": "not yet run: prediction to be committed first",
+          "counted": true,
+          "result": null,
+          "claims": []
+        },
+        {
+          "id": "signature-byte",
+          "label": "Signature byte",
+          "title": "One byte inside the loader's signature area",
+          "status": "not yet run: prediction to be committed first",
+          "counted": true,
+          "result": null,
+          "claims": []
+        },
+        {
+          "id": "rebuilt-firmware",
+          "label": "E6",
+          "title": "Firmware rebuilt with one driver changed",
+          "status": "not yet run: prediction to be committed first",
+          "counted": true,
+          "result": null,
+          "claims": []
+        }
+      ],
+      "detail": {
+        "console_lines": [],
+        "loader_report_lines": [],
+        "events": [],
+        "pcrs": [],
+        "explanation": "A counted experiment is one that has never been run. Its prediction is written and committed before its first boot, and the recording stores the prediction's hash so a later edit would be detected. None of these three has a prediction yet, so none has been run and nothing is said here about what they will show.",
+        "definitions": [
+          {
+            "glossary": "counted-experiment"
+          },
+          {
+            "glossary": "prediction"
+          }
+        ]
+      },
+      "claims": [
+        {
+          "text": "No committed recording carries a prediction.",
+          "basis": "recording",
+          "run": "normal-1, normal-2, e2",
+          "field": "provenance.prediction"
+        }
+      ],
+      "picture": null
+    },
+    {
+      "id": "specification-leaves-open",
+      "kind": "list",
+      "stop": null,
+      "eyebrow": "What the specification leaves open",
+      "statement": {
+        "text": "Four decisive behaviours are left to the firmware maker.",
+        "emphasis": "left to the firmware maker"
+      },
+      "support": "UEFI 2.11 fixes some outcomes and leaves these open, which a yes or no answer cannot show.",
+      "evidence": {
+        "recorded": true,
+        "kind": "console",
+        "run": "e2",
+        "file": "recordings/e2/recording.json",
+        "field": "console[1]",
+        "position": 1,
+        "text": "BdsDxe: failed to load Boot0001 \"UEFI QEMU HARDDISK QM00001 \" from PciRoot(0x0)/Pci(0x1F,0x2)/Sata(0x0,0xFFFF,0x0): Access Denied",
+        "highlight": "Access Denied",
+        "caption": "One of the four, as this firmware chose it: the words printed for a refused loader."
+      },
+      "items": [
+        {
+          "id": "off-switch",
+          "title": "The off switch",
+          "text": "No switch is defined that turns checking off while the keys stay enrolled. The starting value of the Secure Boot variable is set by platform policy.",
+          "claims": [
+            {
+              "text": "UEFI 2.11 defines no switch that turns Secure Boot checking off with the keys kept. The starting value of the Secure Boot variable is set by platform policy.",
+              "basis": "uefi-platform",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "3.3",
+                "title": "Globally Defined Variables",
+                "pdf_page": 166
+              }
+            }
+          ]
+        },
+        {
+          "id": "refusal-status",
+          "title": "The refusal status",
+          "text": "Two statuses are defined for a load that is refused. No sentence says which one a platform must return when a signature check fails.",
+          "claims": [
+            {
+              "text": "The load service defines two refusal statuses, and nothing says which a platform must use for a failed signature check. The description names the security violation status for an invalid signature.",
+              "basis": "uefi-platform",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "7.4.1",
+                "title": "EFI_BOOT_SERVICES.LoadImage()",
+                "pdf_page": 282,
+                "pdf_pages": [
+                  282,
+                  283
+                ]
+              }
+            },
+            {
+              "text": "This firmware printed Access Denied for the refused loader.",
+              "basis": "recording",
+              "run": "e2",
+              "file": "recordings/e2/recording.json",
+              "field": "console[1]"
+            }
+          ]
+        },
+        {
+          "id": "lookup-order",
+          "title": "The order of the two lookups",
+          "text": "A match in the forbidden list defeats a match in the allowed list. Which list is looked in first is not stated.",
+          "note": "This comes from the prose. One figure in that section has no text layer and was not read.",
+          "claims": [
+            {
+              "text": "The text fixes the outcome, that a forbidden-list match defeats an allowed-list match, and states no order for the two lookups.",
+              "basis": "uefi-platform",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "32.5.3.3",
+                "title": "Authorization Process",
+                "pdf_page": 1638
+              }
+            }
+          ]
+        },
+        {
+          "id": "launch-decision",
+          "title": "The decision to launch",
+          "text": "The text says when verification must not succeed. The decision to launch is then the firmware's, on the match or on its own policy.",
+          "claims": [
+            {
+              "text": "After the match, the firmware decides whether to launch the image, on that match or on its own policy. Implementations need not support every part of the process.",
+              "basis": "uefi-platform",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "32.5.3.3",
+                "title": "Authorization Process",
+                "pdf_page": 1638,
+                "pdf_pages": [
+                  1635,
+                  1638
+                ]
+              }
+            },
+            {
+              "text": "Firmware may also approve an image for other reasons of its own.",
+              "basis": "uefi-platform",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "32.5.3.2",
+                "title": "Firmware Policy",
+                "pdf_page": 1635
+              }
+            }
+          ]
+        }
+      ],
+      "detail": {
+        "console_lines": [
+          {
+            "run": "e2",
+            "positions": [
+              0,
+              1,
+              2,
+              3
+            ]
+          }
+        ],
+        "loader_report_lines": [],
+        "events": [
+          {
+            "run": "e2",
+            "indexes": [
+              25,
+              26
+            ]
+          }
+        ],
+        "pcrs": [],
+        "explanation": "These four are open by the UEFI text itself, so reading another document cannot close them. For each, the honest question is what this firmware does, and the answer comes from a recording. Measured boot is a separate matter: UEFI 2.11 gives no register a purpose and points to a Trusted Computing Group document, which has not been read for this project.",
+        "definitions": [
+          {
+            "glossary": "platform-policy"
+          },
+          {
+            "term": "Status",
+            "definition": "The result value a firmware service returns to its caller. Error codes have their highest bit set."
+          },
+          {
+            "glossary": "db"
+          },
+          {
+            "glossary": "dbx"
+          },
+          {
+            "term": "Keys",
+            "definition": "The certificates enrolled in firmware that decide whose signatures are trusted."
+          }
+        ]
+      },
+      "claims": [
+        {
+          "text": "UEFI 2.11 gives no register a purpose and points to a Trusted Computing Group document for measuring boot events. That document has not been read for this project.",
+          "basis": "tcg-unread",
+          "uefi_pointer": {
+            "document": "UEFI Specification",
+            "version": "2.11",
+            "section": "2.6.4",
+            "title": "Extensions to this Specification Published Elsewhere",
+            "pdf_page": 151,
+            "pdf_pages": [
+              150,
+              151
+            ]
+          }
+        }
+      ],
+      "picture": null
+    }
+  ]
+}

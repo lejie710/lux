@@ -1,0 +1,1141 @@
+{
+  "format": "lux-content/2",
+  "file": "story-b.json",
+  "language": "en",
+  "stops": [
+    {
+      "number": 4,
+      "of": 7,
+      "id": "stop-4",
+      "label": "Drivers and services",
+      "stage_name": {
+        "name": "DXE",
+        "expansion": "Driver Execution Environment",
+        "attribution": "A name from the firmware's own source and from the Platform Initialization specification, which was not read for this project. It is not a UEFI 2.11 term.",
+        "claims": [
+          {
+            "text": "DXE is commonly written out as Driver Execution Environment. The document that defines the name was not read for this project.",
+            "basis": "general"
+          }
+        ]
+      },
+      "threads": [
+        "secure-boot",
+        "measured-boot"
+      ],
+      "mapping": {
+        "rules": [
+          "pcr7-policy"
+        ],
+        "events": "Secure Boot variables in TPM register 7, and any separator in register 7",
+        "rests_on": "Log order observed on this firmware. The link from these records to this stage comes from the firmware project's documentation and is not yet confirmed in its source.",
+        "claims": [
+          {
+            "text": "The recording places six events at stop 4, all under the rule pcr7-policy.",
+            "basis": "recording",
+            "run": "normal-1",
+            "field": "events[3..8].stop and events[3..8].stop_rule"
+          }
+        ]
+      },
+      "not_shown": [
+        "The list of drivers the firmware loaded. It is not in these recordings.",
+        "The firmware's table of services and devices (the handle database). It is not in these recordings.",
+        "Any debug text from this stage. The packaged firmware is a release build and prints none."
+      ],
+      "headline": "s4-services",
+      "screens": [
+        {
+          "id": "s4-services",
+          "kind": "stop",
+          "stop": 4,
+          "statement": {
+            "text": "Firmware builds the services that everything later will call.",
+            "emphasis": "services"
+          },
+          "support": "The firmware's own source names this stage DXE, and this recording holds none of its drivers, only what it left in the TPM log.",
+          "evidence": {
+            "recorded": true,
+            "kind": "event",
+            "run": "normal-1",
+            "file": "recordings/normal-1/recording.json",
+            "field": "events[3].summary",
+            "position": 3,
+            "text": "variable SecureBoot, 1 data bytes",
+            "event_index": 4,
+            "caption": "The first record this project places at stop 4."
+          },
+          "detail": {
+            "console_lines": [],
+            "loader_report_lines": [],
+            "events": [
+              {
+                "run": "normal-1",
+                "indexes": [
+                  4,
+                  5,
+                  6,
+                  7,
+                  8,
+                  9
+                ]
+              }
+            ],
+            "pcrs": [
+              {
+                "run": "normal-1",
+                "registers": [
+                  7
+                ],
+                "bank": "sha256"
+              }
+            ],
+            "console_note": "The firmware printed nothing on the console during this stage.",
+            "explanation": "UEFI 2.11 does not describe this stage. It describes what a conforming system must provide: a table of services that later software calls, and a record of which device offers which service. This recording has no list of the drivers that built those services, so none is shown. What the recording does have for this stop is six records in the TPM log, all about Secure Boot policy.",
+            "definitions": [
+              {
+                "term": "Driver",
+                "definition": "A piece of firmware code that offers a service or runs a device. UEFI says a driver's start-up code may not touch hardware; it only announces what it can do.",
+                "basis": "uefi-required",
+                "citation": {
+                  "document": "UEFI Specification",
+                  "version": "2.11",
+                  "section": "2.5.2",
+                  "title": "Driver Initialization",
+                  "pdf_page": 138
+                }
+              },
+              {
+                "term": "Handle database",
+                "definition": "The firmware's list of handles, each with the services (protocol interfaces) attached to it.",
+                "basis": "uefi-required",
+                "citation": {
+                  "document": "UEFI Specification",
+                  "version": "2.11",
+                  "section": "7.3.1",
+                  "title": "Driver Model Boot Services",
+                  "pdf_page": 248
+                }
+              },
+              {
+                "glossary": "event-log"
+              },
+              {
+                "glossary": "tpm"
+              }
+            ]
+          },
+          "claims": [
+            {
+              "text": "Every conforming system must provide the system table, the boot services and the runtime services.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "2.6.1",
+                "title": "Required Elements",
+                "pdf_page": 145
+              }
+            },
+            {
+              "text": "Once firmware is initialised it passes control to the boot manager. UEFI 2.11 says nothing about how the firmware reached that point.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "3.1",
+                "title": "Firmware Boot Manager",
+                "pdf_page": 152
+              }
+            },
+            {
+              "text": "The handle database is a list of handles, each with one or more protocol interfaces.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "7.3.1",
+                "title": "Driver Model Boot Services",
+                "pdf_page": 248
+              }
+            },
+            {
+              "text": "How the firmware stores that database is its own choice.",
+              "basis": "uefi-platform",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "7.3",
+                "title": "Protocol Handler Services",
+                "pdf_page": 247
+              }
+            },
+            {
+              "text": "Connecting drivers to devices is a platform job. UEFI says the boot manager usually does it and allows other designs.",
+              "basis": "uefi-platform",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "2.5.6",
+                "title": "Platform Components",
+                "pdf_page": 142
+              }
+            },
+            {
+              "text": "That the services come into being at this stage is the common account of the stage named DXE. It is not from UEFI 2.11, and neither the firmware's source nor the Platform Initialization specification was read to confirm it.",
+              "basis": "general"
+            },
+            {
+              "text": "The firmware's own module naming uses the letters DXE: the console prefix is BdsDxe.",
+              "basis": "this-firmware",
+              "source": "observed in recording normal-1 console line 0"
+            },
+            {
+              "text": "The recording holds no driver list and no console line for this stage. Its console has ten lines and the first is from the boot manager.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "console"
+            },
+            {
+              "text": "The first event placed at stop 4 is a record of the variable SecureBoot in register 7.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "events[3] (index field 4): pcr, type, summary, stop"
+            }
+          ],
+          "picture": {
+            "plate": "board",
+            "lit": [
+              "power",
+              "firmware",
+              "processor",
+              "memory",
+              "controllers",
+              "security"
+            ],
+            "newly_lit": [
+              "controllers"
+            ],
+            "screen": "none",
+            "note": "Which parts light is a choice made for the illustration. It is not evidence and is not taken from the recording."
+          }
+        },
+        {
+          "id": "s4-policy",
+          "kind": "stop",
+          "stop": 4,
+          "thread": "secure-boot",
+          "thread_first_appearance": true,
+          "statement": {
+            "text": "Before checking any software, firmware records the rules it will check by.",
+            "emphasis": "the rules it will check by"
+          },
+          "support": "Five records in a row go to TPM register 7: the Secure Boot switch, the owner's key, the update key, the allowed list and the forbidden list.",
+          "evidence": {
+            "recorded": true,
+            "kind": "event",
+            "run": "normal-1",
+            "file": "recordings/normal-1/recording.json",
+            "field": "events[4].summary",
+            "position": 4,
+            "text": "variable PK, 879 data bytes",
+            "event_index": 5,
+            "caption": "The second of the five policy records: the owner's key."
+          },
+          "detail": {
+            "console_lines": [],
+            "loader_report_lines": [],
+            "events": [
+              {
+                "run": "normal-1",
+                "indexes": [
+                  4,
+                  5,
+                  6,
+                  7,
+                  8
+                ]
+              }
+            ],
+            "pcrs": [
+              {
+                "run": "normal-1",
+                "registers": [
+                  7
+                ],
+                "bank": "sha256"
+              }
+            ],
+            "console_note": "No console line belongs to these records.",
+            "explanation": "Secure Boot is the thread that can block, and its policy is five stored variables: a switch, two keys and two lists. UEFI 2.11 defines what each one means and who may change it, but not that they are recorded in the TPM or in which register; that belongs to a Trusted Computing Group document that has not been read for this project. What is shown here is what this firmware did: five records, in this order, all in register 7, before any record about a loaded program. The recording keeps each record's size and digest, not the value inside.",
+            "definitions": [
+              {
+                "glossary": "secure-boot"
+              },
+              {
+                "glossary": "secureboot-variable"
+              },
+              {
+                "glossary": "pk"
+              },
+              {
+                "glossary": "kek"
+              },
+              {
+                "glossary": "db"
+              },
+              {
+                "glossary": "dbx"
+              },
+              {
+                "glossary": "pcr"
+              },
+              {
+                "glossary": "hash"
+              },
+              {
+                "term": "EV_EFI_VARIABLE_DRIVER_CONFIG",
+                "definition": "The type name the log decoder gives these records. The firmware's public header lists it with the code 0x80000001, the code this recording holds.",
+                "basis": "this-firmware",
+                "source": "MdePkg/Include/IndustryStandard/UefiTcgPlatform.h",
+                "also_observed": "recording normal-1 events[3..7].type_code",
+                "source_ref": "fw-tcg-header"
+              }
+            ]
+          },
+          "claims": [
+            {
+              "text": "Five events in a row, at positions 3 to 7, record the variables SecureBoot, PK, KEK, db and dbx, in that order, all in register 7.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "events[3..7] (index fields 4 to 8): pcr, type, summary"
+            },
+            {
+              "text": "In the log these five records come before the first record about a loaded program, which is at position 25.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "events[25] (index field 26): type EV_EFI_BOOT_SERVICES_APPLICATION"
+            },
+            {
+              "text": "The SecureBoot variable is set before any image is checked and should not change afterwards in that boot.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "3.3",
+                "title": "Globally Defined Variables",
+                "pdf_page": 166
+              }
+            },
+            {
+              "text": "A value of 1 in SecureBoot means the firmware checks driver and boot program signatures during this boot. A value of 0 means it does not.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "3.3",
+                "title": "Globally Defined Variables",
+                "pdf_page": 166
+              }
+            },
+            {
+              "text": "How SecureBoot gets its starting value is left to platform policy, with one limit: it must be 0 in setup mode or audit mode.",
+              "basis": "uefi-platform",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "3.3",
+                "title": "Globally Defined Variables",
+                "pdf_page": 166
+              }
+            },
+            {
+              "text": "The Platform Key links the platform's owner to the firmware, and the Key Exchange Key links an operating system to the firmware.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "32.3",
+                "title": "Firmware/OS Key Exchange: Creating Trust Relationships",
+                "pdf_page": 1621
+              }
+            },
+            {
+              "text": "An update to db or dbx is accepted only from a signer that chains to a Key Exchange Key certificate, or from the Platform Key.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "8.2.6",
+                "title": "Using the EFI_VARIABLE_AUTHENTICATION_2 descriptor",
+                "pdf_page": 312
+              }
+            },
+            {
+              "text": "db is the authorised signature database and dbx is the forbidden one.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "32.7.1",
+                "title": "UEFI Image Variable GUID & Variable Name",
+                "pdf_page": 1640
+              }
+            },
+            {
+              "text": "Which variables are recorded in the TPM, in which register and in which order is defined by a Trusted Computing Group document. That document has not been read for this project, so nothing here says what it requires.",
+              "basis": "tcg-unread",
+              "reason": "UEFI 2.11 gives no register a purpose and names no event type; it points to a Trusted Computing Group document for measuring boot events.",
+              "uefi_pointer": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "2.6.4",
+                "title": "Extensions to this Specification Published Elsewhere",
+                "pdf_page": 151
+              }
+            },
+            {
+              "text": "This firmware records the five Secure Boot policy variables in register 7.",
+              "basis": "this-firmware",
+              "source": "observed in recording normal-1 events 3 to 7 (index fields 4 to 8)"
+            },
+            {
+              "text": "The recording stores each record's size and digest. It does not store the value of the SecureBoot byte.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "events[3]: summary, digest_sha256"
+            },
+            {
+              "text": "The three key files this run was prepared with are named in the recording by their fingerprints.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "provenance.keys"
+            }
+          ],
+          "picture": {
+            "plate": "board",
+            "lit": [
+              "power",
+              "firmware",
+              "processor",
+              "memory",
+              "controllers",
+              "security"
+            ],
+            "newly_lit": [],
+            "screen": "none",
+            "note": "Which parts light is a choice made for the illustration. It is not evidence and is not taken from the recording."
+          }
+        },
+        {
+          "id": "s4-empty-list",
+          "kind": "stop",
+          "stop": 4,
+          "thread": "secure-boot",
+          "statement": {
+            "text": "The forbidden list is empty in this run, and that is recorded too.",
+            "emphasis": "empty"
+          },
+          "support": "An empty list still leaves a record, and a separator follows in register 7, earlier than the other registers get theirs.",
+          "evidence": {
+            "recorded": true,
+            "kind": "event",
+            "run": "normal-1",
+            "file": "recordings/normal-1/recording.json",
+            "field": "events[7].summary",
+            "position": 7,
+            "text": "variable dbx, 0 data bytes",
+            "event_index": 8,
+            "caption": "The banned list, with nothing in it."
+          },
+          "detail": {
+            "console_lines": [],
+            "loader_report_lines": [],
+            "events": [
+              {
+                "run": "normal-1",
+                "indexes": [
+                  8,
+                  9
+                ]
+              },
+              {
+                "run": "normal-1",
+                "indexes": [
+                  18,
+                  19,
+                  20,
+                  21,
+                  22,
+                  23,
+                  24
+                ],
+                "note": "The separators of registers 0 to 6, shown for contrast. They belong to stop 5."
+              }
+            ],
+            "pcrs": [
+              {
+                "run": "normal-1",
+                "registers": [
+                  7
+                ],
+                "bank": "sha256"
+              }
+            ],
+            "console_note": "No console line belongs to these records.",
+            "explanation": "The forbidden list holds nothing in this run, and the firmware still writes a record for it, with a size of zero. Right after it comes a separator record in register 7. Registers 0 to 6 get their separators only later, at stop 5, just after the boot attempt is logged. Why register 7 is separated earlier, and what a separator means, is for a Trusted Computing Group document that has not been read for this project.",
+            "definitions": [
+              {
+                "glossary": "dbx"
+              },
+              {
+                "glossary": "separator"
+              },
+              {
+                "term": "EV_SEPARATOR",
+                "definition": "The type name the log decoder gives a separator. The firmware's public header lists it with the code 0x00000004, the code this recording holds.",
+                "basis": "this-firmware",
+                "source": "MdePkg/Include/IndustryStandard/UefiTcgPlatform.h",
+                "also_observed": "recording normal-1 events[8].type_code",
+                "source_ref": "fw-tcg-header"
+              }
+            ]
+          },
+          "claims": [
+            {
+              "text": "The record of dbx has zero data bytes.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "events[7].summary (index field 8)"
+            },
+            {
+              "text": "A separator in register 7 is the next record, at position 8.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "events[8] (index field 9): pcr, type, summary"
+            },
+            {
+              "text": "The separators of registers 0 to 6 come later, at positions 17 to 23.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "events[17..23] (index fields 18 to 24): pcr, type"
+            },
+            {
+              "text": "This firmware writes a record for an empty forbidden list, and separates register 7 before the other registers.",
+              "basis": "this-firmware",
+              "source": "observed in recording normal-1 events 7 and 8 (index fields 8 and 9)"
+            },
+            {
+              "text": "How an empty variable is logged, and when each register is separated, is defined by a Trusted Computing Group document that has not been read for this project.",
+              "basis": "tcg-unread",
+              "reason": "UEFI 2.11 has no sentence on either point.",
+              "uefi_pointer": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "2.6.4",
+                "title": "Extensions to this Specification Published Elsewhere",
+                "pdf_page": 151
+              }
+            },
+            {
+              "text": "dbx is the forbidden signature database.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "32.7.1",
+                "title": "UEFI Image Variable GUID & Variable Name",
+                "pdf_page": 1640
+              }
+            }
+          ],
+          "picture": {
+            "plate": "board",
+            "lit": [
+              "power",
+              "firmware",
+              "processor",
+              "memory",
+              "controllers",
+              "security"
+            ],
+            "newly_lit": [],
+            "screen": "none",
+            "note": "Which parts light is a choice made for the illustration. It is not evidence and is not taken from the recording."
+          }
+        }
+      ]
+    },
+    {
+      "number": 5,
+      "of": 7,
+      "id": "stop-5",
+      "label": "Choosing what to boot",
+      "stage_name": {
+        "name": "BDS",
+        "expansion": "Boot Device Selection",
+        "attribution": "A name from the firmware's own source and from the Platform Initialization specification, which was not read for this project. UEFI 2.11 calls this part the boot manager; the letters BDS occur in it once and are not defined there.",
+        "claims": [
+          {
+            "text": "BDS is commonly written out as Boot Device Selection. The document that defines the name was not read for this project.",
+            "basis": "general"
+          },
+          {
+            "text": "UEFI 2.11 describes a boot manager: firmware policy, set through stored variables, that loads programs in the order those variables give.",
+            "basis": "uefi-required",
+            "citation": {
+              "document": "UEFI Specification",
+              "version": "2.11",
+              "section": "3",
+              "title": "Boot Manager (chapter opening text)",
+              "pdf_page": 152
+            }
+          },
+          {
+            "text": "The firmware's boot manager prints its console lines under the prefix BdsDxe.",
+            "basis": "this-firmware",
+            "source": "observed in recording normal-1 console line 0"
+          }
+        ]
+      },
+      "threads": [
+        "measured-boot"
+      ],
+      "mapping": {
+        "rules": [
+          "pcr1-config",
+          "boot-attempt"
+        ],
+        "events": "Platform configuration and boot variables in TPM register 1; the action record that a boot option is being called; the separators of registers 0 to 6",
+        "rests_on": "For the register 1 records: log order observed on this firmware; the link to this stage comes from the firmware project's documentation and is not yet confirmed in its source. For the boot attempt: its observed position, directly before the load.",
+        "claims": [
+          {
+            "text": "The recording places fifteen events at stop 5: seven under the rule pcr1-config and eight under the rule boot-attempt.",
+            "basis": "recording",
+            "run": "normal-1",
+            "field": "events[9..23].stop and events[9..23].stop_rule"
+          }
+        ]
+      },
+      "not_shown": [
+        "The contents of the boot variables. The recording keeps each one's name, size and digest only.",
+        "Which option the firmware marked as the current one. That variable was not read from the machine.",
+        "Why option 0000 was not started.",
+        "Which file on the disk was read. The console names the disk, not a file."
+      ],
+      "headline": "s5-boot-order",
+      "screens": [
+        {
+          "id": "s5-boot-order",
+          "kind": "stop",
+          "stop": 5,
+          "statement": {
+            "text": "Now firmware decides what to start.",
+            "emphasis": "what to start"
+          },
+          "support": "The boot manager, which the firmware's source names BDS, reads a stored list of boot options and must try them in that order.",
+          "evidence": {
+            "recorded": true,
+            "kind": "event",
+            "run": "normal-1",
+            "file": "recordings/normal-1/recording.json",
+            "field": "events[13].summary",
+            "position": 13,
+            "text": "variable BootOrder, 4 data bytes",
+            "event_index": 14,
+            "caption": "The stored order, as the firmware recorded it."
+          },
+          "detail": {
+            "console_lines": [],
+            "loader_report_lines": [],
+            "events": [
+              {
+                "run": "normal-1",
+                "indexes": [
+                  10,
+                  11,
+                  12,
+                  13
+                ],
+                "note": "Four records the decoder labels platform configuration: ACPI DATA."
+              },
+              {
+                "run": "normal-1",
+                "indexes": [
+                  14,
+                  15,
+                  16
+                ],
+                "note": "BootOrder, Boot0000 and Boot0001."
+              }
+            ],
+            "pcrs": [
+              {
+                "run": "normal-1",
+                "registers": [
+                  1
+                ],
+                "bank": "sha256"
+              }
+            ],
+            "console_note": "The console line for this stop is on the next screen.",
+            "explanation": "UEFI 2.11 is firm here: for a normal boot the firmware must use the stored boot order, first entry first. It also leaves room: the firmware may add options or remove invalid ones, and a change to the order is only guaranteed to act after a reset. The recording shows the order variable and two boot options written to register 1, after four configuration records in the same register. That these go to register 1 is what this firmware did; the rule for it is in a Trusted Computing Group document that has not been read for this project.",
+            "definitions": [
+              {
+                "glossary": "boot-manager"
+              },
+              {
+                "glossary": "bootorder"
+              },
+              {
+                "glossary": "boot-option"
+              },
+              {
+                "glossary": "uefi-variable"
+              },
+              {
+                "glossary": "bds"
+              }
+            ]
+          },
+          "claims": [
+            {
+              "text": "For a normal boot the firmware must use the boot order held in the stored variables.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "3",
+                "title": "Boot Manager (chapter opening text)",
+                "pdf_page": 152
+              }
+            },
+            {
+              "text": "BootOrder is an ordered list; its first element is the first option to try.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "3.3",
+                "title": "Globally Defined Variables",
+                "pdf_page": 165
+              }
+            },
+            {
+              "text": "The firmware may add boot options or remove invalid ones, and a change to the order is only guaranteed to take effect after the next reset.",
+              "basis": "uefi-platform",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "3",
+                "title": "Boot Manager (chapter opening text)",
+                "pdf_page": 152
+              }
+            },
+            {
+              "text": "The recorded BootOrder variable has 4 data bytes.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "events[13].summary (index field 14)"
+            },
+            {
+              "text": "Four bytes is room for two 16-bit entries. This is a reading of the size against the UEFI format; the recording does not hold the bytes themselves.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "3.3",
+                "title": "Globally Defined Variables",
+                "pdf_page": 165
+              }
+            },
+            {
+              "text": "Two boot option variables are recorded after it: Boot0000 with 62 data bytes and Boot0001 with 110.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "events[14].summary and events[15].summary (index fields 15 and 16)"
+            },
+            {
+              "text": "Four records before them, also in register 1, are labelled platform configuration: ACPI DATA. This project does not know what requires them.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "events[9..12] (index fields 10 to 13): pcr, type, summary"
+            },
+            {
+              "text": "This firmware records the boot order and the boot options in register 1.",
+              "basis": "this-firmware",
+              "source": "observed in recording normal-1 events 13 to 15 (index fields 14 to 16)"
+            },
+            {
+              "text": "Whether boot variables must be recorded, and in which register, is defined by a Trusted Computing Group document that has not been read for this project.",
+              "basis": "tcg-unread",
+              "reason": "UEFI 2.11 gives no register a purpose.",
+              "uefi_pointer": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "2.6.4",
+                "title": "Extensions to this Specification Published Elsewhere",
+                "pdf_page": 151
+              }
+            },
+            {
+              "text": "The firmware's own module naming uses the letters BDS: the console prefix is BdsDxe.",
+              "basis": "this-firmware",
+              "source": "observed in recording normal-1 console line 0"
+            }
+          ],
+          "picture": {
+            "plate": "board",
+            "lit": [
+              "power",
+              "firmware",
+              "processor",
+              "memory",
+              "controllers",
+              "storage",
+              "security"
+            ],
+            "newly_lit": [
+              "storage"
+            ],
+            "screen": "none",
+            "note": "Which parts light is a choice made for the illustration. It is not evidence and is not taken from the recording."
+          }
+        },
+        {
+          "id": "s5-choice",
+          "kind": "stop",
+          "stop": 5,
+          "statement": {
+            "text": "Firmware picks option 0001: the disk.",
+            "emphasis": "the disk"
+          },
+          "support": "Two boot options were recorded, the console names only 0001, and this recording does not show why 0000 was not started.",
+          "evidence": {
+            "recorded": true,
+            "kind": "console",
+            "run": "normal-1",
+            "file": "recordings/normal-1/recording.json",
+            "field": "console[0]",
+            "position": 0,
+            "text": "BdsDxe: loading Boot0001 \"UEFI QEMU HARDDISK QM00001 \" from PciRoot(0x0)/Pci(0x1F,0x2)/Sata(0x0,0xFFFF,0x0)",
+            "caption": "The first line the firmware prints in the whole run."
+          },
+          "detail": {
+            "console_lines": [
+              {
+                "run": "normal-1",
+                "positions": [
+                  0
+                ]
+              },
+              {
+                "run": "e2",
+                "positions": [
+                  0
+                ],
+                "note": "Pilot run. The same line, character for character."
+              }
+            ],
+            "loader_report_lines": [],
+            "events": [
+              {
+                "run": "normal-1",
+                "indexes": [
+                  15,
+                  16
+                ]
+              }
+            ],
+            "pcrs": [
+              {
+                "run": "normal-1",
+                "registers": [
+                  1
+                ],
+                "bank": "sha256"
+              }
+            ],
+            "explanation": "This is the first thing the firmware prints. It names boot option 0001 and where that option points: a disk on a storage controller. The path ends at the disk and names no file; UEFI 2.11 describes a default file name for that case, and the recording does not show which file was read. Option 0000 was recorded too, but no console line mentions it, and the recording does not say why.",
+            "definitions": [
+              {
+                "glossary": "boot-option"
+              },
+              {
+                "term": "Device path",
+                "definition": "The text after the word from on the console line. It reads as a route through the machine: a root, a controller, then a disk port.",
+                "basis": "recording",
+                "run": "normal-1",
+                "field": "console[0]"
+              },
+              {
+                "glossary": "console"
+              },
+              {
+                "glossary": "pilot"
+              }
+            ]
+          },
+          "claims": [
+            {
+              "text": "The first console line of the run says the boot manager is loading Boot0001 and gives a path that ends at a disk.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "console[0]"
+            },
+            {
+              "text": "Two boot option variables were recorded, Boot0000 and Boot0001.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "events[14].summary and events[15].summary (index fields 15 and 16)"
+            },
+            {
+              "text": "No console line in the run mentions Boot0000.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "console"
+            },
+            {
+              "text": "When a boot option names a device and no file, UEFI describes a default file name to look for.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "3.5.1.1",
+                "title": "Removable Media Boot Behavior",
+                "pdf_page": 169
+              }
+            },
+            {
+              "text": "UEFI defines a variable, BootCurrent, that names the option selected on this boot. It was not read from the machine, so it is not shown.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "3.3",
+                "title": "Globally Defined Variables",
+                "pdf_page": 165
+              }
+            },
+            {
+              "text": "If a boot option does not succeed, the next one in the order is tried.",
+              "basis": "uefi-required",
+              "citation": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "3.1.1",
+                "title": "Boot Manager Programming",
+                "pdf_page": 153
+              }
+            },
+            {
+              "text": "In the pilot run e2 the first console line is the same as in the normal run, character for character.",
+              "basis": "recording",
+              "run": "e2",
+              "field": "console[0], compared with normal-1 console[0]"
+            }
+          ],
+          "picture": {
+            "plate": "board",
+            "lit": [
+              "power",
+              "firmware",
+              "processor",
+              "memory",
+              "controllers",
+              "storage",
+              "security"
+            ],
+            "newly_lit": [],
+            "screen": "none",
+            "note": "Which parts light is a choice made for the illustration. It is not evidence and is not taken from the recording."
+          }
+        },
+        {
+          "id": "s5-attempt",
+          "kind": "stop",
+          "stop": 5,
+          "thread": "measured-boot",
+          "statement": {
+            "text": "Firmware logs the boot attempt before it logs the loader.",
+            "emphasis": "before"
+          },
+          "support": "Then registers 0 to 6 each get one identical separator record, whose meaning is set by a document not read for this project.",
+          "evidence": {
+            "recorded": true,
+            "kind": "event",
+            "run": "normal-1",
+            "file": "recordings/normal-1/recording.json",
+            "field": "events[16].summary",
+            "position": 16,
+            "text": "action: Calling EFI Application from Boot Option",
+            "event_index": 17,
+            "caption": "The record that a boot option is about to be called."
+          },
+          "detail": {
+            "console_lines": [
+              {
+                "run": "normal-1",
+                "positions": [
+                  0
+                ]
+              }
+            ],
+            "loader_report_lines": [],
+            "events": [
+              {
+                "run": "normal-1",
+                "indexes": [
+                  17,
+                  18,
+                  19,
+                  20,
+                  21,
+                  22,
+                  23,
+                  24
+                ]
+              },
+              {
+                "run": "normal-1",
+                "indexes": [
+                  25,
+                  26
+                ],
+                "note": "The two records that follow. They belong to stop 6 and are shown only to make the order visible."
+              },
+              {
+                "run": "e2",
+                "indexes": [
+                  17,
+                  18,
+                  19,
+                  20,
+                  21,
+                  22,
+                  23,
+                  24
+                ],
+                "note": "Pilot run. The same eight records are present."
+              }
+            ],
+            "pcrs": [
+              {
+                "run": "normal-1",
+                "registers": [
+                  0,
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6
+                ],
+                "bank": "sha256"
+              }
+            ],
+            "pilot_note": "e2 is a pilot: it was run before any prediction was written. It is shown, not counted, and no score is claimed from it.",
+            "explanation": "The log has an order even though it has no clock: the record that a boot option is being called comes first, then seven separators, one for each of registers 0 to 6, and only then the two records this project places at stop 6, the second of which is the loaded image. The pilot run e2, where the loader was later refused, has the same eight records up to this point; the two runs first differ at the next record, which this project places at stop 6. The text of the record and its register are what this firmware wrote. What they are required to be is in a Trusted Computing Group document that has not been read for this project.",
+            "definitions": [
+              {
+                "glossary": "loader"
+              },
+              {
+                "term": "Action record",
+                "definition": "A record in the TPM log whose content is a short piece of text naming a step. The decoder calls its type EV_EFI_ACTION.",
+                "basis": "recording",
+                "run": "normal-1",
+                "field": "events[16].type and events[16].summary"
+              },
+              {
+                "glossary": "separator"
+              },
+              {
+                "glossary": "pilot"
+              }
+            ]
+          },
+          "claims": [
+            {
+              "text": "The action record Calling EFI Application from Boot Option is at position 16, in register 4.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "events[16] (index field 17): pcr, type, summary"
+            },
+            {
+              "text": "The two records this project places at stop 6 come after it, at positions 24 and 25: one of type EV_EFI_VARIABLE_AUTHORITY naming the variable db, and one for the loaded image.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "events[24] and events[25] (index fields 25 and 26): type, summary, stop"
+            },
+            {
+              "text": "Seven separators follow the action record, one each for registers 0 to 6, all with the same digest.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "events[17..23] (index fields 18 to 24): pcr, type, digest_sha256"
+            },
+            {
+              "text": "This firmware logs the boot attempt in register 4 and then separates registers 0 to 6, before it logs anything about the loader.",
+              "basis": "this-firmware",
+              "source": "observed in recording normal-1 events 16 to 25 (index fields 17 to 26)"
+            },
+            {
+              "text": "Which action texts must be logged, in which register and when, and what a separator means, is defined by a Trusted Computing Group document that has not been read for this project.",
+              "basis": "tcg-unread",
+              "reason": "The action texts do not occur anywhere in UEFI 2.11, and it gives no register a purpose.",
+              "uefi_pointer": {
+                "document": "UEFI Specification",
+                "version": "2.11",
+                "section": "2.6.4",
+                "title": "Extensions to this Specification Published Elsewhere",
+                "pdf_page": 151
+              }
+            },
+            {
+              "text": "The pilot run e2 has the same record at position 16 and the same seven separators.",
+              "basis": "recording",
+              "run": "e2",
+              "field": "events[16..23] (index fields 17 to 24): pcr, type, digest_sha256"
+            },
+            {
+              "text": "The normal run and the pilot run e2 first differ at the event with index field 25, which the comparison places at stop 6. Every event of stops 4 and 5 before it is the same in both.",
+              "basis": "recording",
+              "run": "normal-1, e2",
+              "file": "recordings/comparisons/normal-1_vs_e2.json",
+              "field": "first_differing_event.index and first_differing_event.stop"
+            },
+            {
+              "text": "The pilot run e2 ended refused; the normal run ended accepted.",
+              "basis": "recording",
+              "run": "normal-1, e2",
+              "file": "recordings/comparisons/normal-1_vs_e2.json",
+              "field": "outcome"
+            },
+            {
+              "text": "The two recordings of the normal run are identical on every compared field, so the records shown at stops 4 and 5 repeat.",
+              "basis": "recording",
+              "run": "normal-1, normal-2",
+              "file": "recordings/comparisons/normal-1_vs_normal-2.json",
+              "field": "identical"
+            }
+          ],
+          "picture": {
+            "plate": "board",
+            "lit": [
+              "power",
+              "firmware",
+              "processor",
+              "memory",
+              "controllers",
+              "storage",
+              "security"
+            ],
+            "newly_lit": [],
+            "screen": "none",
+            "note": "Which parts light is a choice made for the illustration. It is not evidence and is not taken from the recording."
+          }
+        }
+      ]
+    }
+  ]
+}
