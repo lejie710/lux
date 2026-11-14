@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.pyc
+
+# Run directories and anything a boot leaves behind
+/work/
+runs/
+*.sock
+*.pid
+mem.bin
+*.mem
+*.dump
+swtpm.log
+
+# Private scratch
+/scratch/
+/notes/
+*.local
+*.tmp
+.env
+.vscode/
+.idea/
