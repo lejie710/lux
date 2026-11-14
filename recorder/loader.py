@@ -8,18 +8,30 @@ the signed file is a fixed, committed artifact (see `keys`).
 Changed copies differ from the signed loader in exactly one byte, and each
 function proves from the file's own headers where that byte lies before it
 returns anything.
+
+A **second loader** exists for the boot order experiment in its "different"
+form, where the two boot entries must lead to two different programs. It is
+the same source with the letter A of the start message changed to B, signed
+once with the same committed key, and committed as `guest/second-loader-signed.efi`.
+Like the first signed loader it is a fixed artifact, pinned by hash here.
+`verify_second_loader` proves what it is from the first loader: same
+content except that one letter, and a signature area of its own.
 """
+import hashlib
 from dataclasses import dataclass
 from pathlib import Path
 
 from recorder import pe
-from recorder.errors import StagingRefused
+from recorder.errors import FormatError, StagingRefused
 from recorder.provenance import RunCommand
 
 # The loader's first console line, stored as UTF-16. Its last letter is the
 # byte the content-change experiments alter.
 START_MESSAGE = "LUX-LOADER A"
 CHANGED_LETTER = "B"
+
+SECOND_LOADER_PATH = Path(__file__).parent / "guest" / "second-loader-signed.efi"
+SECOND_LOADER_SHA256 = "948c330302d28389dfdc584a694fa19a9527cbd0fe8d3050785be02c14b1b06f"
 
 
 @dataclass(frozen=True)
@@ -93,7 +105,30 @@ def change_signature_byte(signed_loader: bytes, offset_in_area: int) -> tuple[by
         raise StagingRefused("the byte to change is not inside the signature area")
     if pe.section_at(image, offset) is not None:
         raise StagingRefused("the signature area overlaps a section; the location is ambiguous")
+    try:
+        part = pe.signature_part_at(signed_loader, offset_in_area)
+    except FormatError as error:
+        raise StagingRefused(f"the signature area cannot be read: {error}") from error
     changed = bytearray(signed_loader)
     changed[offset] ^= 0x01
-    change = ByteChange(offset, signed_loader[offset], changed[offset], "signature area")
+    change = ByteChange(offset, signed_loader[offset], changed[offset],
+                        f"signature area, {part.name}")
     return bytes(changed), change
+
+
+def verify_second_loader(second_loader: bytes, signed_loader: bytes) -> None:
+    """Check that the second loader is what it is said to be. Raises `StagingRefused`.
+
+    Three facts are required: the file has the pinned hash; it carries a
+    signature area; and its Authenticode digest equals that of the first
+    loader with the one letter of its start message changed. The last fact
+    means the two programs differ in that letter and in nothing else that
+    the firmware measures.
+    """
+    if hashlib.sha256(second_loader).hexdigest() != SECOND_LOADER_SHA256:
+        raise StagingRefused("the second loader differs from the committed, pinned file")
+    if not pe.parse_pe(second_loader).is_signed:
+        raise StagingRefused("the second loader has no signature area")
+    one_letter_changed, _ = change_content_byte(signed_loader)
+    if pe.authenticode_sha256(second_loader) != pe.authenticode_sha256(one_letter_changed):
+        raise StagingRefused("the second loader is not the first loader with one letter changed")

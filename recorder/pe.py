@@ -8,11 +8,21 @@ The recorder needs three facts about the boot loader file:
 * its Authenticode SHA-256, the digest that both the signature and the
   firmware's measurement are built on.
 
+It also reads what the signature area is made of (`signature_parts`), so that
+an experiment that changes one byte there can say which thing it changed:
+the signature value itself, the digest that was signed, the signer's
+certificate, or padding.
+
 Only the 64-bit variant (PE32+) is supported, because that is what the
 firmware in this project loads.
 
 Method reference for the digest: Microsoft, "Windows Authenticode Portable
 Executable Signature Format", section "Calculating the PE Image Hash".
+
+The signature area holds one entry: an 8-byte header, then a signed-data
+structure in the DER encoding (each item is a tag byte, a length and a
+body), then padding to a multiple of 8 bytes. Only the nesting this project's
+signing tool writes is understood; anything else raises `FormatError`.
 """
 import hashlib
 import struct
@@ -139,3 +149,172 @@ def authenticode_sha256(data: bytes) -> str:
     if end > position:
         digest.update(data[position:end])
     return digest.hexdigest()
+
+
+# ---------------------------------------------------------------- the signature area
+
+PART_HEADER = "entry header"
+PART_IMAGE_DIGEST = "signed image digest"
+PART_CERTIFICATE = "signer certificate"
+PART_SIGNED_ATTRIBUTES = "signed attributes"
+PART_SIGNATURE_VALUE = "signature value"
+PART_PADDING = "padding"
+PART_STRUCTURE = "structure"
+
+_ENTRY_HEADER_SIZE = 8              # length (4), revision (2), type (2)
+_ENTRY_TYPE_SIGNED_DATA = 2         # the only entry type a UEFI image signature uses
+_DER_SEQUENCE = 0x30
+_DER_SET = 0x31
+_DER_INTEGER = 0x02
+_DER_OCTET_STRING = 0x04
+_DER_CONTEXT_0 = 0xA0               # the item written as [0], with other items inside
+
+
+@dataclass(frozen=True)
+class SignaturePart:
+    """One named run of bytes inside the signature area."""
+
+    name: str
+    offset_in_area: int      # counted from the first byte of the signature area
+    size: int
+
+    def contains(self, offset_in_area: int) -> bool:
+        """True when the offset lies inside this part."""
+        return self.offset_in_area <= offset_in_area < self.offset_in_area + self.size
+
+
+@dataclass(frozen=True)
+class _Item:
+    """One DER item: where its header starts, and where its body starts and ends."""
+
+    tag: int
+    start: int
+    body: int
+    end: int
+
+
+def _der_items(data: bytes, start: int, end: int) -> list[_Item]:
+    """The DER items that lie side by side between two file offsets."""
+    items: list[_Item] = []
+    position = start
+    while position < end:
+        if position + 2 > end:
+            raise FormatError("the signature area ends inside an item header")
+        tag, length = data[position], data[position + 1]
+        body = position + 2
+        if length & 0x80:                       # long form: the low bits count the length bytes
+            count = length & 0x7F
+            if count == 0 or count > 4 or body + count > end:
+                raise FormatError("the signature area holds a length this reader does not understand")
+            length = int.from_bytes(data[body:body + count], "big")
+            body += count
+        if body + length > end:
+            raise FormatError("an item of the signature area runs past its container")
+        items.append(_Item(tag, position, body, body + length))
+        position = body + length
+    return items
+
+
+def _expect(items: list[_Item], index: int, tag: int, what: str) -> _Item:
+    """The item at a position, which must carry the given tag."""
+    if index >= len(items) or items[index].tag != tag:
+        raise FormatError(f"the signature area has no {what} where one is expected")
+    return items[index]
+
+
+def _inside(data: bytes, item: _Item) -> list[_Item]:
+    return _der_items(data, item.body, item.end)
+
+
+def _named_items(data: bytes, start: int, end: int) -> list[tuple[str, int, int]]:
+    """Find the four named parts inside the signed-data entry, as (name, start, end)."""
+    outer = _expect(_der_items(data, start, end), 0, _DER_SEQUENCE, "outer sequence")
+    wrapped = _expect(_inside(data, outer), 1, _DER_CONTEXT_0, "signed-data wrapper")
+    signed_data = _inside(data, _expect(_inside(data, wrapped), 0, _DER_SEQUENCE, "signed-data sequence"))
+    # Signed data: version, digest algorithms, the signed content, certificates, signers.
+    content = _expect(signed_data, 2, _DER_SEQUENCE, "signed content")
+    certificates = _expect(signed_data, 3, _DER_CONTEXT_0, "certificate list")
+    signers = _expect(signed_data, len(signed_data) - 1, _DER_SET, "signer list")
+
+    # Signed content: an identifier, then a wrapper around
+    # { what was hashed, { algorithm, digest } }.
+    content_body = _expect(_inside(data, content), 1, _DER_CONTEXT_0, "content wrapper")
+    indirect = _inside(data, _expect(_inside(data, content_body), 0, _DER_SEQUENCE, "content sequence"))
+    digest_record = _inside(data, _expect(indirect, 1, _DER_SEQUENCE, "digest record"))
+    image_digest = _expect(digest_record, 1, _DER_OCTET_STRING, "image digest")
+
+    certificate_items = _inside(data, certificates)
+    if len(certificate_items) != 1:
+        raise FormatError("the signature area does not hold exactly one certificate")
+    certificate = _expect(certificate_items, 0, _DER_SEQUENCE, "certificate")
+
+    signer_items = _inside(data, signers)
+    if len(signer_items) != 1:
+        raise FormatError("the signature area does not hold exactly one signer")
+    # Signer: version, who signed, digest algorithm, signed attributes,
+    # signature algorithm, signature value.
+    signer = _inside(data, _expect(signer_items, 0, _DER_SEQUENCE, "signer record"))
+    _expect(signer, 0, _DER_INTEGER, "signer version")
+    attributes = _expect(signer, 3, _DER_CONTEXT_0, "signed attributes")
+    value = _expect(signer, 5, _DER_OCTET_STRING, "signature value")
+    return [
+        (PART_IMAGE_DIGEST, image_digest.body, image_digest.end),
+        (PART_CERTIFICATE, certificate.start, certificate.end),
+        (PART_SIGNED_ATTRIBUTES, attributes.start, attributes.end),
+        (PART_SIGNATURE_VALUE, value.body, value.end),
+    ]
+
+
+def signature_parts(data: bytes) -> tuple[SignaturePart, ...]:
+    """The named parts of a signed image's signature area, in file order.
+
+    The parts do not overlap and together cover the whole area. Bytes that
+    only hold the structure together (tags, lengths, identifiers) are
+    reported as `structure`. Raises `FormatError` for an unsigned image or
+    an area that is not laid out the way the signing tool lays it out.
+
+    What each named part is:
+
+    * `entry header`: the 8 bytes saying how long the entry is and of which type;
+    * `signed image digest`: the image's Authenticode digest as the signer wrote it down;
+    * `signer certificate`: the certificate that carries the signer's public key;
+    * `signed attributes`: the small record the signature is computed over
+      (it holds a digest of the part that contains the image digest);
+    * `signature value`: the number made with the signer's private key;
+    * `padding`: filler bytes after the entry.
+    """
+    image = parse_pe(data)
+    if not image.is_signed:
+        raise FormatError("the image has no signature area")
+    area, area_end = image.signature_offset, image.signature_offset + image.signature_size
+    if area_end > len(data) or image.signature_size < _ENTRY_HEADER_SIZE:
+        raise FormatError("the signature area does not fit in the file")
+    entry_length, _, entry_type = struct.unpack_from("<IHH", data, area)
+    entry_end = area + entry_length
+    if entry_type != _ENTRY_TYPE_SIGNED_DATA or not _ENTRY_HEADER_SIZE < entry_length <= image.signature_size:
+        raise FormatError("the signature area does not hold one signed-data entry")
+    if area_end - entry_end >= 8:
+        raise FormatError("the signature area holds more than one entry")
+
+    parts = [SignaturePart(PART_HEADER, 0, _ENTRY_HEADER_SIZE)]
+    position = area + _ENTRY_HEADER_SIZE
+    for name, start, end in _named_items(data, position, entry_end):
+        if start < position:
+            raise FormatError("the parts of the signature area are not in the expected order")
+        if start > position:
+            parts.append(SignaturePart(PART_STRUCTURE, position - area, start - position))
+        parts.append(SignaturePart(name, start - area, end - start))
+        position = end
+    if entry_end > position:
+        parts.append(SignaturePart(PART_STRUCTURE, position - area, entry_end - position))
+    if area_end > entry_end:
+        parts.append(SignaturePart(PART_PADDING, entry_end - area, area_end - entry_end))
+    return tuple(parts)
+
+
+def signature_part_at(data: bytes, offset_in_area: int) -> SignaturePart:
+    """The part of the signature area that holds a byte. Raises `FormatError` if none does."""
+    for part in signature_parts(data):
+        if part.contains(offset_in_area):
+            return part
+    raise FormatError("the offset lies outside the signature area")

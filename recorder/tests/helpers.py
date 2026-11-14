@@ -12,7 +12,7 @@ import shutil
 import struct
 from pathlib import Path
 
-from recorder import keys, varstore
+from recorder import bootentries, keys, varstore
 from recorder.banks import ALGORITHMS, DIGEST_SIZES, PcrBanks, banks_from_hex
 from recorder.capture import Extend
 from recorder.eventlog import EV_NO_ACTION, HEADER_SIGNATURE, Event
@@ -108,6 +108,16 @@ def template_store() -> bytes:
         ("PK", b"pk"), ("KEK", b"kek"), ("db", b"db"),
         ("SecureBootEnable", b"\x01"), ("BootOrder", b"\x00\x00\x01\x00"),
     ])
+
+
+def two_entry_store(order: tuple[int, ...] = bootentries.ORDER_A_FIRST) -> bytes:
+    """A store shaped like the two-entry template: keys, the firmware's own two options, A and B."""
+    variables = [("PK", b"pk"), ("KEK", b"kek"), ("db", b"db"), ("SecureBootEnable", b"\x01"),
+                 ("Boot0000", b"the firmware's setup application"), ("Boot0001", b"the disk")]
+    variables += [(entry.variable, varstore.load_option(entry.description, entry.firmware_path))
+                  for entry in bootentries.ENTRIES]
+    variables.append(("BootOrder", varstore.boot_order_data(order)))
+    return make_store(variables)
 
 
 FIRMWARE_BYTES = b"firmware image"

@@ -12,6 +12,10 @@
     "run": "e2"
   },
   "console_first_differing_line": 2,
+  "console_first_differing_text": {
+    "baseline": "BdsDxe: starting Boot0001 \"UEFI QEMU HARDDISK QM00001 \" from PciRoot(0x0)/Pci(0x1F,0x2)/Sata(0x0,0xFFFF,0x0)",
+    "changed": "BdsDxe: failed to load Boot0001 \"UEFI QEMU HARDDISK QM00001 \" from PciRoot(0x0)/Pci(0x1F,0x2)/Sata(0x0,0xFFFF,0x0): Access Denied"
+  },
   "events_only_in_baseline": [
     {
       "digest_sha256": "3af949760de8f2194b4046474edc565c6361dd881b99dfc2b744908e75c19ece",

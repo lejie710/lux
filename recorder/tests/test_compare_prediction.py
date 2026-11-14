@@ -12,7 +12,7 @@ from recorder.errors import ComparisonRefused, FormatError, PredictionMissing
 from recorder.tests import helpers
 from recorder.tests.helpers import FakeGit
 
-BOOT_ORDER = experiments.get("boot-order")
+BOOT_ORDER = experiments.get("boot-order-same")
 SIGNATURE_BYTE = experiments.get("signature-byte")
 
 
@@ -217,8 +217,8 @@ class ComparableAndRepeat(unittest.TestCase):
 
 
 PREDICTION = {
-    "format": "lux-prediction/1", "experiment": "boot-order", "written": "2026-11-20",
-    "change": "BootOrder lists its entries in reverse",
+    "format": "lux-prediction/1", "experiment": "boot-order-same", "written": "2026-11-20",
+    "change": BOOT_ORDER.change,
     "rows": [
         {"id": "continues", "field": "outcome.changed", "expect": "accepted", "basis": "uefi-required",
          "citation": {"document": "UEFI Specification", "version": "2.11",
@@ -321,12 +321,12 @@ class PredictionGate(unittest.TestCase):
     def setUp(self) -> None:
         self.directory = Path(tempfile.mkdtemp(prefix="lux-test-"))
         self.addCleanup(shutil.rmtree, self.directory, ignore_errors=True)
-        self.file = self.directory / "boot-order.json"
+        self.file = self.directory / "boot-order-same.json"
         self.file.write_bytes(json.dumps(PREDICTION).encode())
 
     def test_committed_prediction_is_accepted_with_its_hash_and_commit(self) -> None:
         reference = prediction.require_committed(BOOT_ORDER, self.directory, FakeGit())
-        self.assertEqual(reference.path, "predictions/boot-order.json")
+        self.assertEqual(reference.path, "predictions/boot-order-same.json")
         self.assertEqual(reference.sha256, recording.sha256_of_file(self.file))
         self.assertEqual(reference.commit, "abc123")
         self.assertEqual(reference.parameters, {})
@@ -338,7 +338,7 @@ class PredictionGate(unittest.TestCase):
         self.assertEqual(git.asked, [])
 
     def test_untracked_modified_or_unknown_commit_refuses(self) -> None:
-        for git in (FakeGit(tracked=False), FakeGit(status=" M boot-order.json\n"),
+        for git in (FakeGit(tracked=False), FakeGit(status=" M boot-order-same.json\n"),
                     FakeGit(commit=""), FakeGit(code=128), FakeGit(ancestor=False)):
             with self.assertRaises(PredictionMissing):
                 prediction.require_committed(BOOT_ORDER, self.directory, git)
@@ -361,7 +361,7 @@ class PredictionGate(unittest.TestCase):
         with self.assertRaises(PredictionMissing):
             prediction.require_committed(BOOT_ORDER, self.directory, FakeGit())
         other = self.directory / "signature-byte.json"
-        other.write_bytes(json.dumps(PREDICTION).encode())       # names boot-order inside
+        other.write_bytes(json.dumps(PREDICTION).encode())       # names boot-order-same inside
         with self.assertRaises(PredictionMissing):
             prediction.require_committed(SIGNATURE_BYTE, self.directory, FakeGit())
 
@@ -404,7 +404,7 @@ class PredictionGateWithRealGit(unittest.TestCase):
         self.addCleanup(shutil.rmtree, self.repository, ignore_errors=True)
         self.predictions = self.repository / "predictions"
         self.predictions.mkdir()
-        self.file = self.predictions / "boot-order.json"
+        self.file = self.predictions / "boot-order-same.json"
         self._git("init", "--quiet")
         (self.repository / "README").write_text("test repository\n")
         self._git("add", "README")
@@ -431,11 +431,11 @@ class PredictionGateWithRealGit(unittest.TestCase):
     def test_untracked_then_staged_then_committed_then_modified(self) -> None:
         self._write()
         self.assertIn("not committed", self._refused())                 # untracked
-        self._git("add", "predictions/boot-order.json")
+        self._git("add", "predictions/boot-order-same.json")
         self.assertIn("not committed", self._refused())                 # staged only
         self._commit("add the prediction")
         reference = prediction.require_committed(BOOT_ORDER, self.predictions)
-        self.assertEqual(reference.path, "predictions/boot-order.json")
+        self.assertEqual(reference.path, "predictions/boot-order-same.json")
         self.assertEqual(reference.sha256, recording.sha256_of_file(self.file))
         self.assertEqual(reference.commit, self._git("rev-parse", "HEAD").strip())
         self._write(written="2026-11-21")
@@ -444,20 +444,20 @@ class PredictionGateWithRealGit(unittest.TestCase):
     def test_an_edit_hidden_from_git_status_is_still_refused(self) -> None:
         """`assume-unchanged` makes git report a clean file; the committed bytes do not lie."""
         self._write()
-        self._git("add", "predictions/boot-order.json")
+        self._git("add", "predictions/boot-order-same.json")
         self._commit("add the prediction")
-        self._git("update-index", "--assume-unchanged", "predictions/boot-order.json")
+        self._git("update-index", "--assume-unchanged", "predictions/boot-order-same.json")
         self._write(written="2026-11-21")
         self.assertEqual(self._git("status", "--porcelain").strip(), "")
         self.assertIn("differs from the committed one", self._refused())
 
     def test_a_later_commit_of_the_file_is_the_one_named(self) -> None:
         self._write()
-        self._git("add", "predictions/boot-order.json")
+        self._git("add", "predictions/boot-order-same.json")
         self._commit("add the prediction")
         first = self._git("rev-parse", "HEAD").strip()
         self._write(written="2026-11-22")
-        self._git("add", "predictions/boot-order.json")
+        self._git("add", "predictions/boot-order-same.json")
         self._commit("revise the prediction before the run")
         reference = prediction.require_committed(BOOT_ORDER, self.predictions)
         self.assertNotEqual(reference.commit, first)

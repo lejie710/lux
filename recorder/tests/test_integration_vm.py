@@ -1,8 +1,8 @@
 """Integration test: boot the real virtual machine. Skipped unless asked for.
 
 Run it with `LUX_VM_TESTS=1` on a machine where `python3 -m recorder prepare`
-has succeeded. It boots the normal run twice (about ten seconds each); it
-never runs a changed boot.
+has succeeded. It boots the normal run twice and the normal run with two
+boot entries once (about ten seconds each); it never runs a changed boot.
 """
 import os
 import shutil
@@ -18,18 +18,41 @@ VM_TESTS_WANTED = os.environ.get("LUX_VM_TESTS") == "1"
 VM_AVAILABLE = shutil.which("qemu-system-x86_64") is not None and shutil.which("swtpm") is not None
 
 
+def _environment() -> runner.Environment:
+    """The real machine, in the prepared work directory."""
+    return runner.Environment(
+        testkeys_directory=helpers.TESTKEYS,
+        predictions_directory=helpers.REPOSITORY / "predictions",
+        work_directory=cli.default_work_directory(), machine_factory=QemuMachine,
+        clock=SystemClock(), limits=Limits(),
+        tool_versions=provenance.tool_versions, host_os=provenance.host_os(), git=prediction.run_git,
+        require_repeat=lambda: None)              # only counted runs ask, and none is run here
+
+
+@unittest.skipUnless(VM_TESTS_WANTED, "set LUX_VM_TESTS=1 to boot the virtual machine")
+@unittest.skipUnless(VM_AVAILABLE, "QEMU and swtpm are not installed")
+class TwoEntryNormalRunRepeats(unittest.TestCase):
+    """The normal run with two boot entries, in the original order. Not a changed boot."""
+
+    def test_a_fresh_run_equals_the_committed_two_entry_normal_recording(self) -> None:
+        fresh = runner.record_run(
+            runner.RunRequest("it-normal-two", "normal-two-same", "fresh"), _environment()).document
+        committed = recording.load_json(
+            helpers.REPOSITORY / "recordings" / "normal-two-same-1" / "recording.json",
+            recording.RECORDING_FORMAT)
+        result = compare.compare_recordings(committed, fresh, "committed", "fresh")
+        self.assertTrue(result["identical"], result)
+        self.assertIsNone(fresh["run"]["change_detail"])
+        self.assertEqual(fresh["provenance"]["boot_order"][:2], ["Boot0002", "Boot0003"])
+
+
 @unittest.skipUnless(VM_TESTS_WANTED, "set LUX_VM_TESTS=1 to boot the virtual machine")
 @unittest.skipUnless(VM_AVAILABLE, "QEMU and swtpm are not installed")
 class NormalRunRepeats(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        work = cli.default_work_directory()
-        env = runner.Environment(
-            testkeys_directory=helpers.TESTKEYS,
-            predictions_directory=helpers.REPOSITORY / "predictions",
-            work_directory=work, machine_factory=QemuMachine, clock=SystemClock(), limits=Limits(),
-            tool_versions=provenance.tool_versions, host_os=provenance.host_os(), git=prediction.run_git,
-            require_repeat=lambda: None)          # only counted runs ask, and none is run here
+        env = _environment()
+        work = env.work_directory
         cls.work = work
         cls.first = runner.record_run(runner.RunRequest("it-normal-1", "normal", "first"), env).document
         cls.second = runner.record_run(runner.RunRequest("it-normal-2", "normal", "second"), env).document

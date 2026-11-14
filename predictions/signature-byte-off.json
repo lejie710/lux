@@ -1,0 +1,270 @@
+{
+  "format": "lux-prediction/1",
+  "experiment": "signature-byte-off",
+  "written": "2026-11-15",
+  "change": "one byte changed inside the loader's signature area, Secure Boot switched off",
+  "wrong_if": [
+    "The prediction is wrong if the boot is refused or hangs: with Secure Boot switched off the changed loader is expected to run to its last line.",
+    "It is wrong if register 4 differs from the normal run. The changed byte lies in the signature area, and the expectation is that the image digest this firmware measures does not cover that area.",
+    "It is wrong if the record differs from the pilot e4 (Secure Boot switched off, nothing else changed) in any row below: another first differing event than 4, or any differing register besides 7."
+  ],
+  "not_scored": [
+    "This run changes two things against the normal run: the switch and the byte. The pilot e4 changes the switch alone. The rows therefore predict that this run equals e4, which is the same as predicting that the byte adds nothing a recording can see. A comparison is always made against a normal run, so that equality is spelled out row by row.",
+    "The changed file has another SHA-256 than the signed loader and the same Authenticode digest. Both follow from how the file was changed, not from the boot, so they are not rows."
+  ],
+  "baseline": {
+    "run": "normal-1",
+    "recording_sha256": "5f06748352fdf3d684fbdc917606e547aeccf95d6e91dd5225d7d40af512728c"
+  },
+  "byte": {
+    "file_offset": 40170,
+    "offset_in_signature_area": 1490,
+    "part": "signature value",
+    "position_in_part": 128,
+    "part_size": 256,
+    "old_value": 218,
+    "new_value": 219,
+    "what_it_is": "Byte 128 of the 256 bytes of the signature value: the number that was made with the signer's private key over the signed attributes. It is not part of the certificate, of the digest that was signed, or of the padding. Its lowest bit is flipped."
+  },
+  "parameters": {
+    "signature_area_offset": 1490
+  },
+  "rows": [
+    {
+      "id": "accepted",
+      "field": "outcome.changed",
+      "expect": "accepted",
+      "basis": "uefi-required",
+      "citation": {
+        "document": "UEFI Specification",
+        "version": "2.11",
+        "section": "3.3 Globally Defined Variables",
+        "page": 166
+      },
+      "reason": "With the SecureBoot variable at 0 the cited text says that signature verification of boot applications is not active during the current boot, so nothing looks at the changed signature."
+    },
+    {
+      "id": "no-refusal",
+      "field": "refusal_lines.changed",
+      "expect": [],
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/e4/recording.json, outcome.refusal_lines, which is empty (pilot)",
+      "reason": "As in e4 and e1, with the switch off this firmware gives up no boot option."
+    },
+    {
+      "id": "switch-reported-off",
+      "field": "first_differing_event.changed",
+      "expect": {
+        "digest_sha256": "115aa827dbccfb44d216ad9ecfda56bdea620b860a94bed5b7a27bba1c4d02d8",
+        "pcr": 7,
+        "type": "EV_EFI_VARIABLE_DRIVER_CONFIG"
+      },
+      "basis": "uefi-platform",
+      "citation": {
+        "document": "UEFI Specification",
+        "version": "2.11",
+        "section": "3.3 Globally Defined Variables",
+        "page": 166
+      },
+      "source": "recordings/e4/recording.json, event 4 (pilot); the same event in recordings/e1/recording.json (pilot)",
+      "reason": "The cited text leaves the value of SecureBoot to platform policy, and in e4 and e1 this firmware measured SecureBoot as 0, with exactly this digest, once its own switch was off.",
+      "note": "UEFI defines no switch that turns checking off while the keys stay enrolled. The switch is this firmware's own."
+    },
+    {
+      "id": "first-event",
+      "field": "first_differing_event.index",
+      "expect": 4,
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/comparisons/normal-1_vs_e4.json, first_differing_event (pilot): event 4",
+      "reason": "As in e4 and e1, the first difference is the measurement of the SecureBoot variable, long before any loader is read."
+    },
+    {
+      "id": "first-event-stop",
+      "field": "first_differing_event.stop",
+      "expect": 4,
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/normal-1/recording.json, event 4",
+      "reason": "Event 4 of the normal run carries stop 4.",
+      "note": "The stop is this project's own label for an event, not a specification term."
+    },
+    {
+      "id": "pcr0-same",
+      "field": "pcrs_differing.sha256",
+      "expect_excludes": [
+        0
+      ],
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/comparisons/normal-1_vs_e4.json, pcrs_same (pilot); apart from events 4 and 25 of recordings/normal-1/recording.json, every event has an equal partner in recordings/e4/recording.json",
+      "reason": "This register was equal to the normal run in e4, and nothing measured into it depends on the switch or on the loader's signature area.",
+      "note": "Which register records what is defined by a Trusted Computing Group document that has not been read; this row rests on the observation alone."
+    },
+    {
+      "id": "pcr1-same",
+      "field": "pcrs_differing.sha256",
+      "expect_excludes": [
+        1
+      ],
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/comparisons/normal-1_vs_e4.json, pcrs_same (pilot); apart from events 4 and 25 of recordings/normal-1/recording.json, every event has an equal partner in recordings/e4/recording.json",
+      "reason": "This register was equal to the normal run in e4, and nothing measured into it depends on the switch or on the loader's signature area.",
+      "note": "Which register records what is defined by a Trusted Computing Group document that has not been read; this row rests on the observation alone."
+    },
+    {
+      "id": "pcr2-same",
+      "field": "pcrs_differing.sha256",
+      "expect_excludes": [
+        2
+      ],
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/comparisons/normal-1_vs_e4.json, pcrs_same (pilot); apart from events 4 and 25 of recordings/normal-1/recording.json, every event has an equal partner in recordings/e4/recording.json",
+      "reason": "This register was equal to the normal run in e4, and nothing measured into it depends on the switch or on the loader's signature area.",
+      "note": "Which register records what is defined by a Trusted Computing Group document that has not been read; this row rests on the observation alone."
+    },
+    {
+      "id": "pcr3-same",
+      "field": "pcrs_differing.sha256",
+      "expect_excludes": [
+        3
+      ],
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/comparisons/normal-1_vs_e4.json, pcrs_same (pilot); apart from events 4 and 25 of recordings/normal-1/recording.json, every event has an equal partner in recordings/e4/recording.json",
+      "reason": "This register was equal to the normal run in e4, and nothing measured into it depends on the switch or on the loader's signature area.",
+      "note": "Which register records what is defined by a Trusted Computing Group document that has not been read; this row rests on the observation alone."
+    },
+    {
+      "id": "pcr4-same",
+      "field": "pcrs_differing.sha256",
+      "expect_excludes": [
+        4
+      ],
+      "basis": "tcg-unread",
+      "citation": null,
+      "reason": "The digest this recorder computes for the changed file leaves the signature area out and equals the signed loader's, and in normal-1 and e1 the digest this firmware measured into register 4 was that digest of the file it loaded, so the same is expected here; which bytes of an image a measurement must cover is defined outside UEFI, in documents that have not been read, and nothing is claimed here about what they say."
+    },
+    {
+      "id": "pcr5-same",
+      "field": "pcrs_differing.sha256",
+      "expect_excludes": [
+        5
+      ],
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/comparisons/normal-1_vs_e4.json, pcrs_same (pilot); apart from events 4 and 25 of recordings/normal-1/recording.json, every event has an equal partner in recordings/e4/recording.json",
+      "reason": "This register was equal to the normal run in e4, and nothing measured into it depends on the switch or on the loader's signature area.",
+      "note": "Which register records what is defined by a Trusted Computing Group document that has not been read; this row rests on the observation alone."
+    },
+    {
+      "id": "pcr6-same",
+      "field": "pcrs_differing.sha256",
+      "expect_excludes": [
+        6
+      ],
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/comparisons/normal-1_vs_e4.json, pcrs_same (pilot); apart from events 4 and 25 of recordings/normal-1/recording.json, every event has an equal partner in recordings/e4/recording.json",
+      "reason": "This register was equal to the normal run in e4, and nothing measured into it depends on the switch or on the loader's signature area.",
+      "note": "Which register records what is defined by a Trusted Computing Group document that has not been read; this row rests on the observation alone."
+    },
+    {
+      "id": "pcr7-differs",
+      "field": "pcrs_differing.sha256",
+      "expect_contains": [
+        7
+      ],
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/e4/recording.json, event 4, and recordings/normal-1/recording.json, event 25, which recordings/e4/recording.json does not have (pilot)",
+      "reason": "As in e4, the SecureBoot variable is measured as 0, and no record of a key that allowed the loader is logged.",
+      "note": "Which register records what is defined by a Trusted Computing Group document that has not been read; this row rests on the observation alone."
+    },
+    {
+      "id": "events-only-in-normal-run",
+      "field": "events_only_in_baseline",
+      "expect": [
+        {
+          "digest_sha256": "ccfc4bb32888a345bc8aeadaba552b627d99348c767681ab3141f5b01e40a40e",
+          "index": 4,
+          "pcr": 7,
+          "type": "EV_EFI_VARIABLE_DRIVER_CONFIG"
+        },
+        {
+          "digest_sha256": "3af949760de8f2194b4046474edc565c6361dd881b99dfc2b744908e75c19ece",
+          "index": 25,
+          "pcr": 7,
+          "type": "EV_EFI_VARIABLE_AUTHORITY"
+        }
+      ],
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/comparisons/normal-1_vs_e4.json, events_only_in_baseline (pilot): events 4 and 25 of recordings/normal-1/recording.json",
+      "reason": "As in e4, the SecureBoot measurement with value 1 and the key record exist only in the normal run.",
+      "note": "The image digest is not in this list, because the changed run is expected to log an equal one."
+    },
+    {
+      "id": "events-only-in-changed-run",
+      "field": "events_only_in_changed",
+      "expect": [
+        {
+          "digest_sha256": "115aa827dbccfb44d216ad9ecfda56bdea620b860a94bed5b7a27bba1c4d02d8",
+          "index": 4,
+          "pcr": 7,
+          "type": "EV_EFI_VARIABLE_DRIVER_CONFIG"
+        }
+      ],
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/comparisons/normal-1_vs_e4.json, events_only_in_changed (pilot): event 4 of recordings/e4/recording.json",
+      "reason": "As in e4, the SecureBoot measurement with value 0 exists only in the changed run, and nothing else does."
+    },
+    {
+      "id": "image-digest-present",
+      "field": "events_only_in_baseline",
+      "expect_excludes": [
+        {
+          "digest_sha256": "00c5018d3157edb92f96a08ba685a1c5913c5dd5fa2228b021dd9d4970eee50f",
+          "index": 26,
+          "pcr": 4,
+          "type": "EV_EFI_BOOT_SERVICES_APPLICATION"
+        }
+      ],
+      "basis": "tcg-unread",
+      "citation": null,
+      "reason": "The image digest of the normal run (event 26) is expected to have an equal partner in the changed run for the reason given in the row for register 4, which rests on documents that have not been read, and nothing is claimed here about what they say."
+    },
+    {
+      "id": "console-first-difference",
+      "field": "console_first_differing_line",
+      "expect": 6,
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/e4/recording.json, console line 6 (pilot)",
+      "reason": "As in e4, the loader's start line is the unchanged one, and the first difference is the size of the memory map the loader reports.",
+      "note": "With the switch off this firmware hands over a smaller memory map. No register reflects that."
+    },
+    {
+      "id": "console-first-difference-text",
+      "field": "console_first_differing_text.changed",
+      "expect": "LUX MemoryMapSize=0000000000001860",
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/e4/recording.json, console line 6 (pilot); the same line in recordings/e1/recording.json (pilot)",
+      "reason": "The same size was reported in both pilots that had the switch off."
+    },
+    {
+      "id": "loader-report-first-difference",
+      "field": "loader_report_first_differing_line",
+      "expect": 28,
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/e4/recording.json, loader_report line 28 (pilot); the same in recordings/e1/recording.json (pilot)",
+      "reason": "As in e4 and e1, the loader's dump of the memory map differs from the same line on."
+    }
+  ]
+}

@@ -98,7 +98,7 @@ class LoaderCopies(unittest.TestCase):
         differing = [i for i in range(len(self.signed)) if self.signed[i] != changed[i]]
         self.assertEqual(differing, [change.file_offset])
         self.assertTrue(pe.in_signature_area(pe.parse_pe(self.signed), change.file_offset))
-        self.assertEqual(change.area, "signature area")
+        self.assertEqual(change.area, "signature area, structure")
         self.assertEqual(pe.authenticode_sha256(changed), helpers.LOADER_AUTHENTICODE)
 
     def test_signature_offset_outside_the_area_is_refused(self) -> None:
@@ -161,11 +161,13 @@ class VariableStore(unittest.TestCase):
         with self.assertRaises(StagingRefused):
             varstore.switch_secure_boot_off(switched)
 
-    def test_boot_order_is_reversed_and_single_entry_refused(self) -> None:
-        reversed_store = varstore.reverse_boot_order(helpers.template_store())
-        self.assertEqual(varstore.read_data(reversed_store, "BootOrder"), b"\x01\x00\x00\x00")
-        with self.assertRaises(StagingRefused):
-            varstore.reverse_boot_order(helpers.make_store([("BootOrder", b"\x00\x00")]))
+    def test_boot_order_is_read_back_as_option_numbers(self) -> None:
+        store = helpers.make_store([("BootOrder", varstore.boot_order_data([3, 2, 0, 1]))])
+        self.assertEqual(varstore.read_boot_order(store), [3, 2, 0, 1])
+        self.assertEqual(varstore.read_data(store, "BootOrder"), bytes.fromhex("0300020000000100"))
+        for broken in (helpers.make_store([]), helpers.make_store([("BootOrder", b"\x01\x00\x02")])):
+            with self.assertRaises(FormatError):
+                varstore.read_boot_order(broken)
 
     def test_in_place_edit_refuses_another_size_or_a_missing_variable(self) -> None:
         with self.assertRaises(StagingRefused):
@@ -355,12 +357,15 @@ class Staging(TempDirCase):
 
     def test_every_experiment_has_one_sentence_and_a_known_kind(self) -> None:
         self.assertEqual(set(experiments.EXPERIMENTS),
-                         {"normal", "e1", "e2", "e4", "e5", "boot-order", "signature-byte", "rebuilt-firmware"})
+                         {"normal", "normal-two-same", "normal-two-different", "e1", "e2", "e4", "e5",
+                          "boot-order-same", "boot-order-different", "signature-byte",
+                          "signature-byte-off", "rebuilt-firmware"})
         for experiment in experiments.EXPERIMENTS.values():
             self.assertIn(experiment.kind, ("normal", "pilot", "counted"))
             self.assertTrue(experiment.change)
         counted = {e.identifier for e in experiments.EXPERIMENTS.values() if e.kind == "counted"}
-        self.assertEqual(counted, {"boot-order", "signature-byte", "rebuilt-firmware"})
+        self.assertEqual(counted, {"boot-order-same", "boot-order-different", "signature-byte",
+                                   "signature-byte-off", "rebuilt-firmware"})
         with self.assertRaises(StagingRefused):
             experiments.get("unknown")
 
@@ -410,10 +415,6 @@ class Staging(TempDirCase):
         self.assertEqual(dbx[-32:].hex(), helpers.LOADER_AUTHENTICODE)
         self.assertEqual((run / "esp/EFI/BOOT/BOOTX64.EFI").read_bytes(), self.signed)
 
-    def test_boot_order_is_reversed(self) -> None:
-        _, run = self._stage("boot-order")
-        self.assertEqual(varstore.read_data((run / "vars.fd").read_bytes(), "BootOrder"), b"\x01\x00\x00\x00")
-
     def test_signature_byte_takes_its_offset_from_the_prediction_parameters_only(self) -> None:
         self.assertFalse(hasattr(experiments.get("signature-byte"), "signature_area_offset"))
         for parameters in ({}, {"signature_area_offset": "64"}, {"signature_area_offset": True}):
@@ -421,7 +422,7 @@ class Staging(TempDirCase):
                 self._stage("signature-byte", **parameters)
         self.assertFalse((self.temp / "runs" / "signature-byte").exists())
         staged, _ = self._stage("signature-byte", signature_area_offset=64)
-        self.assertEqual(staged.loader_change.area, "signature area")
+        self.assertEqual(staged.loader_change.area, "signature area, structure")
         self.assertEqual(staged.loader_authenticode_sha256, helpers.LOADER_AUTHENTICODE)
         self.assertNotEqual(staged.loader_sha256, hashlib.sha256(self.signed).hexdigest())
         detail = staged.change_detail()["loader_byte"]

@@ -8,7 +8,8 @@ from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path, PurePosixPath
 from unittest import mock
 
-from recorder import cli, compare, preparation, recording, runner, session, staging, storymap
+from recorder import (bootentries, cli, compare, loader, preparation, recording, runner, session,
+                      staging, storymap, varstore)
 from recorder import eventlog as eventlog_module
 from recorder.errors import (ComparisonRefused, GateFailure, KeysRefused, MachineFailure,
                              PredictionMissing, RunIncomplete, StagingRefused)
@@ -152,6 +153,10 @@ class WholeRun(unittest.TestCase):
         self.work = self.temp / "work"
         (self.work / "template").mkdir(parents=True)
         (self.work / "template" / "vars-template.fd").write_bytes(template)
+        self.two_entries = helpers.two_entry_store()
+        (self.work / staging.TWO_ENTRY_TEMPLATE_PATH).write_bytes(self.two_entries)
+        (self.work / staging.B_FIRST_TEMPLATE_PATH).write_bytes(
+            helpers.two_entry_store(bootentries.ORDER_B_FIRST))
         self.testkeys = helpers.copy_testkeys(self.temp / "testkeys", template)
         self.predictions = self.temp / "predictions"
         self.predictions.mkdir()
@@ -192,7 +197,8 @@ class WholeRun(unittest.TestCase):
             testkeys_directory=self.testkeys, predictions_directory=self.predictions,
             work_directory=self.work, machine_factory=factory, clock=clock, limits=LIMITS,
             tool_versions=lambda: {"qemu": "test"}, host_os="test os", git=git or FakeGit(),
-            require_repeat=require_repeat or self._repeat_holds)
+            require_repeat=require_repeat or self._repeat_holds,
+            two_entry_template_sha256=hashlib.sha256(self.two_entries).hexdigest())
 
     def _record(self, name: str, experiment: str = "normal", **arguments: object) -> runner.RunResult:
         request = runner.RunRequest(name, experiment, "2026-01-01T00:00:00Z")
@@ -306,7 +312,8 @@ class WholeRun(unittest.TestCase):
     # ---- the prediction gate
 
     def test_counted_experiment_without_prediction_is_refused_before_anything_starts(self) -> None:
-        for experiment in ("boot-order", "signature-byte", "rebuilt-firmware"):
+        for experiment in ("boot-order-same", "boot-order-different", "signature-byte",
+                           "signature-byte-off", "rebuilt-firmware"):
             with self.assertRaises(PredictionMissing):
                 self._record("blind", experiment)
         self.assertEqual(self.machines, [])
@@ -314,34 +321,40 @@ class WholeRun(unittest.TestCase):
 
     def test_counted_experiment_with_uncommitted_prediction_is_refused(self) -> None:
         import json
-        (self.predictions / "boot-order.json").write_bytes(json.dumps(PREDICTION).encode())
-        for git in (FakeGit(tracked=False), FakeGit(status="M  boot-order.json")):
+        (self.predictions / "boot-order-same.json").write_bytes(json.dumps(PREDICTION).encode())
+        for git in (FakeGit(tracked=False), FakeGit(status="M  boot-order-same.json")):
             with self.assertRaises(PredictionMissing):
-                self._record("blind", "boot-order", git=git)
+                self._record("blind", "boot-order-same", git=git)
         self.assertEqual(self.machines, [])
 
     def test_counted_experiment_with_committed_prediction_runs_and_names_it(self) -> None:
         import json
-        path = self.predictions / "boot-order.json"
+        path = self.predictions / "boot-order-same.json"
         path.write_bytes(json.dumps(PREDICTION).encode())
         # The fake machine replays the normal boot; only the gate and the bookkeeping are under test.
-        document = self._record("blind", "boot-order", git=FakeGit(commit="feedbeef\n")).document
+        document = self._record("blind", "boot-order-same", git=FakeGit(commit="feedbeef\n")).document
         self.assertEqual(len(self.machines), 1)
         self.assertEqual(document["provenance"]["prediction"], {
-            "path": "predictions/boot-order.json", "parameters": {},
+            "path": "predictions/boot-order-same.json", "parameters": {},
             "sha256": recording.sha256_of_file(path), "commit": "feedbeef"})
         self.assertEqual(document["run"]["kind"], "counted")
         self.assertEqual(self.repeat_checks, 1)
+        self.assertEqual(document["run"]["change_detail"], {
+            "loader_byte": None, "store_edits": [], "firmware_replaced": False,
+            "boot_order": ["Boot0003", "Boot0002", "Boot0000", "Boot0001"]})
+        self.assertEqual(document["provenance"]["boot_order"],
+                         ["Boot0003", "Boot0002", "Boot0000", "Boot0001"])
+        self.assertEqual([entry["entry"] for entry in document["provenance"]["boot_entries"]], ["A", "B"])
 
     def test_counted_experiment_is_refused_when_the_normal_run_does_not_repeat(self) -> None:
         import json
-        (self.predictions / "boot-order.json").write_bytes(json.dumps(PREDICTION).encode())
+        (self.predictions / "boot-order-same.json").write_bytes(json.dumps(PREDICTION).encode())
 
         def no_repeat() -> None:
             raise ComparisonRefused("the two normal runs are not identical")
 
         with self.assertRaises(ComparisonRefused):
-            self._record("blind", "boot-order", require_repeat=no_repeat)
+            self._record("blind", "boot-order-same", require_repeat=no_repeat)
         self.assertEqual(self.machines, [])
         self.assertFalse((self.work / "runs").exists())
 
@@ -351,7 +364,8 @@ class WholeRun(unittest.TestCase):
         path.write_bytes(json.dumps(signature_prediction(signature_area_offset=64)).encode())
         document = self._record("blind", "signature-byte").document
         self.assertEqual(document["provenance"]["prediction"]["parameters"], {"signature_area_offset": 64})
-        self.assertEqual(document["run"]["change_detail"]["loader_byte"]["area"], "signature area")
+        self.assertEqual(document["run"]["change_detail"]["loader_byte"]["area"],
+                         "signature area, structure")
         path.write_bytes(json.dumps(signature_prediction()).encode())        # no byte named
         with self.assertRaises(PredictionMissing):
             self._record("blind-2", "signature-byte")
@@ -359,9 +373,9 @@ class WholeRun(unittest.TestCase):
 
     def test_a_prediction_edited_behind_git_is_refused_before_anything_starts(self) -> None:
         import json
-        (self.predictions / "boot-order.json").write_bytes(json.dumps(PREDICTION).encode())
+        (self.predictions / "boot-order-same.json").write_bytes(json.dumps(PREDICTION).encode())
         with self.assertRaises(PredictionMissing):
-            self._record("blind", "boot-order", git=FakeGit(blob=b"the committed text was another"))
+            self._record("blind", "boot-order-same", git=FakeGit(blob=b"the committed text was another"))
         self.assertEqual(self.machines, [])
 
     def test_pilot_and_normal_runs_need_no_prediction(self) -> None:
@@ -398,7 +412,10 @@ class Preparation(unittest.TestCase):
         self.empty.write_bytes(helpers.make_store([]))
         (self.temp / "firmware.fd").write_bytes(helpers.FIRMWARE_BYTES)
         self.testkeys = helpers.copy_testkeys(self.temp / "testkeys", self.enrolled)
+        self.two_entries = helpers.two_entry_store()
+        self.b_first = helpers.two_entry_store(bootentries.ORDER_B_FIRST)
         self.boots = 0
+        self.programs: dict[str, bytes] = {}
 
     def _run(self, command: list[str]) -> str:
         """Stands in for the assembler and linker: the build result is the committed loader."""
@@ -407,23 +424,38 @@ class Preparation(unittest.TestCase):
         return ""
 
     def _factory(self, console: bytes, store: bytes):
+        """A machine per preparation boot. What it "writes" depends on which boot it is.
+
+        The key enrolment boot answers with `console` and `store`. The boots
+        that also create the two boot entries answer with `self.entry_console`
+        and the two-entry stores, unless a test replaces them.
+        """
         def factory(run_directory: Path, firmware: Path) -> helpers.FakeMachine:
             self.boots += 1
-            self.staged_program = (run_directory / "esp/EFI/BOOT/BOOTX64.EFI").read_bytes()
+            name = run_directory.name
+            self.programs[name] = (run_directory / "esp/EFI/BOOT/BOOTX64.EFI").read_bytes()
+            self.staged_program = self.programs[name]
             self.staged_store = (run_directory / "vars.fd").read_bytes()
-            (run_directory / "vars.fd").write_bytes(store)       # what the firmware would write
-            return helpers.FakeMachine(self.clock, run_directory, {2.0: console}, exits_at=4.0)
+            written, said = {"prep-two-entries": (self.two_entries, self.entry_console),
+                             "prep-two-entries-b-first": (self.b_first, self.entry_console),
+                             }.get(name, (store, console))
+            (run_directory / "vars.fd").write_bytes(written)     # what the firmware would write
+            return helpers.FakeMachine(self.clock, run_directory, {2.0: said}, exits_at=4.0)
         return factory
 
     def _env(self, console: bytes, store: bytes) -> preparation.PrepareEnvironment:
         self.clock = helpers.FakeClock()
+        self.entry_console = self.GOOD_WITH_ENTRIES
         return preparation.PrepareEnvironment(
             testkeys_directory=self.testkeys, work_directory=self.temp / "work", run=self._run,
             machine_factory=self._factory(console, store), clock=self.clock, limits=LIMITS,
-            empty_store=self.empty, firmware=self.temp / "firmware.fd")
+            empty_store=self.empty, firmware=self.temp / "firmware.fd",
+            two_entry_template_sha256=hashlib.sha256(helpers.two_entry_store()).hexdigest())
 
     GOOD = (b"LUX-SETVAR db status=00\r\nLUX-SETVAR KEK status=00\r\n"
             b"LUX-SETVAR PK status=00\r\nLUX-SETVAR done\r\n")
+    GOOD_WITH_ENTRIES = (b"LUX-SETVAR Boot0002 status=00\r\nLUX-SETVAR Boot0003 status=00\r\n"
+                         b"LUX-SETVAR BootOrder status=00\r\n" + GOOD)
 
     def test_template_is_made_by_one_enrolment_boot_and_reused(self) -> None:
         env = self._env(self.GOOD, self.enrolled)
@@ -431,9 +463,84 @@ class Preparation(unittest.TestCase):
         self.assertEqual(summary["keys"], "verified")
         self.assertEqual(summary["vars_template_sha256"], hashlib.sha256(self.enrolled).hexdigest())
         self.assertEqual(self.staged_store, self.empty.read_bytes())
-        self.assertIn("LUX-SETVAR PK status=??".encode("utf-16le"), self.staged_program)
+        self.assertIn("LUX-SETVAR PK status=??".encode("utf-16le"), self.programs["prep-enrol"])
+        self.assertNotIn("BootOrder".encode("utf-16le"), self.programs["prep-enrol"])
         preparation.prepare(env)
-        self.assertEqual(self.boots, 1)
+        self.assertEqual(self.boots, 2)          # one per template, and none when both exist
+
+    def test_the_two_entry_template_is_made_by_an_enrolment_boot_of_its_own(self) -> None:
+        env = self._env(self.GOOD, self.enrolled)
+        summary = preparation.prepare(env)
+        self.assertEqual(summary["two_entry_template_sha256"], hashlib.sha256(self.two_entries).hexdigest())
+        self.assertEqual(summary["second_loader_sha256"], loader.SECOND_LOADER_SHA256)
+        program = self.programs["prep-two-entries"]
+        positions = [program.index(f"LUX-SETVAR {name} status=??".encode("utf-16le"))
+                     for name in ("Boot0002", "Boot0003", "BootOrder", "db", "KEK", "PK")]
+        self.assertEqual(positions, sorted(positions))           # entries, then the order, then the keys
+        self.assertIn(varstore.boot_order_data(bootentries.ORDER_A_FIRST), program)
+        self.assertEqual(self.staged_store, self.empty.read_bytes())     # it too starts from the empty store
+        self.assertEqual(sorted(self.programs), ["prep-enrol", "prep-two-entries"])
+        self.assertFalse((self.temp / "work" / staging.B_FIRST_TEMPLATE_PATH).exists())
+
+    def test_a_two_entry_store_that_differs_from_the_pinned_one_is_discarded(self) -> None:
+        env = self._env(self.GOOD, self.enrolled)
+        self.two_entries = helpers.two_entry_store() + b"\xff"       # not the pinned bytes
+        with self.assertRaises(StagingRefused) as caught:
+            preparation.prepare(env)
+        self.assertIn("pinned", str(caught.exception))
+        self.assertFalse((self.temp / "work" / staging.TWO_ENTRY_TEMPLATE_PATH).exists())
+
+    def test_a_two_entry_store_without_an_entry_or_with_a_failed_write_is_refused(self) -> None:
+        env = self._env(self.GOOD, self.enrolled)
+        self.two_entries = self.enrolled                             # keys only, no entries A and B
+        with self.assertRaises(StagingRefused):
+            preparation.prepare(env)
+        env = self._env(self.GOOD, self.enrolled)
+        self.two_entries = helpers.two_entry_store()
+        self.entry_console = self.GOOD_WITH_ENTRIES.replace(b"BootOrder status=00", b"BootOrder status=0F")
+        with self.assertRaises(StagingRefused):
+            preparation.prepare(env)
+        self.assertFalse((self.temp / "work" / staging.TWO_ENTRY_TEMPLATE_PATH).exists())
+
+    # ---- the changed boot order: staged with fakes only, never booted
+
+    def test_the_changed_boot_order_is_written_by_one_preparation_boot(self) -> None:
+        env = self._env(self.GOOD, self.enrolled)
+        preparation.prepare(env)
+        summary = preparation.prepare_changed_boot_order(env)
+        self.assertEqual(self.boots, 3)
+        program = self.programs["prep-two-entries-b-first"]
+        self.assertIn(varstore.boot_order_data(bootentries.ORDER_B_FIRST), program)
+        self.assertNotIn(varstore.boot_order_data(bootentries.ORDER_A_FIRST), program)
+        self.assertEqual(self.staged_store, self.empty.read_bytes())
+        self.assertEqual(summary["boot_order"], "Boot0003 Boot0002 Boot0000 Boot0001")
+        self.assertEqual(summary["changed_boot_order_template_sha256"], hashlib.sha256(self.b_first).hexdigest())
+        self.assertEqual((self.temp / "work" / staging.B_FIRST_TEMPLATE_PATH).read_bytes(), self.b_first)
+        preparation.prepare_changed_boot_order(env)                  # reused, not made again
+        self.assertEqual(self.boots, 3)
+        # The two programs differ in the two bytes that exchange A and B, and in nothing else.
+        original = self.programs["prep-two-entries"]
+        differing = [i for i in range(len(program)) if program[i] != original[i]]
+        self.assertEqual(len(program), len(original))
+        self.assertEqual(len(differing), 2)
+
+    def test_a_changed_order_store_that_differs_in_anything_else_is_not_kept(self) -> None:
+        env = self._env(self.GOOD, self.enrolled)
+        preparation.prepare(env)
+        elsewhere = bytearray(helpers.two_entry_store(bootentries.ORDER_B_FIRST))
+        elsewhere[-1] ^= 1                                           # one more byte differs
+        wrong_order = helpers.two_entry_store((3, 2, 1, 0))
+        for store in (bytes(elsewhere), wrong_order, self.two_entries):
+            self.b_first = store
+            with self.assertRaises(StagingRefused):
+                preparation.prepare_changed_boot_order(env)
+            self.assertFalse((self.temp / "work" / staging.B_FIRST_TEMPLATE_PATH).exists())
+
+    def test_the_changed_boot_order_needs_the_two_entry_template_first(self) -> None:
+        env = self._env(self.GOOD, self.enrolled)
+        with self.assertRaises(StagingRefused):
+            preparation.prepare_changed_boot_order(env)
+        self.assertEqual(self.boots, 0)
 
     def test_a_failed_write_is_refused(self) -> None:
         bad = self.GOOD.replace(b"KEK status=00", b"KEK status=1A")
@@ -549,7 +656,7 @@ class CommandLine(unittest.TestCase):
         target = self._temp()
         (target / "blind").mkdir()
         (target / "blind" / "recording.json").write_text("the first result")
-        code, _, err, run = self._record_into(target, "blind", "boot-order", "--replace")
+        code, _, err, run = self._record_into(target, "blind", "boot-order-same", "--replace")
         self.assertEqual((code, run.call_count), (1, 0))
         self.assertIn("recorded once", err)
         self.assertEqual((target / "blind" / "recording.json").read_text(), "the first result")
@@ -624,17 +731,18 @@ class CommandLine(unittest.TestCase):
         import json
         target = self._temp()
         first, second = self._two_normal_runs(target)
-        files = {"baseline": first, "prediction": target / "boot-order.json",
+        files = {"baseline": first, "prediction": target / "signature-byte.json",
                  "changed": target / "blind" / "recording.json",
                  "repeat": target / cli.REPEAT_COMPARISON, "comparison": target / "c.json",
                  "score": target / "score.json"}
-        files["prediction"].write_bytes(json.dumps(PREDICTION).encode())
+        # The rows of the example prediction, under an experiment whose baseline is the plain normal run.
+        files["prediction"].write_bytes(json.dumps({**PREDICTION, "experiment": "signature-byte"}).encode())
         changed = recording_from_fixture("e2", "blind", "2026-01-01T00:02:00Z")
-        counted = cli.experiments.get("boot-order")
-        changed["run"].update(experiment="boot-order", kind="counted",
+        counted = cli.experiments.get("signature-byte")
+        changed["run"].update(experiment="signature-byte", kind="counted",
                               experiment_sha256=cli.experiments.fingerprint(counted))
         changed["provenance"]["prediction"] = {
-            "path": "predictions/boot-order.json", "commit": "c", "parameters": {},
+            "path": "predictions/signature-byte.json", "commit": "c", "parameters": {},
             "sha256": recording.sha256_of_file(files["prediction"])}
         recording.write_json(files["changed"], changed)
         for baseline, other, out in ((first, second, files["repeat"]),
@@ -665,7 +773,7 @@ class CommandLine(unittest.TestCase):
         self.assertEqual(score["mismatches"], ["continues", "pcr1"])
         self.assertEqual([row["id"] for row in score["rows"]], ["continues", "pcr1", "pcr0", "order-kept"])
         self.assertEqual(score["rows"][0], {"id": "continues", "basis": "uefi-required", "held": False})
-        self.assertEqual((score["experiment"], score["run"]), ("boot-order", "blind"))
+        self.assertEqual((score["experiment"], score["run"]), ("signature-byte", "blind"))
         self.assertEqual(score["comparison_sha256"], recording.sha256_of_file(files["comparison"]))
         self.assertEqual(score["repeat_comparison_sha256"], recording.sha256_of_file(files["repeat"]))
         self.assertEqual(score["changed_recording_sha256"], recording.sha256_of_file(files["changed"]))
@@ -687,7 +795,7 @@ class CommandLine(unittest.TestCase):
         files["repeat"].write_bytes(files["comparison"].read_bytes())        # not two normal runs
         code, _, err = self._check(files)
         self.assertEqual(code, 1)
-        self.assertIn("not between two normal runs", err)
+        self.assertIn("not between two recordings of the normal run 'normal'", err)
 
     def test_check_refuses_another_baseline_or_recording_than_the_comparison_used(self) -> None:
         files = self._scored_setup()
@@ -702,8 +810,8 @@ class CommandLine(unittest.TestCase):
 
     def test_check_refuses_when_the_experiment_description_changed_after_the_run(self) -> None:
         files = self._scored_setup()
-        edited = cli.experiments.Experiment("boot-order", "counted", "BootOrder lists its entries in reverse")
-        with mock.patch.dict(cli.experiments.EXPERIMENTS, {"boot-order": edited}):
+        edited = cli.experiments.Experiment("signature-byte", "counted", "another byte, another place")
+        with mock.patch.dict(cli.experiments.EXPERIMENTS, {"signature-byte": edited}):
             code, _, err = self._check(files)
         self.assertEqual(code, 1)
         self.assertIn("description was changed after this run", err)

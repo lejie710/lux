@@ -12,6 +12,10 @@
     "run": "normal-2"
   },
   "console_first_differing_line": null,
+  "console_first_differing_text": {
+    "baseline": null,
+    "changed": null
+  },
   "events_only_in_baseline": [],
   "events_only_in_changed": [],
   "first_differing_event": null,

@@ -3,18 +3,25 @@ import hashlib
 import json
 import unittest
 
-from recorder import compare, eventlog, gate, keys, recording
+from recorder import bootentries, compare, eventlog, gate, keys, recording
 from recorder.banks import banks_from_hex
 from recorder.tests import helpers
 
 RECORDINGS = helpers.REPOSITORY / "recordings"
 NORMAL_RUNS = ("normal-1", "normal-2")
 PILOTS = ("e1", "e2", "e4", "e5")
-ALL_RUNS = NORMAL_RUNS + PILOTS
-# Every committed comparison: the repeat of the normal run, and each pilot against normal-1.
-PAIRS = (("normal-1", "normal-2"),) + tuple(("normal-1", pilot) for pilot in PILOTS)
+# The normal runs of the boot order experiments: two boot entries, original order, each form twice.
+TWO_ENTRY_RUNS = ("normal-two-same-1", "normal-two-same-2",
+                  "normal-two-different-1", "normal-two-different-2")
+ALL_RUNS = NORMAL_RUNS + PILOTS + TWO_ENTRY_RUNS
+# The repeat of each normal run.
+REPEATS = (("normal-1", "normal-2"), ("normal-two-same-1", "normal-two-same-2"),
+           ("normal-two-different-1", "normal-two-different-2"))
+# Every committed comparison: the repeats, and each pilot against normal-1.
+PAIRS = REPEATS + tuple(("normal-1", pilot) for pilot in PILOTS)
 # Number of events each committed event log holds.
-EVENT_COUNTS = {"normal-1": 28, "normal-2": 28, "e1": 27, "e2": 26, "e4": 27, "e5": 27}
+EVENT_COUNTS = {"normal-1": 28, "normal-2": 28, "e1": 27, "e2": 26, "e4": 27, "e5": 27,
+                **{run: 30 for run in TWO_ENTRY_RUNS}}
 AUTHORITY = "EV_EFI_VARIABLE_AUTHORITY"
 
 
@@ -31,8 +38,10 @@ class CommittedRecordings(unittest.TestCase):
             recording.sha256_of_file(RECORDINGS / changed / "recording.json"))
 
     def test_the_two_normal_runs_are_identical(self) -> None:
-        result = self._compare("normal-1", "normal-2")
-        self.assertTrue(result["identical"], result["other_fields_differing"])
+        for first, second in REPEATS:
+            result = self._compare(first, second)
+            self.assertTrue(result["identical"], (first, result["other_fields_differing"]))
+            self.assertEqual(result["console_first_differing_text"], {"baseline": None, "changed": None})
 
     def test_the_pilot_differs_in_registers_4_5_and_7_only(self) -> None:
         result = self._compare("normal-1", "e2")
@@ -67,9 +76,12 @@ class CommittedRecordings(unittest.TestCase):
                 self._load(baseline), self._load(changed),
                 recording.sha256_of_file(RECORDINGS / baseline / "recording.json"),
                 recording.sha256_of_file(RECORDINGS / changed / "recording.json"))
-        repeat = recording.load_json(
-            RECORDINGS / "comparisons" / "normal-1_vs_normal-2.json", compare.COMPARISON_FORMAT)
-        compare.require_repeat(repeat, recording.sha256_of_file(RECORDINGS / "normal-1" / "recording.json"))
+        for first, second in REPEATS:
+            repeat = recording.load_json(
+                RECORDINGS / "comparisons" / f"{first}_vs_{second}.json", compare.COMPARISON_FORMAT)
+            baseline = self._load(first)["run"]["experiment"]
+            compare.require_repeat(
+                repeat, recording.sha256_of_file(RECORDINGS / first / "recording.json"), baseline)
 
     def test_the_pilot_recording_proves_which_byte_was_changed(self) -> None:
         self.assertIsNone(self._load("normal-1")["run"]["change_detail"])
@@ -107,8 +119,11 @@ class CommittedRecordings(unittest.TestCase):
         for run in ALL_RUNS:
             provenance = self._load(run)["provenance"]
             self.assertEqual(provenance["keys"], fingerprints)
-            self.assertEqual(provenance["vars_template_sha256"], manifest["vars_template_sha256"])
+            template = (bootentries.TEMPLATE_SHA256 if run in TWO_ENTRY_RUNS
+                        else manifest["vars_template_sha256"])
+            self.assertEqual(provenance["vars_template_sha256"], template, run)
             self.assertIsNone(provenance["prediction"])
+            self.assertEqual("boot_entries" in provenance, run in TWO_ENTRY_RUNS, run)
         self.assertEqual(self._load("normal-1")["provenance"]["loader"]["authenticode_sha256"],
                          manifest["loader_authenticode_sha256"])
         for run, loader in (("e1", helpers.CHANGED_LOADER_AUTHENTICODE),

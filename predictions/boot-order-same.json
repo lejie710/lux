@@ -1,0 +1,290 @@
+{
+  "format": "lux-prediction/1",
+  "experiment": "boot-order-same",
+  "written": "2026-11-15",
+  "change": "BootOrder lists entry B before entry A, written in a preparation boot; both entries hold the same signed loader",
+  "wrong_if": [
+    "The prediction is wrong if the boot does not continue, or if the first boot option the firmware tries is not Boot0003, entry B.",
+    "It is wrong if the first differing event is not the measurement of BootOrder (event 14), or if that measurement does not carry the digest of the order as it was written.",
+    "It is wrong if any register besides 1 differs. In particular register 4 is expected to be equal, because both entries hold the same file."
+  ],
+  "not_scored": [
+    "UEFI 2.11 (3.3 Globally Defined Variables, PDF page 165) says BootCurrent names the boot option that was selected for the current boot, so it should read 0003, the number of entry B. The loader does not read that variable, and it is not kept in the variable store file, so no recording shows it and no row covers it.",
+    "Entry A is not expected to be tried at all: the loader behind entry B never returns to the firmware. UEFI 2.11 (3.1.1 Boot Manager Programming, PDF page 153) speaks of the next option only for an option that comes back. The rows on events and on refusal lines would show a second attempt, but 'A was not tried' is not a field of its own.",
+    "In the normal run the firmware measures the Boot#### variables in the order BootOrder lists them (events 15 to 18). With the changed order the measurements of Boot0003 and Boot0002 are expected to exchange places. A comparison pairs events by register, type and digest wherever they stand, so this exchange is not visible in any field and is not a row."
+  ],
+  "baseline": {
+    "run": "normal-two-same-1",
+    "recording_sha256": "1dcd310e75d7bcccd55c3c56b33a1ff8a0d5a59389aec8f36eabeb92a02dcde9"
+  },
+  "boot_order": {
+    "form": "both entries hold the same signed loader",
+    "normal_run": [
+      "Boot0002",
+      "Boot0003",
+      "Boot0000",
+      "Boot0001"
+    ],
+    "changed_run": [
+      "Boot0003",
+      "Boot0002",
+      "Boot0000",
+      "Boot0001"
+    ],
+    "entry_a": {
+      "option": "Boot0002",
+      "file": "\\EFI\\LUX\\A.EFI",
+      "authenticode_sha256": "00c5018d3157edb92f96a08ba685a1c5913c5dd5fa2228b021dd9d4970eee50f"
+    },
+    "entry_b": {
+      "option": "Boot0003",
+      "file": "\\EFI\\LUX\\B.EFI",
+      "authenticode_sha256": "00c5018d3157edb92f96a08ba685a1c5913c5dd5fa2228b021dd9d4970eee50f"
+    }
+  },
+  "parameters": {},
+  "rows": [
+    {
+      "id": "continues",
+      "field": "outcome.changed",
+      "expect": "accepted",
+      "basis": "uefi-required",
+      "citation": {
+        "document": "UEFI Specification",
+        "version": "2.11",
+        "section": "3 Boot Manager (opening text)",
+        "page": 152
+      },
+      "reason": "The firmware must use the stored boot order for a normal boot, and the order now starts with entry B, an active boot option whose loader is signed with the enrolled db key: the very file the normal run accepts from entry A."
+    },
+    {
+      "id": "entry-b-first",
+      "field": "console_first_differing_text.changed",
+      "expect_text_contains": "Boot0003",
+      "basis": "uefi-required",
+      "citation": {
+        "document": "UEFI Specification",
+        "version": "2.11",
+        "section": "3.3 Globally Defined Variables (Table 3.3 Global Variables)",
+        "page": 165
+      },
+      "reason": "BootOrder is an ordered list whose first element is the first option to try, and it now starts with 0003.",
+      "note": "UEFI describes no console message; the lines are this firmware's own. So this row only asks that the first line that differs from the normal run names Boot0003."
+    },
+    {
+      "id": "first-console-line",
+      "field": "console_first_differing_text.changed",
+      "expect": "BdsDxe: loading Boot0003 \"Lux entry B\" from \\EFI\\LUX\\B.EFI",
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/normal-two-same-1/recording.json, console line 1",
+      "reason": "The normal run's first line names Boot0002, the label 'Lux entry A' and the path of A.EFI, and the same line with entry B's number, label and path is expected."
+    },
+    {
+      "id": "console-first-difference",
+      "field": "console_first_differing_line",
+      "expect": 1,
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/normal-two-same-1/recording.json, console line 1",
+      "reason": "The line that names the option being loaded is the first console line of the normal run."
+    },
+    {
+      "id": "no-refusal",
+      "field": "refusal_lines.changed",
+      "expect": [],
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/normal-two-same-1/recording.json, outcome.refusal_lines, which is empty",
+      "reason": "The normal run gives up no boot option, and entry B's loader is as acceptable as entry A's."
+    },
+    {
+      "id": "order-measured-as-written",
+      "field": "first_differing_event.changed",
+      "expect": {
+        "digest_sha256": "af165fc35b8a79bd6a5146f7dd669e7004c22a81cce51c81c5df5ae29fe0651d",
+        "pcr": 1,
+        "type": "EV_EFI_VARIABLE_BOOT"
+      },
+      "basis": "uefi-platform",
+      "citation": {
+        "document": "UEFI Specification",
+        "version": "2.11",
+        "section": "3 Boot Manager (opening text)",
+        "page": 152
+      },
+      "source": "recordings/normal-two-same-1/recording.json, event 14",
+      "reason": "The cited text lets the firmware add boot options to the list and remove invalid ones, and in the normal run this firmware measured the order exactly as the preparation boot had written it, so the same is expected here.",
+      "note": "The same text guarantees a change only after the next reset; the order is written in a preparation boot and the machine is switched off before the recorded boot. The predicted digest is the SHA-256 of the eight bytes that will be written as BootOrder (03 00 02 00 00 00 01 00). In the normal run the digest of event 14 is the SHA-256 of the variable's value, which the agreement gate recomputed."
+    },
+    {
+      "id": "first-event",
+      "field": "first_differing_event.index",
+      "expect": 14,
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/normal-two-same-1/recording.json, event 14",
+      "reason": "Events 1 to 13 of the normal run measure the firmware, the Secure Boot variables and platform configuration, none of which the boot order touches, and event 14 is the measurement of BootOrder."
+    },
+    {
+      "id": "first-event-stop",
+      "field": "first_differing_event.stop",
+      "expect": 5,
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/normal-two-same-1/recording.json, event 14",
+      "reason": "Event 14 of the normal run carries stop 5.",
+      "note": "The stop is this project's own label for an event, not a specification term."
+    },
+    {
+      "id": "pcr0-same",
+      "field": "pcrs_differing.sha256",
+      "expect_excludes": [
+        0
+      ],
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/normal-two-same-1/recording.json: register 0 holds events 1 to 3 and 20; registers 2, 3 and 6 hold one separator each, events 22, 23 and 26",
+      "reason": "Nothing measured into this register in the normal run depends on the boot order or on which loader runs.",
+      "note": "Which register records what is defined by a Trusted Computing Group document that has not been read; this row rests on the observation alone."
+    },
+    {
+      "id": "pcr1-differs",
+      "field": "pcrs_differing.sha256",
+      "expect_contains": [
+        1
+      ],
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/normal-two-same-1/recording.json, event 14",
+      "reason": "The normal run measures the value of BootOrder into register 1 (event 14), and that value is the thing this experiment changes.",
+      "note": "Which register records what is defined by a Trusted Computing Group document that has not been read; this row rests on the observation alone."
+    },
+    {
+      "id": "pcr2-same",
+      "field": "pcrs_differing.sha256",
+      "expect_excludes": [
+        2
+      ],
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/normal-two-same-1/recording.json: register 0 holds events 1 to 3 and 20; registers 2, 3 and 6 hold one separator each, events 22, 23 and 26",
+      "reason": "Nothing measured into this register in the normal run depends on the boot order or on which loader runs.",
+      "note": "Which register records what is defined by a Trusted Computing Group document that has not been read; this row rests on the observation alone."
+    },
+    {
+      "id": "pcr3-same",
+      "field": "pcrs_differing.sha256",
+      "expect_excludes": [
+        3
+      ],
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/normal-two-same-1/recording.json: register 0 holds events 1 to 3 and 20; registers 2, 3 and 6 hold one separator each, events 22, 23 and 26",
+      "reason": "Nothing measured into this register in the normal run depends on the boot order or on which loader runs.",
+      "note": "Which register records what is defined by a Trusted Computing Group document that has not been read; this row rests on the observation alone."
+    },
+    {
+      "id": "pcr4-same",
+      "field": "pcrs_differing.sha256",
+      "expect_excludes": [
+        4
+      ],
+      "basis": "tcg-unread",
+      "citation": null,
+      "reason": "Both entries hold the same file, and the digest this firmware measured in normal-1 and e1 was the Authenticode digest of the loaded file, which does not contain the file's path, so the same image digest is expected although the file is read from another path; whether a path may enter the measurement is defined by a Trusted Computing Group document that has not been read, and nothing is claimed here about what it says."
+    },
+    {
+      "id": "pcr5-same",
+      "field": "pcrs_differing.sha256",
+      "expect_excludes": [
+        5
+      ],
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/normal-two-same-1/recording.json, events 25, 29 and 30",
+      "reason": "The loader behind entry B calls ExitBootServices like the one behind entry A, so the same two events are expected.",
+      "note": "Which register records what is defined by a Trusted Computing Group document that has not been read; this row rests on the observation alone."
+    },
+    {
+      "id": "pcr6-same",
+      "field": "pcrs_differing.sha256",
+      "expect_excludes": [
+        6
+      ],
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/normal-two-same-1/recording.json: register 0 holds events 1 to 3 and 20; registers 2, 3 and 6 hold one separator each, events 22, 23 and 26",
+      "reason": "Nothing measured into this register in the normal run depends on the boot order or on which loader runs.",
+      "note": "Which register records what is defined by a Trusted Computing Group document that has not been read; this row rests on the observation alone."
+    },
+    {
+      "id": "pcr7-same",
+      "field": "pcrs_differing.sha256",
+      "expect_excludes": [
+        7
+      ],
+      "basis": "tcg-unread",
+      "citation": null,
+      "reason": "Both loaders are signed with the same db key, and in every accepted run so far the key record in register 7 (event 27 here) holds the db entry and not the image, so the same record is expected whichever entry is started; what that record must contain is defined by a Trusted Computing Group document that has not been read, and nothing is claimed here about what it says."
+    },
+    {
+      "id": "events-only-in-normal-run",
+      "field": "events_only_in_baseline",
+      "expect": [
+        {
+          "digest_sha256": "6fefab5c7f39cab95876143225a19b4674e522a12ff9f80b64c841f50fe9fe30",
+          "index": 14,
+          "pcr": 1,
+          "type": "EV_EFI_VARIABLE_BOOT"
+        }
+      ],
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/normal-two-same-1/recording.json, event 14",
+      "reason": "The measurement of the original order exists only in the normal run, and every other event has an equal partner."
+    },
+    {
+      "id": "events-only-in-changed-run",
+      "field": "events_only_in_changed",
+      "expect": [
+        {
+          "digest_sha256": "af165fc35b8a79bd6a5146f7dd669e7004c22a81cce51c81c5df5ae29fe0651d",
+          "index": 14,
+          "pcr": 1,
+          "type": "EV_EFI_VARIABLE_BOOT"
+        }
+      ],
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/normal-two-same-1/recording.json, event 14",
+      "reason": "The measurement of the changed order exists only in the changed run, and nothing else does.",
+      "note": "The predicted digest is the SHA-256 of the eight bytes that will be written as BootOrder (03 00 02 00 00 00 01 00). In the normal run the digest of event 14 is the SHA-256 of the variable's value, which the agreement gate recomputed."
+    },
+    {
+      "id": "loader-report-equal",
+      "field": "loader_report_first_differing_line",
+      "expect": null,
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/normal-two-same-1/recording.json and its repeat, loader_report",
+      "reason": "The same boot options exist with values of the same size, and the file loaded has the same size and a path of the same length, so the loader is expected to report the same memory map as in the normal run.",
+      "note": "The least certain row. The memory map does react to boot options: the two-entry normal run differs from the plain normal run from line 12 of the report. The map is whatever the firmware hands over, and nothing fixes it."
+    },
+    {
+      "id": "nothing-else-differs",
+      "field": "other_fields_differing",
+      "expect": [
+        "event_log.sha256",
+        "provenance.boot_order",
+        "provenance.vars_template_sha256",
+        "vars_after_sha256"
+      ],
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/normal-two-same-1/recording.json, fields event_log, gate and outcome",
+      "reason": "Besides events, registers and console, only the hash of the event log, the boot order and the hash of the store the run starts from, and the hash of the store after the boot are expected to differ.",
+      "note": "The number of events and the size of the event log are expected to be equal to the normal run's. The boot order and the starting store differ by the change itself."
+    }
+  ]
+}

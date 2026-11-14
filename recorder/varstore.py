@@ -18,12 +18,16 @@ size (4), vendor identifier (16). The name (UTF-16) and the data follow.
 
 Which edits have been proven against a boot: switching `SecureBootEnable`
 off (recordings `e1` and `e4`) and appending a `dbx` record (recording `e5`);
-in both the firmware read the edited store and acted on it. Reversing
-`BootOrder` has not been booted: it stages an experiment whose run waits for
-a committed prediction.
+in both the firmware read the edited store and acted on it.
+
+The boot order is not edited here. A changed boot order is written by the
+firmware itself in a preparation boot (`preparation`, `bootentries`). This
+module only builds the values that boot writes, reads the order back, and
+checks that two stores differ in the value of one variable and nowhere else.
 """
 import struct
 import uuid
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 from recorder.errors import FormatError, StagingRefused
@@ -38,6 +42,13 @@ IMAGE_SECURITY_DATABASE_GUID = "d719b2cb-3d3a-4596-a3bc-dad00e67656f"
 CERT_SHA256_GUID = "c1c41626-504c-4092-aca9-41f936934328"
 # Non-volatile, boot service, runtime, and time-based authenticated write.
 SECURE_VARIABLE_ATTRIBUTES = 0x27
+# Non-volatile, boot service, runtime: what `BootOrder` and `Boot####` carry.
+BOOT_VARIABLE_ATTRIBUTES = 0x07
+# A boot option the boot manager tries by itself, as part of a normal boot.
+LOAD_OPTION_ACTIVE = 0x00000001
+_PATH_NODE_FILE = (0x04, 0x04)          # device path node: media, file path
+_PATH_NODE_END = (0x7F, 0xFF)           # device path node: end of the whole path
+_PATH_NODE_HEADER_SIZE = 4              # type (1), sub-type (1), length (2)
 
 
 @dataclass(frozen=True)
@@ -125,17 +136,64 @@ def replace_data(store: bytes, name: str, new_data: bytes) -> bytes:
     return bytes(edited)
 
 
-def reverse_boot_order(store: bytes) -> bytes:
-    """A copy of the store whose `BootOrder` lists its entries in reverse.
+def option_name(number: int) -> str:
+    """The name of a boot option variable: `Boot` and four upper-case hexadecimal digits."""
+    if not 0 <= number <= 0xFFFF:
+        raise ValueError("a boot option number fits in 16 bits")
+    return f"Boot{number:04X}"
 
-    `BootOrder` is a list of 16-bit option numbers. Refused when it has
-    fewer than two entries, because reversing would then change nothing.
+
+def boot_order_data(numbers: Sequence[int]) -> bytes:
+    """The value of `BootOrder`: the option numbers as 16-bit values, first to try first."""
+    return b"".join(struct.pack("<H", number) for number in numbers)
+
+
+def read_boot_order(store: bytes) -> list[int]:
+    """The option numbers `BootOrder` lists in a store file, in order.
+
+    Raises `FormatError` when the variable is missing or is not a list of
+    16-bit values.
     """
-    current = read_data(store, "BootOrder")
-    if current is None or len(current) < 4 or len(current) % 2:
-        raise StagingRefused("BootOrder is missing or lists fewer than two entries")
-    entries = [current[i:i + 2] for i in range(0, len(current), 2)]
-    return replace_data(store, "BootOrder", b"".join(reversed(entries)))
+    data = read_data(store, "BootOrder")
+    if data is None or len(data) % 2:
+        raise FormatError("the store has no BootOrder that is a list of 16-bit numbers")
+    return [number for (number,) in struct.iter_unpack("<H", data)]
+
+
+def load_option(description: str, file_path: str) -> bytes:
+    """The value of a `Boot####` variable for an active option that names a file by path.
+
+    Layout: attributes (4), length of the path list (2), the description
+    (UTF-16, zero-terminated), then the path list. The path list here is one
+    file path node followed by the end node, so the option names no disk:
+    the firmware looks for the file on the disks it has.
+    """
+    path = (file_path + "\0").encode("utf-16le")
+    file_node = struct.pack("<BBH", *_PATH_NODE_FILE, _PATH_NODE_HEADER_SIZE + len(path)) + path
+    end_node = struct.pack("<BBH", *_PATH_NODE_END, _PATH_NODE_HEADER_SIZE)
+    paths = file_node + end_node
+    return (struct.pack("<IH", LOAD_OPTION_ACTIVE, len(paths))
+            + (description + "\0").encode("utf-16le") + paths)
+
+
+def only_this_variable_differs(first: bytes, second: bytes, name: str) -> bool:
+    """True when two store files are equal byte for byte outside one variable's value.
+
+    The variable must be live in both, at the same place and with the same
+    size, and its value must differ. This is the proof that two stores
+    differ in one thing: every other record, every deleted record and every
+    unused byte is the same.
+    """
+    if len(first) != len(second):
+        return False
+    left, right = live_variable(first, name), live_variable(second, name)
+    if left is None or right is None:
+        return False
+    if (left.data_offset, left.data_size) != (right.data_offset, right.data_size):
+        return False
+    start, end = left.data_offset, left.data_offset + left.data_size
+    return (first[:start] == second[:start] and first[end:] == second[end:]
+            and first[start:end] != second[start:end])
 
 
 def switch_secure_boot_off(store: bytes) -> bytes:

@@ -12,6 +12,10 @@
     "run": "e4"
   },
   "console_first_differing_line": 6,
+  "console_first_differing_text": {
+    "baseline": "LUX MemoryMapSize=0000000000001950",
+    "changed": "LUX MemoryMapSize=0000000000001860"
+  },
   "events_only_in_baseline": [
     {
       "digest_sha256": "ccfc4bb32888a345bc8aeadaba552b627d99348c767681ab3141f5b01e40a40e",

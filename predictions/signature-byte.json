@@ -1,0 +1,284 @@
+{
+  "format": "lux-prediction/1",
+  "experiment": "signature-byte",
+  "written": "2026-11-15",
+  "change": "one byte changed inside the loader's signature area, Secure Boot on",
+  "wrong_if": [
+    "The prediction is wrong if the loader runs: the console shows the loader's lines and the outcome is 'accepted'. That would also mean this firmware started an image whose signature does not verify.",
+    "It is wrong if the boot is refused but the record differs from the pilot e2 in any row below: another first differing event than 25, another set of differing registers than 4, 5 and 7, or an image digest for the refused loader in register 4.",
+    "It is wrong if the firmware reports the refusal with another status text than 'Access Denied'."
+  ],
+  "not_scored": [
+    "UEFI says a refused image is recorded in the Image Execution Information Table. Nothing in a recording reads that table, so no row covers it.",
+    "The changed file has another SHA-256 than the signed loader and the same Authenticode digest. Both follow from how the file was changed, not from the boot, so they are not rows."
+  ],
+  "baseline": {
+    "run": "normal-1",
+    "recording_sha256": "5f06748352fdf3d684fbdc917606e547aeccf95d6e91dd5225d7d40af512728c"
+  },
+  "byte": {
+    "file_offset": 40170,
+    "offset_in_signature_area": 1490,
+    "part": "signature value",
+    "position_in_part": 128,
+    "part_size": 256,
+    "old_value": 218,
+    "new_value": 219,
+    "what_it_is": "Byte 128 of the 256 bytes of the signature value: the number that was made with the signer's private key over the signed attributes. It is not part of the certificate, of the digest that was signed, or of the padding. Its lowest bit is flipped."
+  },
+  "parameters": {
+    "signature_area_offset": 1490
+  },
+  "rows": [
+    {
+      "id": "refused",
+      "field": "outcome.changed",
+      "expect": "refused",
+      "basis": "uefi-required",
+      "citation": {
+        "document": "UEFI Specification",
+        "version": "2.11",
+        "section": "32.5.1 Overview (under 32.5 UEFI Image Validation)",
+        "page": 1633
+      },
+      "reason": "The changed signature value cannot be verified against the certificate in db and db does not hold the image's hash, so the image's signature is not found in the authorized database, and the cited text says such an image is deferred and the next boot option is selected.",
+      "note": "That a signature value with one bit changed cannot verify is a property of the signature scheme, which UEFI does not describe. UEFI's own words are 'deferred' and 'the next boot option will be selected'; the recorder calls that outcome 'refused'."
+    },
+    {
+      "id": "refusal-text",
+      "field": "refusal_lines.changed",
+      "expect": [
+        "BdsDxe: failed to load Boot0001 \"UEFI QEMU HARDDISK QM00001 \" from PciRoot(0x0)/Pci(0x1F,0x2)/Sata(0x0,0xFFFF,0x0): Access Denied"
+      ],
+      "basis": "uefi-platform",
+      "citation": {
+        "document": "UEFI Specification",
+        "version": "2.11",
+        "section": "7.4.1 EFI_BOOT_SERVICES.LoadImage()",
+        "page": 283
+      },
+      "source": "recordings/e2/recording.json, console line 2 (pilot); the same line in recordings/e5/recording.json, console line 2 (pilot)",
+      "reason": "UEFI defines two status codes for an image that may not run and does not say which one a platform must return, and this firmware printed exactly this line for the refused loaders of the pilots e2 and e5.",
+      "note": "The console line is the firmware's own; UEFI describes no console message. The disk and the boot option are the same here as in the pilots."
+    },
+    {
+      "id": "first-event",
+      "field": "first_differing_event.index",
+      "expect": 25,
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/comparisons/normal-1_vs_e2.json, first_differing_event (pilot): event 25",
+      "reason": "As in e2, nothing before the load differs, and the first difference is where the normal run logs the record of the key that allowed the loader."
+    },
+    {
+      "id": "first-event-stop",
+      "field": "first_differing_event.stop",
+      "expect": 6,
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/normal-1/recording.json, event 25",
+      "reason": "Event 25 of the normal run carries stop 6, load and verify.",
+      "note": "The stop is this project's own label for an event, not a specification term."
+    },
+    {
+      "id": "first-event-in-changed-run",
+      "field": "first_differing_event.changed",
+      "expect": {
+        "digest_sha256": "7044f06303e54fa96c3fcd1a0f11047c03d209074470b1fd60460c9f007e28a6",
+        "pcr": 4,
+        "type": "EV_EFI_ACTION"
+      },
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/e2/recording.json, event 25 (pilot)",
+      "reason": "As in e2, the changed run logs the action 'Returning from EFI Application from Boot Option' into register 4 in place of the key record, because the firmware gives the boot option up."
+    },
+    {
+      "id": "pcr0-same",
+      "field": "pcrs_differing.sha256",
+      "expect_excludes": [
+        0
+      ],
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/comparisons/normal-1_vs_e2.json and recordings/comparisons/normal-1_vs_e5.json, pcrs_same (pilots); events 1 to 24 are equal in recordings/e2/recording.json and recordings/normal-1/recording.json",
+      "reason": "This register was equal to the normal run in e2 and e5, the two refused pilots, and nothing measured into it depends on the loader file.",
+      "note": "Which register records what is defined by a Trusted Computing Group document that has not been read; this row rests on the observation alone."
+    },
+    {
+      "id": "pcr1-same",
+      "field": "pcrs_differing.sha256",
+      "expect_excludes": [
+        1
+      ],
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/comparisons/normal-1_vs_e2.json and recordings/comparisons/normal-1_vs_e5.json, pcrs_same (pilots); events 1 to 24 are equal in recordings/e2/recording.json and recordings/normal-1/recording.json",
+      "reason": "This register was equal to the normal run in e2 and e5, the two refused pilots, and nothing measured into it depends on the loader file.",
+      "note": "Which register records what is defined by a Trusted Computing Group document that has not been read; this row rests on the observation alone."
+    },
+    {
+      "id": "pcr2-same",
+      "field": "pcrs_differing.sha256",
+      "expect_excludes": [
+        2
+      ],
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/comparisons/normal-1_vs_e2.json and recordings/comparisons/normal-1_vs_e5.json, pcrs_same (pilots); events 1 to 24 are equal in recordings/e2/recording.json and recordings/normal-1/recording.json",
+      "reason": "This register was equal to the normal run in e2 and e5, the two refused pilots, and nothing measured into it depends on the loader file.",
+      "note": "Which register records what is defined by a Trusted Computing Group document that has not been read; this row rests on the observation alone."
+    },
+    {
+      "id": "pcr3-same",
+      "field": "pcrs_differing.sha256",
+      "expect_excludes": [
+        3
+      ],
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/comparisons/normal-1_vs_e2.json and recordings/comparisons/normal-1_vs_e5.json, pcrs_same (pilots); events 1 to 24 are equal in recordings/e2/recording.json and recordings/normal-1/recording.json",
+      "reason": "This register was equal to the normal run in e2 and e5, the two refused pilots, and nothing measured into it depends on the loader file.",
+      "note": "Which register records what is defined by a Trusted Computing Group document that has not been read; this row rests on the observation alone."
+    },
+    {
+      "id": "pcr4-differs",
+      "field": "pcrs_differing.sha256",
+      "expect_contains": [
+        4
+      ],
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/e2/recording.json, events 25 and 26 (pilot), against recordings/normal-1/recording.json, event 26",
+      "reason": "As in e2, no image digest is logged for the refused loader, and two action events for giving up the option and calling the next one are added.",
+      "note": "Which register records what is defined by a Trusted Computing Group document that has not been read; this row rests on the observation alone."
+    },
+    {
+      "id": "pcr5-differs",
+      "field": "pcrs_differing.sha256",
+      "expect_contains": [
+        5
+      ],
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/normal-1/recording.json, events 27 and 28, which recordings/e2/recording.json does not have (pilot)",
+      "reason": "As in e2, the loader never runs, so the two events around its exit call are missing.",
+      "note": "Which register records what is defined by a Trusted Computing Group document that has not been read; this row rests on the observation alone."
+    },
+    {
+      "id": "pcr6-same",
+      "field": "pcrs_differing.sha256",
+      "expect_excludes": [
+        6
+      ],
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/comparisons/normal-1_vs_e2.json and recordings/comparisons/normal-1_vs_e5.json, pcrs_same (pilots); events 1 to 24 are equal in recordings/e2/recording.json and recordings/normal-1/recording.json",
+      "reason": "This register was equal to the normal run in e2 and e5, the two refused pilots, and nothing measured into it depends on the loader file.",
+      "note": "Which register records what is defined by a Trusted Computing Group document that has not been read; this row rests on the observation alone."
+    },
+    {
+      "id": "pcr7-differs",
+      "field": "pcrs_differing.sha256",
+      "expect_contains": [
+        7
+      ],
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/normal-1/recording.json, event 25, which recordings/e2/recording.json does not have (pilot)",
+      "reason": "As in e2, the Secure Boot variables are measured as in the normal run, and the record of the key that allowed the loader is missing.",
+      "note": "Which register records what is defined by a Trusted Computing Group document that has not been read; this row rests on the observation alone."
+    },
+    {
+      "id": "events-only-in-normal-run",
+      "field": "events_only_in_baseline",
+      "expect": [
+        {
+          "digest_sha256": "3af949760de8f2194b4046474edc565c6361dd881b99dfc2b744908e75c19ece",
+          "index": 25,
+          "pcr": 7,
+          "type": "EV_EFI_VARIABLE_AUTHORITY"
+        },
+        {
+          "digest_sha256": "00c5018d3157edb92f96a08ba685a1c5913c5dd5fa2228b021dd9d4970eee50f",
+          "index": 26,
+          "pcr": 4,
+          "type": "EV_EFI_BOOT_SERVICES_APPLICATION"
+        },
+        {
+          "digest_sha256": "d8043d6b7b85ad358eb3b6ae6a873ab7ef23a26352c5dc4faa5aeedacf5eb41b",
+          "index": 27,
+          "pcr": 5,
+          "type": "EV_EFI_ACTION"
+        },
+        {
+          "digest_sha256": "b54f7542cbd872a81a9d9dea839b2b8d747c7ebd5ea6615c40f42f44a6dbeba0",
+          "index": 28,
+          "pcr": 5,
+          "type": "EV_EFI_ACTION"
+        }
+      ],
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/comparisons/normal-1_vs_e2.json, events_only_in_baseline (pilot): events 25 to 28 of recordings/normal-1/recording.json",
+      "reason": "As in e2, the key record, the image digest and the two exit events exist only in the normal run."
+    },
+    {
+      "id": "events-only-in-changed-run",
+      "field": "events_only_in_changed",
+      "expect": [
+        {
+          "digest_sha256": "7044f06303e54fa96c3fcd1a0f11047c03d209074470b1fd60460c9f007e28a6",
+          "index": 25,
+          "pcr": 4,
+          "type": "EV_EFI_ACTION"
+        },
+        {
+          "digest_sha256": "3d6772b4f84ed47595d72a2c4c5ffd15f5bb72c7507fe26f2aaee2c69d5633ba",
+          "index": 26,
+          "pcr": 4,
+          "type": "EV_EFI_ACTION"
+        }
+      ],
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/comparisons/normal-1_vs_e2.json, events_only_in_changed (pilot): events 25 and 26 of recordings/e2/recording.json",
+      "reason": "As in e2, the two action events of giving up the boot option and calling the next one exist only in the changed run, and no other event is expected."
+    },
+    {
+      "id": "image-digest-absent",
+      "field": "events_only_in_baseline",
+      "expect_contains": [
+        {
+          "digest_sha256": "00c5018d3157edb92f96a08ba685a1c5913c5dd5fa2228b021dd9d4970eee50f",
+          "index": 26,
+          "pcr": 4,
+          "type": "EV_EFI_BOOT_SERVICES_APPLICATION"
+        }
+      ],
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/normal-1/recording.json, event 26; recordings/e2/recording.json and recordings/e5/recording.json hold no image digest event (pilots)",
+      "reason": "In e2 and e5 this firmware logged no image digest for a refused loader, so the normal run's image digest (event 26) is expected to stay without a partner.",
+      "note": "The changed file has the same Authenticode digest as the signed loader. If the firmware measured the refused image after all, that event would be equal to the normal run's and would pair with it, and this row would fail. Which register records what is defined by a Trusted Computing Group document that has not been read; this row rests on the observation alone."
+    },
+    {
+      "id": "console-first-difference",
+      "field": "console_first_differing_line",
+      "expect": 2,
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/e2/recording.json, console line 2 (pilot)",
+      "reason": "As in e2, the first line (loading the boot option) is equal, and the second is the refusal where the normal run has the line that starts the loader."
+    },
+    {
+      "id": "loader-report-empty",
+      "field": "loader_report_first_differing_line",
+      "expect": 1,
+      "basis": "this-firmware",
+      "citation": null,
+      "source": "recordings/e2/recording.json, loader_report, which is empty (pilot)",
+      "reason": "As in e2, the loader never runs and reports nothing, so the two reports differ from their first line."
+    }
+  ]
+}

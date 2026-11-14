@@ -22,13 +22,14 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
-from recorder import capture, experiments, gate, keys, normalise, prediction, recording, staging
+from recorder import (bootentries, capture, experiments, gate, keys, loader, normalise, prediction,
+                      recording, staging)
 from recorder.banks import BANK_NAMES, PcrBanks
 from recorder.errors import FormatError, GateFailure, RunIncomplete, StagingRefused
 from recorder.eventlog import Event
 from recorder.experiments import Experiment
 from recorder.session import ENDING_PAUSED, Clock, Limits, Machine, Observation, run_boot
-from recorder.staging import TEMPLATE_PATH
+from recorder.staging import B_FIRST_TEMPLATE_PATH, TEMPLATE_PATH, TWO_ENTRY_TEMPLATE_PATH
 
 _RUN_NAME = re.compile(r"[a-z0-9][a-z0-9-]{0,40}")
 
@@ -49,6 +50,9 @@ class Environment:
     # Raises `ComparisonRefused` unless two identical normal runs are on file.
     # Called for counted experiments only, before anything is staged.
     require_repeat: Callable[[], None]
+    # Needed by experiments with two boot entries only.
+    two_entry_template_sha256: str = bootentries.TEMPLATE_SHA256
+    second_loader: Path = loader.SECOND_LOADER_PATH
 
 
 @dataclass(frozen=True)
@@ -157,7 +161,13 @@ def _provenance(request: RunRequest, env: Environment, staged: staging.StagedRun
                 machine: Machine, prediction_ref: prediction.PredictionRef | None) -> dict[str, object]:
     """The provenance block: everything needed to reproduce the run."""
     run_directory = str(staged.run_directory)
+    entries: dict[str, object] = {}
+    if staged.boot_entries:
+        # Only a run with two boot entries carries these two fields.
+        entries = {"boot_entries": [entry.as_document() for entry in staged.boot_entries],
+                   "boot_order": list(staged.boot_order)}
     return {
+        **entries,
         "recorded_at": request.recorded_at,
         "tools": env.tool_versions(),
         "host_os": env.host_os,
@@ -172,16 +182,32 @@ def _provenance(request: RunRequest, env: Environment, staged: staging.StagedRun
     }
 
 
-def _assets(env: Environment) -> staging.Assets:
-    """The fixed inputs, checked against the committed manifest."""
+def _assets(env: Environment, experiment: Experiment) -> staging.Assets:
+    """The fixed inputs, each checked against the hash that is pinned for it.
+
+    Only the template the experiment starts from is required. The template
+    with the changed boot order has no pinned hash; staging proves from the
+    file itself that it differs from the two-entry template in `BootOrder`
+    alone.
+    """
     pins = keys.pins_of(keys.verify(env.testkeys_directory))
     template = env.work_directory / TEMPLATE_PATH
-    if not template.is_file():
-        raise StagingRefused("no variable store template found; run the prepare command first")
-    if recording.sha256_of_file(template) != pins.vars_template_sha256:
-        raise StagingRefused("the variable store template differs from the committed manifest")
+    two_entries = env.work_directory / TWO_ENTRY_TEMPLATE_PATH
+    if experiment.store == experiments.STORE_ONE_ENTRY:
+        if not template.is_file():
+            raise StagingRefused("no variable store template found; run the prepare command first")
+        if recording.sha256_of_file(template) != pins.vars_template_sha256:
+            raise StagingRefused("the variable store template differs from the committed manifest")
+    else:
+        if not two_entries.is_file():
+            raise StagingRefused("no variable store template with two boot entries found; "
+                                 "run the prepare command first")
+        if recording.sha256_of_file(two_entries) != env.two_entry_template_sha256:
+            raise StagingRefused("the two-entry variable store template differs from the pinned one")
     return staging.Assets(env.testkeys_directory / keys.SIGNED_LOADER_NAME, template,
-                          pins.firmware_sha256)
+                          pins.firmware_sha256, second_loader=env.second_loader,
+                          two_entry_template=two_entries,
+                          b_first_template=env.work_directory / B_FIRST_TEMPLATE_PATH)
 
 
 def record_run(request: RunRequest, env: Environment) -> RunResult:
@@ -196,7 +222,7 @@ def record_run(request: RunRequest, env: Environment) -> RunResult:
 
     run_directory = env.work_directory / "runs" / request.name
     parameters = prediction_ref.parameters if prediction_ref else {}
-    staged = staging.stage_run(experiment, run_directory, _assets(env), parameters,
+    staged = staging.stage_run(experiment, run_directory, _assets(env, experiment), parameters,
                                request.firmware_override)
     machine = env.machine_factory(staged.run_directory, staged.firmware)
     observation = run_boot(machine, env.clock, env.limits)

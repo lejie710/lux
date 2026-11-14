@@ -1,6 +1,7 @@
 """The command line: prepare, record, compare, check.
 
     python3 -m recorder prepare
+    python3 -m recorder prepare --changed-boot-order
     python3 -m recorder record my-normal --experiment normal
     python3 -m recorder compare recordings/normal-1/recording.json \\
         recordings/e2/recording.json --out recordings/comparisons/normal-1_vs_e2.json
@@ -27,7 +28,8 @@ from pathlib import Path
 
 from recorder import (capture, compare, experiments, prediction, preparation, provenance,
                       recording, runner)
-from recorder.errors import ComparisonRefused, FormatError, LuxError, RecordingExists
+from recorder.errors import (ComparisonRefused, FormatError, LuxError, PredictionMissing,
+                             RecordingExists)
 from recorder.experiments import Experiment
 from recorder.session import Limits, QemuMachine, SystemClock
 
@@ -36,6 +38,11 @@ TESTKEYS = REPOSITORY / "recorder" / "testkeys"
 WORK_DIRECTORY_VARIABLE = "LUX_WORK_DIR"
 # The comparison of the two committed normal runs, inside the recordings directory.
 REPEAT_COMPARISON = Path("comparisons") / "normal-1_vs_normal-2.json"
+
+
+def repeat_comparison(baseline: str) -> Path:
+    """Where the comparison of a normal run's two recordings lives, inside the recordings directory."""
+    return Path("comparisons") / f"{baseline}-1_vs_{baseline}-2.json"
 
 EXIT_DONE = 0
 EXIT_REFUSED = 1
@@ -58,6 +65,9 @@ def _parser() -> argparse.ArgumentParser:
     prepare = commands.add_parser("prepare", help="verify keys, build the loader, make the template")
     prepare.add_argument("--generate-keys", action="store_true",
                          help="create the test keys; refused when keys already exist")
+    prepare.add_argument("--changed-boot-order", action="store_true",
+                         help="make the variable store with the changed boot order; refused "
+                              "unless a boot order prediction is committed")
     prepare.add_argument("--work-dir", type=Path, default=None)
 
     record = commands.add_parser("record", help="boot once and write a recording")
@@ -70,7 +80,8 @@ def _parser() -> argparse.ArgumentParser:
                              "for a counted experiment")
     record.add_argument("--repeat", type=Path, default=None,
                         help="comparison of two normal runs, needed before a counted "
-                             f"experiment (default: <out>/{REPEAT_COMPARISON.as_posix()})")
+                             "experiment (default: <out>/comparisons/<normal run>-1_vs_"
+                             "<normal run>-2.json, for the normal run the experiment changes)")
     record.add_argument("--firmware-file", type=Path, default=None,
                         help="rebuilt firmware; its hash must be pinned in the prediction")
     record.add_argument("--work-dir", type=Path, default=None)
@@ -128,11 +139,34 @@ def _prepare(arguments: argparse.Namespace) -> int:
         clock=SystemClock(),
         limits=Limits(),
     )
-    summary = preparation.prepare(env, generate_keys=arguments.generate_keys)
+    if arguments.changed_boot_order:
+        _require_boot_order_prediction()
+        summary = preparation.prepare_changed_boot_order(env)
+    else:
+        summary = preparation.prepare(env, generate_keys=arguments.generate_keys)
     for key, value in sorted(summary.items()):
         print(f"{key}: {value}")
     print("prepared")
     return EXIT_DONE
+
+
+def _require_boot_order_prediction() -> None:
+    """Refuse to make the changed boot order unless a prediction for it is committed.
+
+    The store with the changed order is the changed configuration of a
+    counted experiment. Nothing of it is made before the prediction exists,
+    so that it cannot be tried out first. Raises `PredictionMissing`.
+    """
+    uses_it = [experiment for experiment in experiments.EXPERIMENTS.values()
+               if experiment.store == experiments.STORE_TWO_ENTRIES_B_FIRST]
+    refusals: list[PredictionMissing] = []
+    for experiment in uses_it:
+        try:
+            prediction.require_committed(experiment, REPOSITORY / "predictions", prediction.run_git)
+            return
+        except PredictionMissing as error:
+            refusals.append(error)
+    raise PredictionMissing("the changed boot order is not prepared: " + str(refusals[0]))
 
 
 # ---------------------------------------------------------------- record
@@ -155,11 +189,13 @@ def _require_free_target(target: Path, experiment: Experiment, replace: bool) ->
                               "run name, or pass --replace to overwrite it on purpose")
 
 
-def _require_repeat_on_file(repeat_file: Path, recordings: Path) -> None:
+def _require_repeat_on_file(repeat_file: Path, recordings: Path,
+                            baseline: str = compare.NORMAL_EXPERIMENT) -> None:
     """The repeat precondition, checked against the files on disk.
 
-    The comparison must say that two normal runs are identical, and both
-    recordings it names must still be there with the hashes it stored.
+    The comparison must say that two recordings of the normal run `baseline`
+    are identical, and both recordings it names must still be there with the
+    hashes it stored.
     """
     if not repeat_file.is_file():
         raise ComparisonRefused(
@@ -172,7 +208,7 @@ def _require_repeat_on_file(repeat_file: Path, recordings: Path) -> None:
             if not file.is_file() or recording.sha256_of_file(file) != side["recording_sha256"]:
                 raise ComparisonRefused(f"the recording '{side['run']}' named by the repeat "
                                         "comparison is missing or has changed")
-        compare.require_repeat(repeat, repeat["baseline"]["recording_sha256"])
+        compare.require_repeat(repeat, repeat["baseline"]["recording_sha256"], baseline)
 
 
 def _record(arguments: argparse.Namespace) -> int:
@@ -180,7 +216,7 @@ def _record(arguments: argparse.Namespace) -> int:
     experiment = experiments.get(arguments.experiment)
     target = arguments.out / arguments.name
     _require_free_target(target, experiment, arguments.replace)
-    repeat_file = arguments.repeat or arguments.out / REPEAT_COMPARISON
+    repeat_file = arguments.repeat or arguments.out / repeat_comparison(experiment.baseline)
     env = runner.Environment(
         testkeys_directory=TESTKEYS,
         predictions_directory=REPOSITORY / "predictions",
@@ -191,7 +227,8 @@ def _record(arguments: argparse.Namespace) -> int:
         tool_versions=provenance.tool_versions,
         host_os=provenance.host_os(),
         git=prediction.run_git,
-        require_repeat=lambda: _require_repeat_on_file(repeat_file, arguments.out),
+        require_repeat=lambda: _require_repeat_on_file(repeat_file, arguments.out,
+                                                       experiment.baseline),
     )
     now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     request = runner.RunRequest(arguments.name, arguments.experiment, now, arguments.firmware_file)
@@ -239,8 +276,10 @@ def _require_scorable(arguments: argparse.Namespace, comparison: dict, changed: 
         raise ComparisonRefused("the comparison was not made from this recording")
     if comparison["baseline"]["recording_sha256"] != recording.sha256_of_file(arguments.baseline):
         raise ComparisonRefused("the comparison was not made against this baseline recording")
-    if baseline["run"]["experiment"] != compare.NORMAL_EXPERIMENT:
-        raise ComparisonRefused("the baseline must be a recording of the normal run")
+    if baseline["run"]["kind"] != compare.NORMAL_KIND or baseline["run"]["experiment"] != \
+            compare.baseline_experiment(changed["run"]["experiment"]):
+        raise ComparisonRefused("the baseline must be a recording of the normal run this "
+                                "experiment changes")
     if not prediction.unchanged_since_run(changed, arguments.prediction):
         raise FormatError("the prediction file is not the one this run was recorded under "
                           "(a pilot has none; an edited prediction no longer matches)")
@@ -253,7 +292,7 @@ def _require_scorable(arguments: argparse.Namespace, comparison: dict, changed: 
         raise ComparisonRefused("a counted run is scored only together with --repeat, the "
                                 "comparison that shows two normal runs are identical")
     repeat = recording.load_json(arguments.repeat, compare.COMPARISON_FORMAT)
-    compare.require_repeat(repeat, comparison["baseline"]["recording_sha256"])
+    compare.require_repeat(repeat, comparison["baseline"]["recording_sha256"], experiment.baseline)
     return recording.sha256_of_file(arguments.repeat)
 
 
@@ -263,7 +302,11 @@ def _check(arguments: argparse.Namespace) -> int:
     baseline = recording.load_json(arguments.baseline, recording.RECORDING_FORMAT)
     with _complete_documents():
         repeat_sha256 = _require_scorable(arguments, comparison, changed, baseline)
-        result = prediction.score(prediction.load(arguments.prediction), comparison)
+        predicted = prediction.load(arguments.prediction)
+        if not prediction.fits_baseline(predicted, comparison):
+            raise ComparisonRefused("the prediction was written against another baseline "
+                                    "recording than the one this comparison uses")
+        result = prediction.score(predicted, comparison)
         document = prediction.score_document(result, {
             "run": changed["run"]["name"],
             "prediction": changed["provenance"]["prediction"],

@@ -13,17 +13,25 @@ is itself compared against the fixed one.
 Some pairs must not be compared at all, because the result would look like
 evidence and be none: a recording with itself or with a copy of itself, a
 recording whose agreement gate did not pass, a baseline that is not a normal
-run. `require_comparable` refuses those, and `require_repeat` checks that a
+run, a changed run against another normal run than the one it was changed
+from. `require_comparable` refuses those, and `require_repeat` checks that a
 comparison really is the repeat precondition.
+
+There is more than one normal run. The plain one has the firmware's own boot
+options; the boot order experiments have normal runs with two boot entries.
+Each experiment names the normal run it changes (`experiments`), and a
+changed run is only ever compared with a recording of that one.
 """
 from collections import Counter
 
+from recorder import experiments
 from recorder.banks import BANK_NAMES, PCR_COUNT
 from recorder.errors import ComparisonRefused
 from recorder.recording import MAY_VARY
 
 COMPARISON_FORMAT = "lux-comparison/1"
-NORMAL_EXPERIMENT = "normal"
+NORMAL_EXPERIMENT = experiments.NORMAL
+NORMAL_KIND = experiments.KIND_NORMAL
 
 # Top-level parts that get their own block in the comparison document.
 _OWN_BLOCKS = ("events", "pcrs", "console", "loader_report")
@@ -31,9 +39,11 @@ _OWN_BLOCKS = ("events", "pcrs", "console", "loader_report")
 _OUTCOME_FIELDS = ("outcome.result", "outcome.refusal_lines")
 # What the experiment is. These differ between a normal and a changed run by
 # definition, and the comparison names both experiments in its header, so
-# listing them again among the differences would only be noise.
+# listing them again among the differences would only be noise. The
+# reference to a prediction belongs here too: a counted run has one and a
+# normal run has none.
 _EXPERIMENT_IDENTITY = ("run.experiment", "run.experiment_sha256", "run.kind",
-                        "run.change", "run.change_detail")
+                        "run.change", "run.change_detail", "provenance.prediction")
 
 EventKey = tuple[int, str, str]
 
@@ -107,6 +117,19 @@ def first_differing_line(baseline: list[str], changed: list[str]) -> int | None:
     return None
 
 
+def differing_line_text(baseline: list[str], changed: list[str]) -> dict[str, str | None]:
+    """The text of the first console line that differs, in each run.
+
+    Both values are None when no line differs. One value is None when that
+    run has no line at this position.
+    """
+    position = first_differing_line(baseline, changed)
+    if position is None:
+        return {"baseline": None, "changed": None}
+    return {"baseline": baseline[position - 1] if position <= len(baseline) else None,
+            "changed": changed[position - 1] if position <= len(changed) else None}
+
+
 def _leaves(value: object, prefix: str = "") -> dict[str, object]:
     """Flatten nested dictionaries into dotted paths; lists stay whole values."""
     if not isinstance(value, dict):
@@ -157,7 +180,8 @@ def require_comparable(baseline: dict, changed: dict,
     same recording time are a recording and its copy (the name and the time
     are the fields a comparison ignores, so a renamed copy would otherwise
     compare as identical). A recording whose agreement gate did not pass is
-    not evidence. The baseline is always a normal run.
+    not evidence. The baseline is always a normal run, and for a changed run
+    it is a recording of the normal run that experiment changes.
     """
     if baseline_sha256 == changed_sha256:
         raise ComparisonRefused("both files are the same recording")
@@ -167,20 +191,36 @@ def require_comparable(baseline: dict, changed: dict,
     for side, document in (("baseline", baseline), ("changed", changed)):
         if document["gate"].get("passed") is not True:
             raise ComparisonRefused(f"the {side} recording did not pass the agreement gate")
-    if baseline["run"]["experiment"] != NORMAL_EXPERIMENT:
-        raise ComparisonRefused("the baseline must be a recording of the normal run")
+    if baseline["run"]["kind"] != NORMAL_KIND:
+        raise ComparisonRefused("the baseline must be a recording of a normal run")
+    if changed["run"]["kind"] != NORMAL_KIND:
+        expected = baseline_experiment(str(changed["run"]["experiment"]))
+        if baseline["run"]["experiment"] != expected:
+            raise ComparisonRefused(
+                f"a recording of '{changed['run']['experiment']}' is compared with the normal "
+                f"run it changes, '{expected}', not with '{baseline['run']['experiment']}'")
 
 
-def require_repeat(repeat: dict, baseline_sha256: str) -> None:
+def baseline_experiment(changed_experiment: str) -> str:
+    """The normal run an experiment changes. Raises `ComparisonRefused` if it is unknown."""
+    if changed_experiment not in experiments.EXPERIMENTS:
+        raise ComparisonRefused(f"'{changed_experiment}' is not an experiment this recorder knows")
+    return experiments.EXPERIMENTS[changed_experiment].baseline
+
+
+def require_repeat(repeat: dict, baseline_sha256: str,
+                   baseline: str = NORMAL_EXPERIMENT) -> None:
     """Raise `ComparisonRefused` unless `repeat` proves the normal run repeats.
 
-    The repeat precondition: two different recordings of the normal run are
-    identical on every compared field. `baseline_sha256` is the recording a
-    changed run is measured against; the proof must be about that one.
+    The repeat precondition: two different recordings of one normal run are
+    identical on every compared field. `baseline` names that normal run, and
+    `baseline_sha256` is the recording a changed run is measured against;
+    the proof must be about that one.
     """
     sides = (repeat["baseline"], repeat["changed"])
-    if any(side.get("experiment") != NORMAL_EXPERIMENT for side in sides):
-        raise ComparisonRefused("the repeat comparison is not between two normal runs")
+    if any(side.get("kind") != NORMAL_KIND or side.get("experiment") != baseline for side in sides):
+        raise ComparisonRefused(f"the repeat comparison is not between two recordings of the "
+                                f"normal run '{baseline}'")
     if repeat["baseline"]["recording_sha256"] == repeat["changed"]["recording_sha256"]:
         raise ComparisonRefused("the repeat comparison compares a recording with itself")
     if repeat["identical"] is not True:
@@ -219,6 +259,7 @@ def compare_recordings(baseline: dict, changed: dict,
         "events_only_in_baseline": events_only_in(baseline["events"], changed["events"]),
         "events_only_in_changed": events_only_in(changed["events"], baseline["events"]),
         "console_first_differing_line": console_line,
+        "console_first_differing_text": differing_line_text(baseline["console"], changed["console"]),
         "loader_report_first_differing_line": report_line,
         "other_fields_differing": other,
     }
