@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta name="theme-color" content="#000000" />
+    <title>Lux: what your laptop does before it wakes</title>
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <meta
+      name="description"
+      content="One recorded boot of open-source UEFI firmware in a virtual machine, followed from reset to the moment firmware hands the machine over. Every claim says where it comes from."
+    />
+    <style>
+      /* Black before the stylesheet arrives: the page never flashes white. */
+      html {
+        background: #000;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
