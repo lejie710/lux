@@ -36,6 +36,7 @@ No row failed, so there is no mismatch to state. **Read the numbers with the fiv
 ## How the runs were made
 
 - **Order of events:** the predictions were committed (`76ce581`, notes reworded in `b6270c1` before any run); an independent audit found no trace of any changed configuration in the repository or the work directory; then each experiment was recorded once with `python3 -m recorder record <experiment>-1 --experiment <experiment> --for-the-record`.
+- **The dates, on one clock.** A recording carries its time in UTC. The `written` date in a prediction file is the calendar date at the place of writing, eight hours ahead of UTC. So a prediction that says `written: 2026-11-15` stands beside a run recorded on `2026-11-14`, and that reads as if the run came first. It did not. In UTC the predictions were committed at 2026-11-14T16:13:51Z (`76ce581`) and their notes reworded at 16:41:25Z (`b6270c1`); the four runs were recorded at 16:52:02Z, 16:53:32Z, 16:55:26Z and 16:56:19Z.
 - **Each was booted exactly once.** No run failed, none was repeated, none ended as `timeout`. The agreement gate passed in all four.
 - **The changed boot order store** was made by one preparation boot (`python3 -m recorder prepare --changed-boot-order`) after the boot order predictions were committed. That boot runs the enrolment program on the empty store; it does not boot the changed order. The store has SHA-256 `6bce1b1d7fcd7e037096fbc574f270946c6491909eaa605eb90a86192eff09c7` and differs from the pinned two-entry template in the value of `BootOrder` only.
 - **Before the counted runs, on the same machine,** a fresh plain normal run and a fresh run of each two-entry normal run were equal to the committed ones on every compared field, and a fresh run of the pilot `e2` gave the committed comparison. Those are normal runs and a declared pilot.
@@ -234,6 +235,24 @@ One counted experiment has not been run: `rebuilt-firmware`. No such firmware ha
 - **What a recording cannot see was not scored:** the value of `BootCurrent`, and the table in which UEFI says a refused image is recorded.
 - **The changed boot order was written by a preparation boot and the machine was switched off before the recorded boot.** A change of the order while the machine runs, or by an operating system, was not tested.
 - **The test certificates are not yet valid at the guest's fixed clock**, and this firmware accepts them all the same, in the normal runs as in these.
+
+## Checked a second time
+
+After the runs, a second check was made by someone who ran none of them, with a script that shares no code with the recorder. Nothing was booted for it. It found no difference from this note.
+
+| What was checked | Result |
+|---|---|
+| The four scores, made again from the recordings and the prediction files: the comparison fields recomputed from the two recordings, then every row judged | 6 of 6 and 72 of 72, no mismatch. Every row verdict equals the committed score file, and every recomputed comparison field equals the committed comparison |
+| The registers of all 14 committed recordings, replayed from `eventlog.bin` with a separate parser, in all four hash banks | 96 of 96 values equal in each recording. Every digest that is defined by its event's own data was recomputed and is equal |
+| The gate block of each recording | `passed`, and all seven checks true, in all 14 |
+| Each prediction: the file on disk, the hash stored in the recording, the file read out of the commit the recording names, and the file at the head of the history | The same SHA-256 in all four places, for all four predictions |
+| Order in the history | Both prediction commits are ancestors of every commit that adds a counted recording |
+| The run directories left on the machine | One directory and one attempt marker per counted run. Each TPM log holds one start-up command, and each console log one boot |
+| Every variable store and loader file on the machine | The only stores that list entry B first, and the only loader files with the changed signature byte, were written after the prediction commits: by the preparation boot and by the four runs |
+| The changed loader, made again from the committed signed loader by flipping the lowest bit of the byte at file offset 40170 | SHA-256 `f9a028b6f2544a7e03f007b6058c3b45ebc930e094e0a92de0d902938e0b9496`, as recorded. The byte lies in the 256 bytes of the signature value |
+| The store with the changed order against the two-entry template | Two bytes differ, both inside the value of `BootOrder` |
+
+What this check cannot show: file times and commit times can be set by hand, and it was made on the same machine as the runs. It shows that the files agree with each other and with this note, not that no other boot was ever made.
 
 ## Checking the scores
 
