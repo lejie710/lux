@@ -1,0 +1,22 @@
+{
+  "files": {
+    "KEK.auth": "e7aceb53b68b41d8c727d00a542f594bbd45eed41655a36b4542c49c732cb6ef",
+    "KEK.crt": "06efaa9859d29a4267f4b53a4319b1b4240d96cd82d20556e9a27d2fddd601e8",
+    "KEK.esl": "17fb38f352ecdccbba43e98aade27a85f0193336f287d6e8e2d0ca91e0ed3dc6",
+    "KEK.key": "af2d1744bfb18ff82df96b4a4b790e49ad3930d707fbb174470dc1d9d51da67c",
+    "PK.auth": "ed450430c5b70aede2b3534be5d5391a82bf70b8673f9dcb93464c5811f4ecbf",
+    "PK.crt": "cc698edf940b834df76b45c044c0f18ae67e8c54c15f4d4fbc84b7cfbcf02e5d",
+    "PK.esl": "ebc28e0bbec411c9c429f2bcaa467422ea9b1de9c9f9e63e145b0128fb4fcc32",
+    "PK.key": "f6f3a57b6ffd7027c00acde87a16ce34bcd18f28a48d064824bd673e229c6746",
+    "db.auth": "db0e19473eaa16a2470d363ed3a029df2929c02c5bbb2064d5ae7a2371154055",
+    "db.crt": "a013363d37de7cf5aa7d9bc647a0274dc6d143b9129d140af696207c37c2e094",
+    "db.esl": "23d2c83c36738764317f3f5afb663f40d91e0d1dd7c8d0645477ffa6d4542e93",
+    "db.key": "84bffe11bddd0d82b70d575bf588b2d5caef957f301850a768f45eac69f9449e",
+    "loader-signed.efi": "0cb3ced82bf84f1a235c3b81f8029d055bd846a261cdfd71ad6f9f0437e18a78"
+  },
+  "format": "lux-testkeys/1",
+  "loader_authenticode_sha256": "00c5018d3157edb92f96a08ba685a1c5913c5dd5fa2228b021dd9d4970eee50f",
+  "owner_guid": "11111111-2222-3333-4444-555555555555",
+  "update_timestamp": "2026-01-01 00:00:00",
+  "vars_template_sha256": "57ec06981b573029dd48cd399a5546ad8e57dece61dac9cdeeb894e79e88cebf"
+}
