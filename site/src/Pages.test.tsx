@@ -336,6 +336,15 @@ describe("the evidence of a card", () => {
     expect(html).not.toContain("What happens");
   });
 
+  it("says that a prediction's date is a local one, and names the commit it was scored under", () => {
+    const counted = findSubject("experiments-blind/signature-byte")!;
+    const sheet = renderToStaticMarkup(
+      <EvidencePanel screen={counted.screen} card={counted.card} atClaims={false} onClose={nothing} />,
+    );
+    expect(sheet).toContain("a local calendar date; a recording gives its time in UTC.");
+    expect(sheet).toMatch(/Scored as committed in [0-9a-f]{7}\./);
+  });
+
   it("opens from the address of the card", () => {
     const page = renderToStaticMarkup(
       <App mode={{ kind: "scroll" }} route={readRoute("#/experiments/experiments-pilots/e1/evidence")} />,

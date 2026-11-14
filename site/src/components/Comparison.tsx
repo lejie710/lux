@@ -210,7 +210,11 @@ export function Prediction({ state, status }: { state: ExperimentState; status: 
       )}
       {prediction && (
         <p className="sheet-prose">
-          {prediction.written ? `Written ${prediction.written}. ` : ""}
+          {/* A prediction carries the calendar date of the place it was written at; a recording carries UTC. */}
+          {prediction.written
+            ? `Written ${prediction.written}, a local calendar date; a recording gives its time in UTC. `
+            : ""}
+          {score?.prediction?.commit ? `Scored as committed in ${score.prediction.commit.slice(0, 7)}. ` : ""}
           {score ? "" : state.run ? "The run is recorded and not yet scored." : "On file. Not yet run."}
         </p>
       )}
