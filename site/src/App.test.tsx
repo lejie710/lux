@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { App } from "./App";
 import { EvidencePanel } from "./components/EvidencePanel";
-import { Stage } from "./components/Stage";
+import { EvidencePill, Stage } from "./components/Stage";
 import { PICTURE_NOTE, OPENING, basisLabel, claimNumbers, define, headline, stop } from "./content/load";
 import { PARTS } from "./content/types";
 import { STEPS } from "./model/scene";
@@ -93,6 +93,15 @@ describe("?step=N: the scene frozen at one step", () => {
     expect(html).not.toContain('role="dialog"');
   });
 
+  it("puts the page behind an open panel out of reach, and lets the panel itself take focus", () => {
+    const open = renderToStaticMarkup(<App mode={{ kind: "frozen", step: 2, evidence: true }} />);
+    expect(open).toMatch(/<nav class="lnav" aria-label="Site" inert="">/);
+    expect(open).toMatch(/<main id="top" inert="">/);
+    expect(open).toMatch(/role="dialog" aria-modal="true" aria-labelledby="sheet-title" tabindex="-1"/);
+    const still = renderToStaticMarkup(<App mode={{ kind: "still" }} />);
+    expect(still).not.toContain("inert");
+  });
+
   it("opens the evidence from the start when asked, but not at the opening, which has no control for it", () => {
     expect(renderToStaticMarkup(<App mode={{ kind: "frozen", step: 2, evidence: true }} />)).toContain('role="dialog"');
     expect(renderToStaticMarkup(<App mode={{ kind: "frozen", step: 0, evidence: true }} />)).not.toContain("dialog");
@@ -128,10 +137,26 @@ describe("a stage", () => {
   });
 
   it("shows a recorded line with its register and type, read from the recording", () => {
+    const pill = renderToStaticMarkup(<EvidencePill evidence={OPENING.evidence} />);
+    expect(pill).toMatch(/<span class="pill-register">PCR \d+<\/span>/);
+    expect(pill).toMatch(/<span class="pill-type">EV_[A-Z_]+<\/span>/);
+    expect(pill).toContain(esc(OPENING.evidence.recorded ? OPENING.evidence.text : ""));
+  });
+
+  it("gives the step before stop 1 the opening's supporting sentence, small, and no evidence line", () => {
     const inside = renderToStaticMarkup(<Stage current={1} solo onOpen={nothing} />);
-    expect(inside).toMatch(/<span class="pill-register">PCR \d+<\/span>/);
-    expect(inside).toMatch(/<span class="pill-type">EV_[A-Z_]+<\/span>/);
-    expect(inside).toContain(esc(OPENING.evidence.recorded ? OPENING.evidence.text : ""));
+    expect(inside).toContain(`<h2 class="statement statement-support">${esc(OPENING.support ?? "")}`);
+    expect(inside).not.toContain('class="pill');
+    expect(inside).toContain('id="evidence-open-inside"');
+  });
+
+  it("names the picture by what it shows, not by the note on why it was drawn so", () => {
+    expect(html).toContain('role="img" aria-label="Illustration: a circuit board. Lit: power, processor."');
+    expect(html).not.toContain(esc(stopOne.picture.note));
+  });
+
+  it("tells the board where to look, for windows too narrow to show all of it", () => {
+    expect(html).toMatch(/class="board" data-on="true" style="--focus:0\.\d+"/);
   });
 });
 
@@ -139,7 +164,7 @@ describe("the evidence panel for stop 1", () => {
   const html = renderToStaticMarkup(<EvidencePanel screen={stopOne} atClaims={false} onClose={nothing} />);
 
   it("is a labelled dialog with a way out", () => {
-    expect(html).toContain('role="dialog" aria-modal="true" aria-labelledby="sheet-title"');
+    expect(html).toContain('role="dialog" aria-modal="true" aria-labelledby="sheet-title" tabindex="-1"');
     expect(html).toMatch(/<button type="button" class="sheet-close">Close<\/button>/);
     expect(html).toContain(`<h2 id="sheet-title" class="sheet-title">${esc(stopOne.statement.text)}</h2>`);
   });
@@ -195,6 +220,34 @@ describe("the stylesheet", () => {
     for (const frames of css.matchAll(/@keyframes [a-z-]+ \{([\s\S]*?)\n\}/g))
       for (const property of frames[1].matchAll(/^\s+([a-z-]+):/gm))
         expect(["opacity", "transform"]).toContain(property[1]);
+  });
+
+  it("lets the opening rest for a full window: the first marker is a window and a half", () => {
+    const flat = css.replace(/\s+/g, " ");
+    expect(flat).toContain(".marker:first-child { flex-basis: 150svh; }");
+    expect(flat).toContain("height: calc(100svh + 150svh + (var(--steps) - 1) * 90svh);");
+  });
+
+  it("sizes the opening's title from the stage's height too, and gives the laptop only the room it leaves", () => {
+    const flat = css.replace(/\s+/g, " ");
+    expect(flat).toMatch(/--title-size: clamp\(\d+px, min\([\d.]+cqw, [\d.]+cqh\), \d+px\);/);
+    expect(flat).toMatch(/\.laptop \{[^}]*height: min\([^;]*var\(--title-block\)\);/);
+  });
+
+  it("slides the board on a tall stage with a transform only, towards the step's focus", () => {
+    const flat = css.replace(/\s+/g, " ");
+    expect(flat).toMatch(/@container \(max-aspect-ratio: 4 \/ 5\) \{ \.board \{[^}]*--pan: clamp\([^;]*var\(--focus\)/);
+    expect(flat).toContain("transform: translateX(var(--pan));");
+  });
+
+  it("keeps the faintest text readable on black: at least 4.5 to 1", () => {
+    const hex = /--faint: #([0-9a-f]{6});/.exec(css)![1];
+    const channel = (n: number) => {
+      const c = parseInt(hex.slice(n, n + 2), 16) / 255;
+      return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
+    };
+    const luminance = 0.2126 * channel(0) + 0.7152 * channel(2) + 0.0722 * channel(4);
+    expect((luminance + 0.05) / 0.05).toBeGreaterThan(4.5);
   });
 
   it("keeps the page black", () => {

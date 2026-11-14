@@ -6,7 +6,7 @@
   --text: #f4f2ec;
   --soft: #c9c7c1;
   --grey: #8e8e93;
-  --faint: #6a6a70;
+  --faint: #808086;
   --warm: #ffc56b;
   --line: rgba(255, 255, 255, 0.14);
   --surface: #0c0c0e;
@@ -113,8 +113,9 @@ button {
 /* The scene: a tall section, a pinned stage, and a track of invisible markers that the scroll hook watches. */
 .scene {
   position: relative;
-  /* One window for the stage, then the run of the steps: a longer first one, so the opening rests. */
-  height: calc(100svh + 110svh + (var(--steps) - 1) * 90svh);
+  /* One window for the stage, then the run of the steps. A step changes when its marker reaches the middle
+     of the window, so the first marker is longer: the opening rests for a full window of scrolling. */
+  height: calc(100svh + 150svh + (var(--steps) - 1) * 90svh);
 }
 .pin {
   position: sticky;
@@ -132,7 +133,7 @@ button {
   flex: 0 0 90svh;
 }
 .marker:first-child {
-  flex-basis: 110svh;
+  flex-basis: 150svh;
 }
 .marker:last-child {
   flex: 1 0 90svh;
@@ -146,6 +147,12 @@ button {
   background: var(--black);
   /* Sizes inside a stage follow the stage, not the window: a still section lays out like a pinned one. */
   container-type: size;
+  /* The opening's title follows the stage's height as well as its width, and the laptop is given only the
+     room the title block leaves: on a short, wide window the two never meet. */
+  --title-size: clamp(44px, min(7.4cqw, 14cqh), 108px);
+  --subtitle-size: clamp(18px, min(1.9cqw, 3.6cqh), 27px);
+  --opening-pad: clamp(40px, 8cqh, 76px);
+  --title-block: calc(var(--title-size) + var(--subtitle-size) * 1.25 + 62px + var(--opening-pad));
 }
 .pin .stage {
   min-height: 0;
@@ -164,7 +171,7 @@ button {
   top: calc(var(--nav) + 1cqh);
   margin-inline: auto;
   width: auto;
-  height: min(60cqh, 66cqw);
+  height: min(60cqh, 66cqw, 100cqh - var(--nav) - 1cqh - var(--title-block));
   transform-origin: 50% 74%;
   transition:
     transform 1.3s var(--ease),
@@ -185,6 +192,9 @@ button {
   margin-inline: auto;
   width: min(100%, 160cqh);
   aspect-ratio: 16 / 10;
+  /* How far the board is slid sideways to keep a step's parts in view. None where the whole board fits. */
+  --pan: 0px;
+  transform: translateX(var(--pan));
   transform-origin: 50% 74%;
   /* The plate runs off its own left and right edges; where the window is wider than the plate, they melt. */
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
@@ -195,7 +205,7 @@ button {
 }
 .board[data-on="false"] {
   opacity: 0;
-  transform: scale(0.6);
+  transform: translateX(var(--pan)) scale(0.6);
   transition:
     transform 1.3s var(--ease),
     opacity 0.6s ease;
@@ -251,7 +261,7 @@ button {
   align-items: flex-end;
   justify-content: space-between;
   gap: 32px;
-  padding: 0 var(--gutter) clamp(52px, 8cqh, 76px);
+  padding: 0 var(--gutter) var(--opening-pad);
 }
 .title-eyebrow {
   margin: 0 0 2px;
@@ -261,7 +271,7 @@ button {
 }
 .title {
   margin: 0;
-  font-size: clamp(64px, 7.4vw, 108px);
+  font-size: var(--title-size);
   font-weight: 750;
   line-height: 1;
   letter-spacing: -0.045em;
@@ -273,7 +283,8 @@ button {
 }
 .subtitle {
   margin: 14px 0 0;
-  font-size: clamp(20px, 1.9vw, 27px);
+  font-size: var(--subtitle-size);
+  line-height: 1.25;
   font-weight: 650;
   letter-spacing: -0.02em;
 }
@@ -325,11 +336,14 @@ button {
   text-wrap: balance;
   text-shadow: 0 0 28px var(--black);
 }
-.statement-long {
-  max-width: 21em;
-  font-size: clamp(28px, min(3.5cqw, 5.8cqh), 52px);
-  line-height: 1.1;
-  letter-spacing: -0.035em;
+/* A supporting sentence standing where a statement would: smaller, lighter, quieter. */
+.statement-support {
+  max-width: 26em;
+  font-size: clamp(19px, min(2.1cqw, 4cqh), 28px);
+  font-weight: 600;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+  color: var(--soft);
 }
 /* The citation marker: a small number after the statement, a button with a 28 px reach. */
 .cite {
@@ -348,6 +362,9 @@ button {
 }
 .statement .cite {
   font-size: max(12px, 0.18em);
+}
+.statement-support .cite {
+  top: -0.7em;
 }
 .cite:hover {
   color: var(--warm);
@@ -672,24 +689,25 @@ html[data-mode="still"] .stage {
   }
 }
 
-/* Narrow windows: the board is drawn larger than the window and held by its left edge, where the first
-   stops happen; the foot stacks; the invitation sits under the title. */
+/* Narrow windows: the foot stacks and the invitation sits under the title. */
 @media (max-width: 760px) {
   .lnav .links {
     gap: 16px;
     font-size: 13px;
   }
+  /* No room for the tag: it stays for a screen reader, and the grey of the name says the rest. */
   .lnav .soon small {
-    display: none;
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
   .laptop {
     top: calc(var(--nav) + 5cqh);
-    height: min(42cqh, 72cqw);
-  }
-  .board {
-    width: 200cqw;
-    margin-inline: 0;
-    bottom: 118px;
+    height: min(42cqh, 72cqw, 100cqh - var(--nav) - 5cqh - var(--title-block));
   }
   .words-opening {
     flex-direction: column;
@@ -738,16 +756,36 @@ html[data-mode="still"] .stage {
     left: var(--gutter);
     bottom: 12px;
     right: var(--gutter);
-    font-size: 10px;
+    font-size: 11px;
     line-height: 1.3;
   }
-  .title {
-    font-size: clamp(56px, 17vw, 72px);
+  .stage {
+    --title-size: clamp(48px, min(17cqw, 10cqh), 72px);
+    --subtitle-size: clamp(18px, 5cqw, 21px);
+    /* Two lines of title, two of subtitle, the invitation under them. */
+    --title-block: calc(var(--title-size) * 2 + var(--subtitle-size) * 2.5 + 190px);
   }
   .statement {
     font-size: clamp(30px, 8.6vw, 40px);
   }
-  .statement-long {
-    font-size: clamp(24px, 6.6vw, 30px);
+  .statement-support {
+    font-size: clamp(17px, 4.7vw, 20px);
+  }
+}
+
+/* A stage taller than it is wide (a phone, a tablet held upright): the whole board would be a thin strip
+   with a black band above it. It is drawn one and a half windows wide instead, slid so the parts this step
+   lights are in view, and set between the statement and the foot. The plate's lower half holds the board,
+   so the plate is placed by the middle of that half. Only a transform moves it. */
+@container (max-aspect-ratio: 4 / 5) {
+  .board {
+    width: 150cqw;
+    margin-inline: 0;
+    right: auto;
+    bottom: auto;
+    top: calc(57cqh - 68cqw);
+    --pan: clamp(-50cqw, 50cqw - var(--focus) * 150cqw, 0px);
+    -webkit-mask-image: none;
+    mask-image: none;
   }
 }

@@ -1,0 +1,50 @@
+{
+  "power": {
+    "left": 0.0,
+    "right": 0.2083,
+    "top": 0.64,
+    "bottom": 1.0
+  },
+  "firmware": {
+    "left": 0.2333,
+    "right": 0.325,
+    "top": 0.7667,
+    "bottom": 0.88
+  },
+  "processor": {
+    "left": 0.3292,
+    "right": 0.625,
+    "top": 0.5733,
+    "bottom": 0.86
+  },
+  "memory": {
+    "left": 0.275,
+    "right": 0.6125,
+    "top": 0.4733,
+    "bottom": 0.5867
+  },
+  "controllers": {
+    "left": 0.6167,
+    "right": 0.7625,
+    "top": 0.5867,
+    "bottom": 0.8733
+  },
+  "storage": {
+    "left": 0.725,
+    "right": 0.9708,
+    "top": 0.48,
+    "bottom": 0.8067
+  },
+  "security": {
+    "left": 0.7583,
+    "right": 0.825,
+    "top": 0.7667,
+    "bottom": 0.84
+  },
+  "ribbon": {
+    "left": 0.8583,
+    "right": 1.0,
+    "top": 0.3733,
+    "bottom": 0.5333
+  }
+}

@@ -6,6 +6,15 @@
     <meta name="color-scheme" content="dark" />
     <meta name="theme-color" content="#000000" />
     <title>Lux: what your laptop does before it wakes</title>
+    <!-- The opening's picture and the text face are asked for at once, not after the script has run. -->
+    <link rel="preload" as="image" type="image/webp" href="/src/assets/laptop-dark.webp" fetchpriority="high" />
+    <link
+      rel="preload"
+      as="font"
+      type="font/woff2"
+      href="/node_modules/@fontsource-variable/inter/files/inter-latin-wght-normal.woff2"
+      crossorigin
+    />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
     <meta
       name="description"

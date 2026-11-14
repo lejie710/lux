@@ -6,7 +6,7 @@ import boardDark from "../assets/board-dark.webp";
 import laptopDark from "../assets/laptop-dark.webp";
 import { PICTURE_NOTE, claimNumbers, recordedEvent } from "../content/load";
 import { PARTS, type Evidence, type OpeningScreen, type Part, type Statement } from "../content/types";
-import { STEPS, layersAt, splitEmphasis, type SceneStep } from "../model/scene";
+import { STEPS, focusAt, layersAt, pictureLabel, splitEmphasis, type SceneStep } from "../model/scene";
 import { Mark } from "./Mark";
 import { markerId, openerId } from "./panel";
 
@@ -32,9 +32,9 @@ export function Stage({ current, solo = false, onOpen }: StageProps) {
   const layers = layersAt(step);
   return (
     <div className="stage" data-step={step.id}>
-      <div className="picture" role="img" aria-label={step.screen.picture.note}>
+      <div className="picture" role="img" aria-label={pictureLabel(step)}>
         <img className="laptop" src={laptopDark} alt="" width={1280} height={960} data-on={layers.laptop} />
-        <div className="board" data-on={layers.board}>
+        <div className="board" data-on={layers.board} style={{ "--focus": focusAt(current) } as CSSProperties}>
           <img src={boardDark} alt="" width={1920} height={1200} />
           {PARTS.map((part) => (
             <div
@@ -86,7 +86,8 @@ function Words({ step, on, onOpen }: { step: SceneStep; on: boolean; onOpen: Ope
     );
   }
 
-  // The step between the opening and stop 1 speaks the opening's supporting sentence.
+  // The step between the opening and stop 1 has no statement of its own: it carries the opening's supporting
+  // sentence, at supporting size, and no evidence line. The first evidence line belongs to a stop.
   const statement: Statement = stop ? screen.statement : { text: screen.support ?? "", emphasis: null };
   const numbers = claimNumbers(screen.id);
   return (
@@ -97,7 +98,7 @@ function Words({ step, on, onOpen }: { step: SceneStep; on: boolean; onOpen: Ope
             {stop.number} of {stop.of} <span aria-hidden="true">·</span> {stop.label}
           </p>
         )}
-        <h2 className={`statement${stop ? "" : " statement-long"}`}>
+        <h2 className={stop ? "statement" : "statement statement-support"}>
           <Emphasised statement={statement} />
           <button
             type="button"
@@ -111,7 +112,7 @@ function Words({ step, on, onOpen }: { step: SceneStep; on: boolean; onOpen: Ope
         </h2>
       </div>
       <div className="foot">
-        <EvidencePill evidence={screen.evidence} />
+        {stop && <EvidencePill evidence={screen.evidence} />}
         <button
           type="button"
           className="open-evidence"

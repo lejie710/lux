@@ -2,7 +2,7 @@
 import { describe, expect, it } from "vitest";
 import { OPENING, headline, stop } from "../content/load";
 import { PARTS } from "../content/types";
-import { STEPS, STEP_COUNT, layersAt, splitEmphasis } from "./scene";
+import { PART_BOXES, STEPS, STEP_COUNT, focusAt, layersAt, pictureLabel, splitEmphasis } from "./scene";
 
 const litParts = (n: number) => PARTS.filter((part) => layersAt(STEPS[n]).parts[part].on);
 
@@ -73,5 +73,34 @@ describe("splitEmphasis", () => {
   it("leaves a statement whole when there is no emphasis, or it is not a phrase of it", () => {
     expect(splitEmphasis("a b c", null)).toEqual(["a b c", "", ""]);
     expect(splitEmphasis("a b c", "z")).toEqual(["a b c", "", ""]);
+  });
+});
+
+describe("focusAt", () => {
+  it("looks at the middle of the parts a step lights", () => {
+    const { power, processor } = PART_BOXES;
+    expect(focusAt(2)).toBeCloseTo((Math.min(power.left, processor.left) + Math.max(power.right, processor.right)) / 2);
+  });
+  it("looks, while the board is dark, where the next step will: the picture does not slide as light arrives", () => {
+    expect(focusAt(1)).toBe(focusAt(2));
+    expect(focusAt(0)).toBe(focusAt(2));
+  });
+  it("keeps every part stop 1 lights inside a window two thirds of the board wide", () => {
+    const { power, processor } = PART_BOXES;
+    expect(Math.max(power.right, processor.right) - Math.min(power.left, processor.left)).toBeLessThanOrEqual(2 / 3);
+  });
+  it("knows where every part lies", () => {
+    for (const part of PARTS) {
+      expect(PART_BOXES[part].left).toBeLessThan(PART_BOXES[part].right);
+      expect(PART_BOXES[part].right).toBeLessThanOrEqual(1);
+    }
+  });
+});
+
+describe("pictureLabel", () => {
+  it("says which picture is shown and which parts are lit", () => {
+    expect(pictureLabel(STEPS[0])).toMatch(/laptop/);
+    expect(pictureLabel(STEPS[1])).toBe("Illustration: a circuit board, dark.");
+    expect(pictureLabel(STEPS[2])).toBe("Illustration: a circuit board. Lit: power, processor.");
   });
 });

@@ -7,6 +7,7 @@ repository. This script turns them into what the site ships:
   src/assets/board-dark.webp     the board before power
   src/assets/board-awake.webp    the same board with every part lit
   src/assets/masks/<part>.webp   one soft mask per part of the board
+  src/assets/parts.json          where each part lies on the board, as fractions of the plate
 
 A stop's picture is not a file. The page stacks board-awake over board-dark
 once per part, each copy cut out by that part's mask, and fades the copies in.
@@ -16,6 +17,7 @@ Usage: python tools/make_assets.py <folder with the source plates>
 Needs Pillow. Run from the site folder.
 """
 
+import json
 import sys
 from pathlib import Path
 
@@ -86,6 +88,19 @@ def main() -> None:
 
     for part, polygon in REGIONS.items():
         part_mask(polygon).save(out / "masks" / f"{part}.webp", lossless=True, method=6)
+
+    # Where each part lies, so the page can keep the parts a step lights in view on a narrow window.
+    boxes = {}
+    for part, polygon in REGIONS.items():
+        xs = [x / PLATE[0] for x, _ in polygon]
+        ys = [y / PLATE[1] for _, y in polygon]
+        boxes[part] = {
+            "left": round(min(xs), 4),
+            "right": round(max(xs), 4),
+            "top": round(min(ys), 4),
+            "bottom": round(max(ys), 4),
+        }
+    (out / "parts.json").write_text(json.dumps(boxes, indent=2) + chr(10), encoding="utf-8")
 
     for path in sorted(out.rglob("*.webp")):
         print(f"{path.as_posix()}  {Image.open(path).size}  {path.stat().st_size} bytes")

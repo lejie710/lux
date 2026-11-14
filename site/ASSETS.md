@@ -4,13 +4,14 @@ Every picture on the site is an illustration of a fictional laptop and a fiction
 
 ## How each file was made
 
-| File                           | What it is                                             | How it was made                                                                                                                                 |
-| ------------------------------ | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
-| `src/assets/laptop-dark.webp`  | The laptop before power, 1280 x 960                    | A generated picture (2400 x 1500), cropped close to the laptop, edges faded to black, resized and saved as WebP by `tools/make_assets.py`       |
-| `src/assets/board-dark.webp`   | The board before power, 1920 x 1200                    | A generated picture (2400 x 1500), resized and saved as WebP by the same script                                                                 |
-| `src/assets/board-awake.webp`  | The same board with every part lit, 1920 x 1200        | A generated picture of the same board from the same view, so that parts line up with the dark one; resized and saved as WebP by the same script |
-| `src/assets/masks/<part>.webp` | Eight soft masks, 600 x 375, one per part of the board | Composed in code: a polygon per part, drawn and blurred by the same script. The shape is in the alpha channel                                   |
-| `public/favicon.svg`           | The mark                                               | Drawn by hand as SVG from the geometry in `src/model/mark.ts`; a test keeps the two equal                                                       |
+| File                           | What it is                                                     | How it was made                                                                                                                                  |
+| ------------------------------ | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `src/assets/laptop-dark.webp`  | The laptop before power, 1280 x 960                            | A generated picture (2400 x 1500), cropped close to the laptop, edges faded to black, resized and saved as WebP by `tools/make_assets.py`        |
+| `src/assets/board-dark.webp`   | The board before power, 1920 x 1200                            | A generated picture (2400 x 1500), resized and saved as WebP by the same script                                                                  |
+| `src/assets/board-awake.webp`  | The same board with every part lit, 1920 x 1200                | A generated picture of the same board from the same view, so that parts line up with the dark one; resized and saved as WebP by the same script  |
+| `src/assets/masks/<part>.webp` | Eight soft masks, 600 x 375, one per part of the board         | Composed in code: a polygon per part, drawn and blurred by the same script. The shape is in the alpha channel                                    |
+| `src/assets/parts.json`        | Where each part lies on the board, as fractions of the picture | Composed in code: the bounds of each part's polygon, written by the same script. A narrow window uses it to keep the parts a step lights in view |
+| `public/favicon.svg`           | The mark                                                       | Drawn by hand as SVG from the geometry in `src/model/mark.ts`; a test keeps the two equal                                                        |
 
 The full-size source pictures are not in this repository. With them in a folder, the shipped files are rebuilt by:
 
