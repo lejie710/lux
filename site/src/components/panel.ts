@@ -27,10 +27,18 @@ export type PanelKeyAction = { action: "close" } | { action: "focus"; index: num
  * What a key does while the panel is open. Escape closes it. Tab stays inside: from the last control it
  * goes to the first, and Shift and Tab from the first (or from the panel itself, at -1) goes to the last.
  * `at` is the focused control's place among the panel's `count` controls. Null leaves the key to the browser.
+ * `loose` says focus is inside the panel on something that is not a control, such as the heading a citation
+ * marker lands on: Tab is then the browser's, and goes to the control that follows in the panel.
  */
-export function panelKey(key: { key: string; shiftKey?: boolean }, at: number, count: number): PanelKeyAction {
+export function panelKey(
+  key: { key: string; shiftKey?: boolean },
+  at: number,
+  count: number,
+  loose = false,
+): PanelKeyAction {
   if (key.key === "Escape") return { action: "close" };
   if (key.key !== "Tab" || count === 0) return null;
+  if (at < 0 && loose) return null;
   if (key.shiftKey && at <= 0) return { action: "focus", index: count - 1 };
   if (!key.shiftKey && (at < 0 || at === count - 1)) return { action: "focus", index: 0 };
   return null;

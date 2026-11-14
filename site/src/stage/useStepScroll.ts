@@ -1,11 +1,42 @@
 // The pinned scene's scroll steps: one invisible marker per step crosses the viewport, and the step whose
 // marker is at the viewport's middle is the current one. Each step holds a complete state, so fast or
 // reverse scrolling lands correctly.
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { stepKey } from "../model/scene";
+
+/** Controls that use Space themselves: a press on one of them is theirs, not a step. */
+const CONTROLS = "a[href], button, input, select, textarea, summary, [tabindex='0']";
 
 export function useStepScroll() {
   const [i, setI] = useState(0);
   const markers = useRef<(HTMLDivElement | null)[]>([]);
+  const at = useRef(0);
+  at.current = i;
+
+  /** Go to a step: its marker is put at the middle of the window, at once. The first step is the top. */
+  const go = useCallback((to: number) => {
+    if (to <= 0) window.scrollTo({ top: 0, behavior: "instant" });
+    else markers.current[to]?.scrollIntoView({ block: "center", behavior: "instant" });
+  }, []);
+
+  // One press of Space or Page Down is one step, and Shift with Space or Page Up one step back, while the
+  // stage is pinned. A window's own paging is longer than a short stretch of the track and would skip a screen.
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
+      if (document.documentElement.classList.contains("panel-open")) return;
+      const target = e.target as HTMLElement | null;
+      if (e.key === " " && target?.closest?.(CONTROLS)) return;
+      const scene = markers.current[0]?.closest(".scene")?.getBoundingClientRect();
+      if (!scene || scene.top > 1 || scene.bottom < window.innerHeight - 1) return;
+      const to = stepKey(e, at.current, markers.current.length);
+      if (to === null) return;
+      e.preventDefault();
+      go(to);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [go]);
 
   useEffect(() => {
     let io: IntersectionObserver | undefined;
@@ -35,5 +66,5 @@ export function useStepScroll() {
     };
   }, []);
 
-  return { i, markers };
+  return { i, markers, go };
 }

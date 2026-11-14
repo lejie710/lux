@@ -1,7 +1,8 @@
 // One stage: the picture in all its layers, and the words of each step over it. Every layer and every step's
 // words are always in the stage; the current step only sets which are seen, and the stylesheet fades between
-// them. A stage shown alone (a still section, or a frozen step) carries only its own step's words.
-import type { CSSProperties } from "react";
+// them. A stage shown alone (a still section, or a frozen step) carries only its own step's words, and only
+// the layers of the picture that its step shows: nothing fades there, so nothing unseen needs to be drawn.
+import { Fragment, type CSSProperties } from "react";
 import boardDark from "../assets/board-dark.webp";
 import laptopAwake from "../assets/laptop-awake.webp";
 import laptopDark from "../assets/laptop-dark.webp";
@@ -14,6 +15,7 @@ import {
   focusAt,
   layersAt,
   pictureLabel,
+  spanAt,
   splitEmphasis,
   type PartLayer,
   type SceneStep,
@@ -39,41 +41,57 @@ interface StageProps {
   /** Whether the page has a place for each step that a mark of the rail can lead to. */
   anchors?: boolean;
   onOpen: OpenEvidence;
+  /** Where the reader can step through the story: called with the step to go to. */
+  onStep?: (to: number) => void;
 }
 
-export function Stage({ current, solo = false, anchors = true, onOpen }: StageProps) {
+export function Stage({ current, solo = false, anchors = true, onOpen, onStep }: StageProps) {
   const step = STEPS[current];
   const layers = layersAt(step);
+  // A stage that cross-fades keeps every layer; one shown alone draws only what its step shows.
+  const drawn = (shown: boolean) => shown || !solo;
+  // A screen with a supporting line under its statement leaves the laptop of the ending less room.
+  const low = Boolean(step.screen.pilot_label || step.screen.handover);
+  const frame = { "--focus": focusAt(current), "--span": Math.max(spanAt(current), 0.01) } as CSSProperties;
   return (
     <div className="stage" data-step={step.id}>
       <div className="picture" role="img" aria-label={pictureLabel(step)}>
-        <img className="laptop" src={laptopDark} alt="" width={1280} height={960} data-on={layers.laptop} />
-        <div className="board" data-on={layers.board} style={{ "--focus": focusAt(current) } as CSSProperties}>
-          <img src={boardDark} alt="" width={1920} height={1200} />
-          {PARTS.map((part) => (
-            <Light key={part} name={part} layer={layers.parts[part]} />
-          ))}
-          <Light name="whole" layer={layers.whole} />
-        </div>
+        {drawn(layers.laptop) && (
+          <img className="laptop" src={laptopDark} alt="" width={1280} height={960} data-on={layers.laptop} />
+        )}
+        {drawn(layers.board) && (
+          <div className="board" data-on={layers.board} style={frame}>
+            <img src={boardDark} alt="" width={1920} height={1200} />
+            {PARTS.map((part) => (
+              <Light key={part} name={part} layer={layers.parts[part]} solo={solo} />
+            ))}
+            <Light name="whole" layer={layers.whole} solo={solo} />
+          </div>
+        )}
         {/* The laptop of the ending: its inside awake, and over that the same laptop with its screen lit. */}
-        <div className="ending" data-on={layers.ending}>
-          <img src={laptopInside} alt="" width={1280} height={960} decoding="async" fetchPriority="low" />
-          <img
-            className="dawn"
-            src={laptopAwake}
-            alt=""
-            width={1280}
-            height={960}
-            decoding="async"
-            fetchPriority="low"
-            data-on={layers.screenLit}
-          />
-        </div>
+        {drawn(layers.ending) && (
+          <div className="ending" data-on={layers.ending} data-low={low}>
+            <img src={laptopInside} alt="" width={1280} height={960} />
+            {drawn(layers.screenLit) && (
+              <img className="dawn" src={laptopAwake} alt="" width={1280} height={960} data-on={layers.screenLit} />
+            )}
+          </div>
+        )}
       </div>
       {STEPS.map((s, n) =>
         solo && n !== current ? null : (
           <Words key={s.id} step={s} on={n === current} anchors={anchors} onOpen={onOpen} />
         ),
+      )}
+      {onStep && (
+        <p className="step-nav">
+          <button type="button" disabled={current === 0} onClick={() => onStep(current - 1)}>
+            Previous step
+          </button>
+          <button type="button" disabled={current === STEPS.length - 1} onClick={() => onStep(current + 1)}>
+            Next step
+          </button>
+        </p>
       )}
       <p className="picture-note">{step.screen.picture_caption ?? PICTURE_NOTE}</p>
     </div>
@@ -84,7 +102,7 @@ export function Stage({ current, solo = false, anchors = true, onOpen }: StagePr
  * The light of one part: a copy of the awake picture cut out by the part's mask, and over it a second copy
  * that adds a little more light while the step is about that part.
  */
-function Light({ name, layer }: { name: string; layer: PartLayer }) {
+function Light({ name, layer, solo }: { name: string; layer: PartLayer; solo: boolean }) {
   const style = {
     "--order": layer.order,
     maskImage: `url("${maskOf(name)}")`,
@@ -92,8 +110,10 @@ function Light({ name, layer }: { name: string; layer: PartLayer }) {
   } as CSSProperties;
   return (
     <>
-      <div className="lit" data-part={name} data-on={layer.on} style={style} />
-      {name !== "whole" && <div className="glow" data-part={name} data-on={layer.strong} style={style} />}
+      {(layer.on || !solo) && <div className="lit" data-part={name} data-on={layer.on} style={style} />}
+      {name !== "whole" && (layer.strong || !solo) && (
+        <div className="glow" data-part={name} data-on={layer.strong} style={style} />
+      )}
     </>
   );
 }
@@ -117,7 +137,7 @@ function Words({
       <div className="words words-opening" data-on={on} inert={!on}>
         <div className="title-block">
           <p className="title-eyebrow">{opening.eyebrow}</p>
-          <h1 className="title">
+          <h1 className="title" tabIndex={-1}>
             <Emphasised statement={opening.title} />
           </h1>
           <p className="subtitle">{opening.statement.text}</p>
@@ -166,27 +186,34 @@ function Words({
         </h2>
         {/* The one supporting line a screen may carry: a pilot's label, or the way on from the last screen. */}
         {screen.pilot_label && <p className="aside aside-pilot">{screen.pilot_label}</p>}
+        {/* The way on is a link once the content holds its address. Until then it is words, not a link. */}
         {screen.handover && (
           <p className="aside aside-handover">
             {screen.handover.text}{" "}
-            <a href="#" title={screen.handover.note}>
-              {screen.handover.link_label}
-            </a>
+            {screen.handover.url ? (
+              <a href={screen.handover.url}>{screen.handover.link_label}</a>
+            ) : (
+              <span className="handover-pending">{screen.handover.link_label}</span>
+            )}
           </p>
         )}
       </div>
-      <div className="foot">
-        {stop && <EvidencePill evidence={screen.evidence} />}
-        <button
-          type="button"
-          className="open-evidence"
-          id={openerId(step.id)}
-          onClick={() => onOpen(screen.id, openerId(step.id), false)}
-        >
-          Open the evidence
-        </button>
-        {stop && <Rail step={step} anchors={anchors} />}
-      </div>
+      {/* The step before stop 1 has no evidence line of its own, so no foot: its marker leads to the claims. */}
+      {stop && (
+        <div className="foot">
+          <EvidencePill evidence={screen.evidence} />
+          <button
+            type="button"
+            className="open-evidence"
+            id={openerId(step.id)}
+            aria-label={`Open the evidence: ${stop.label}, screen ${step.screenAt} of ${step.screenCount}`}
+            onClick={() => onOpen(screen.id, openerId(step.id), false)}
+          >
+            Open the evidence
+          </button>
+          <Rail step={step} anchors={anchors} />
+        </div>
+      )}
     </div>
   );
 }
@@ -215,6 +242,7 @@ export function EvidencePill({ evidence, mark = false }: { evidence: Evidence; m
   if (!evidence.recorded) return <p className="pill pill-missing">{evidence.label}</p>;
   const event =
     evidence.kind === "event" && evidence.event_index ? recordedEvent(evidence.run, evidence.event_index) : null;
+  const [before, emphasis, after] = splitEmphasis(evidence.text, mark ? (evidence.highlight ?? null) : null);
   return (
     <p className="pill">
       {event ? (
@@ -229,13 +257,43 @@ export function EvidencePill({ evidence, mark = false }: { evidence: Evidence; m
         )
       )}
       <span className="pill-line">
-        {mark ? (
-          <Emphasised statement={{ text: evidence.text, emphasis: evidence.highlight ?? null }} />
-        ) : (
-          evidence.text
-        )}
+        <Breakable line={before} />
+        {emphasis && <em>{emphasis}</em>}
+        <Breakable line={after} />
       </span>
     </p>
+  );
+}
+
+/**
+ * A recorded line with the places a long one may break: before the word "from", where a console line goes on
+ * to name a device, and after each slash of the device's path. Not one character of the line is changed.
+ */
+export function Breakable({ line }: { line: string }) {
+  // Spaces at the ends of a part stay outside its box, where a line can break and no space is lost.
+  const parts = line.split(/ (?=from )/).map((part) => /^(\s*)(.*?)(\s*)$/s.exec(part)!);
+  return (
+    <>
+      {parts.map(([, lead, words, trail], n) => (
+        <Fragment key={n}>
+          {n > 0 && " "}
+          {lead}
+          {words && (
+            // A line of one part is plain text: only a line of two parts has parts to keep whole.
+            <span className={parts.length > 1 ? "pill-part" : undefined}>
+              {words.split("/").map((piece, m) => (
+                <Fragment key={m}>
+                  {m > 0 && "/"}
+                  {m > 0 && <wbr />}
+                  {piece}
+                </Fragment>
+              ))}
+            </span>
+          )}
+          {trail}
+        </Fragment>
+      ))}
+    </>
   );
 }
 

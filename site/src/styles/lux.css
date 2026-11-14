@@ -124,13 +124,14 @@ button {
   pointer-events: none;
 }
 .marker {
-  height: 90svh;
+  height: 100svh;
 }
 .marker[data-length="long"] {
   height: 150svh;
 }
+/* No stretch is shorter than a window's own paging distance, so no way of scrolling can pass over a screen. */
 .marker[data-length="short"] {
-  height: 64svh;
+  height: 90svh;
 }
 .marker:last-child {
   height: 190svh;
@@ -260,14 +261,18 @@ button {
   position: absolute;
   left: 0;
   right: 0;
-  top: 40cqh;
+  top: 34cqh;
   margin-inline: auto;
-  height: min(45cqh, 72cqw);
+  height: min(55cqh, 72cqw);
   aspect-ratio: 4 / 3;
   transform-origin: 50% 70%;
   transition:
     transform 1.3s var(--ease),
     opacity 1s ease 0.25s;
+}
+/* Under a statement with a supporting line the laptop is a little smaller and lower, clear of the words. */
+.ending[data-low="true"] {
+  transform: translateY(1.5cqh) scale(0.9);
 }
 .ending[data-on="false"] {
   opacity: 0;
@@ -285,8 +290,8 @@ button {
 /* A short window: the laptop is smaller and starts lower, clear of the words above it. */
 @container (max-height: 700px) {
   .ending {
-    top: 44cqh;
-    height: min(40cqh, 72cqw);
+    top: 41cqh;
+    height: min(46cqh, 72cqw);
   }
 }
 .ending .dawn {
@@ -430,13 +435,24 @@ button {
   font-size: clamp(12.5px, min(1.05cqw, 2cqh), 14.5px);
   background: rgba(10, 10, 11, 0.7);
 }
-.aside-handover a {
+.aside-handover a,
+.handover-pending {
   display: inline-block;
   margin-left: 6px;
   font-weight: 650;
+  white-space: nowrap;
+}
+.aside-handover a {
   color: var(--warm);
   text-underline-offset: 5px;
-  white-space: nowrap;
+}
+/* The way on before it has an address: words in the page's own white, not the colour of a link. */
+.handover-pending {
+  color: var(--text);
+}
+/* The step between the opening and stop 1 has one sentence and nothing else: it sits lower, near the board. */
+.words-stop[data-kind="inside"] .head {
+  top: calc(var(--nav) + 15cqh);
 }
 /* A supporting sentence standing where a statement would: smaller, lighter, quieter. */
 .statement-support {
@@ -478,8 +494,18 @@ button {
   bottom: clamp(44px, 6cqh, 60px);
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  gap: 10px 20px;
+  align-items: flex-end;
+  gap: 10px 14px;
+}
+/* A long line takes a second line inside its own pill and leaves the control and the rail their room, so the
+   foot is one row at every step and its lower edge does not move. */
+.foot .pill {
+  max-width: max(55%, 100% - 480px);
+}
+/* A part of a line stays whole where it can: a long line breaks between its parts first. */
+.pill-part {
+  display: inline-block;
+  max-width: 100%;
 }
 .pill {
   margin: 0;
@@ -522,6 +548,13 @@ button {
 .open-evidence:hover {
   color: var(--warm);
 }
+/* Over the picture the control has the same dark ground as the evidence line, so a bright part of the board
+   behind it cannot make it hard to read. */
+.foot .open-evidence {
+  padding: 0 16px;
+  border-radius: 22px;
+  background: rgba(10, 10, 11, 0.86);
+}
 .rail {
   display: flex;
   gap: 9px;
@@ -538,7 +571,8 @@ button {
   position: relative;
   height: 3px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.2);
+  /* Three to one against black: a mark that leads somewhere has an edge that can be seen. */
+  background: rgba(255, 255, 255, 0.44);
   overflow: hidden;
 }
 /* The warm part of a mark: full for a stop that is past, a share of it for the stop in view. */
@@ -553,7 +587,61 @@ button {
 }
 .rail a:hover i,
 .rail a:focus-visible i {
-  background: rgba(255, 255, 255, 0.5);
+  background: rgba(255, 255, 255, 0.75);
+}
+/* Stepping through the story without scrolling: two controls that are seen only while one of them has the
+   keyboard's focus. Space and Page Down do the same. */
+.step-nav {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 12px;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.step-nav:focus-within {
+  opacity: 1;
+  pointer-events: auto;
+}
+.step-nav button {
+  min-height: 36px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 13px;
+  font-weight: 600;
+}
+.step-nav button:disabled {
+  color: var(--faint);
+  cursor: default;
+}
+/* The way to the plain page: out of sight until the keyboard reaches it, then at the top left. */
+.skip {
+  position: absolute;
+  left: var(--gutter);
+  top: 64px;
+  padding: 10px 18px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  opacity: 0;
+  pointer-events: none;
+}
+.skip:focus {
+  opacity: 1;
+  pointer-events: auto;
+}
+/* A heading that focus is moved to when the page changes shows no ring: it is not a control. */
+h1:focus {
+  outline: none;
 }
 .picture-note {
   position: absolute;
@@ -960,7 +1048,15 @@ html[data-mode="still"] .stage {
   }
   .foot {
     bottom: 42px;
-    gap: 2px 16px;
+    gap: 6px 12px;
+    align-items: center;
+  }
+  .foot .pill {
+    max-width: 100%;
+  }
+  .foot .open-evidence {
+    padding: 0 12px;
+    margin-left: -12px;
   }
   .pill {
     font-size: 12px;
@@ -1007,17 +1103,30 @@ html[data-mode="still"] .stage {
    so the plate is placed by the middle of that half. Only a transform moves it. */
 @container (max-aspect-ratio: 4 / 5) {
   .board {
-    width: 150cqw;
+    /* Two and a half windows wide, so the board fills the room between the statement and the foot. Where a
+       step is about parts that lie further apart than the window is wide, it is drawn as much smaller as
+       keeps them all in view. The plate turns about the middle of its lower half, at its left edge. */
+    --wide: 250cqw;
+    --zoom: min(1, 0.44 / var(--span));
+    width: var(--wide);
     margin-inline: 0;
     right: auto;
     bottom: auto;
-    top: calc(57cqh - 68cqw);
-    --pan: clamp(-50cqw, 50cqw - var(--focus) * 150cqw, 0px);
+    top: calc(55cqh - 112.5cqw);
+    transform-origin: 0 72%;
+    --pan: clamp(100cqw - var(--zoom) * var(--wide), 50cqw - var(--zoom) * var(--focus) * var(--wide), 0px);
+    transform: translateX(var(--pan)) scale(var(--zoom));
     -webkit-mask-image: none;
     mask-image: none;
   }
+  .board[data-on="false"] {
+    transform: translateX(var(--pan)) scale(calc(var(--zoom) * 0.6));
+  }
   .ending {
-    top: 40cqh;
-    height: min(34cqh, 74cqw);
+    top: 38cqh;
+    height: min(40cqh, 78cqw);
+  }
+  .words-stop[data-kind="inside"] .head {
+    top: calc(var(--nav) + 9cqh);
   }
 }

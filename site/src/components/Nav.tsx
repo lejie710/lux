@@ -11,9 +11,24 @@ export const PAGE_NAMES: Record<Page, string> = {
   sources: SOURCE_SCREENS[0].title ?? "Sources",
 };
 
-export function Nav({ page = "story", inert = false }: { page?: Page; inert?: boolean }) {
+/** `plain`: the page in view is the scrolled story, which has a plain page beside it for those who want one. */
+export function Nav({
+  page = "story",
+  inert = false,
+  plain = false,
+}: {
+  page?: Page;
+  inert?: boolean;
+  plain?: boolean;
+}) {
   return (
     <nav className="lnav" aria-label="Site" inert={inert}>
+      {/* The first thing a keyboard reaches: the whole story as a page that is read from top to bottom. */}
+      {plain && (
+        <a className="skip" href="?static">
+          Read the boot as a plain page
+        </a>
+      )}
       <a className="name" href={hrefOf("story")}>
         <Mark />
         Lux

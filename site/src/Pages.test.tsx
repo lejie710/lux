@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { App } from "./App";
 import { EvidencePanel } from "./components/EvidencePanel";
 import { Experiments } from "./components/Experiments";
-import { Overview, litAtEndOf } from "./components/Overview";
+import { Overview, litAtEndOf, partsOf } from "./components/Overview";
 import { PROVENANCE_RUN, SOURCE_SECTIONS, Sources } from "./components/Sources";
 import { FILES, comparisonAt, comparisonView, provenanceOf } from "./content/files";
 import {
@@ -149,10 +149,36 @@ describe("the experiments page", () => {
     expect(count(html, /<h1 /g)).toBe(1);
   });
 
-  it("opens with the question and the measure, in the content's words", () => {
+  it("opens with one statement and the score, and keeps the question and the measure behind the control", () => {
     const intro = EXPERIMENT_SCREENS[0];
-    expect(html).toContain(esc(intro.question!));
-    for (const line of intro.measure!) expect(html).toContain(esc(line));
+    expect(html).not.toContain(esc(intro.question!));
+    for (const line of intro.measure!) expect(html).not.toContain(esc(line));
+    const panel = renderToStaticMarkup(<EvidencePanel screen={intro} atClaims={false} onClose={nothing} />);
+    expect(panel).toContain(`<h3>The question</h3><p class="sheet-prose">${esc(intro.question!)}</p>`);
+    for (const line of intro.measure!) expect(panel).toContain(esc(line));
+  });
+
+  it("names the run over each evidence line, and says where it is a pilot or a counted run", () => {
+    expect(html).toContain('<p class="page-run">Run normal-1</p>');
+    expect(html).toContain('<p class="page-run">Run e1, a pilot, shown and not counted</p>');
+    expect(html).toContain('<p class="page-run">Run e2, a pilot, shown and not counted</p>');
+  });
+
+  it("says which number is the record's and which the stop's", () => {
+    expect(html).toMatch(/<dt>First record that differs<\/dt><dd>record \d+, at stop \d<\/dd>/);
+  });
+
+  it("names every control for the evidence apart", () => {
+    const names = [...html.matchAll(/class="open-evidence" id="[^"]+" aria-label="([^"]+)"/g)].map((m) => m[1]);
+    expect(names.length).toBe(EXPERIMENT_SCREENS.length);
+    expect(new Set(names).size).toBe(names.length);
+  });
+
+  it("paints the two pictures of the two-run screen together: neither is put off", () => {
+    const sides = /<div class="sides">[\s\S]*?<\/div><\/div>/.exec(html)![0];
+    expect(count(sides, /<img /g)).toBe(2);
+    expect(sides).not.toContain("decoding");
+    expect(sides).not.toContain("loading=");
   });
 
   it("sets the two runs side by side: screen lit against screen dark, one statement and one line each", () => {
@@ -164,9 +190,10 @@ describe("the experiments page", () => {
     expect(html).toMatch(
       /data-outcome="refused"><img [^>]*alt="Illustration: a laptop, its inside awake, its screen dark\."/,
     );
+    const plain = html.replace(/<wbr\/?>|<\/?span[^>]*>|<\/?em>/g, "");
     for (const side of e2.sides!) {
-      expect(html.replace(/<\/?em>/g, "")).toContain(esc(side.statement.text));
-      expect(html.replace(/<\/?em>/g, "")).toContain(esc(side.evidence.text));
+      expect(plain).toContain(esc(side.statement.text));
+      expect(plain).toContain(esc(side.evidence.text));
     }
     expect(html).toContain("<em>Access Denied</em>");
     expect(html).toContain(esc(e2.status!.text));
@@ -328,7 +355,20 @@ describe("the sources page", () => {
       expect(html).toContain(esc(source.how_used));
     }
     for (const file of FIRMWARE_SOURCES)
-      expect(html).toContain(`<a href="${file.url}" target="_blank" rel="noreferrer">${file.path}</a>`);
+      expect(html).toContain(
+        `<a href="${file.url}" target="_blank" rel="noreferrer">${file.path}<span class="sr-only"> (opens in a new tab)</span></a>`,
+      );
+  });
+
+  it("says of every link that opens a new tab that it does", () => {
+    const links = [...html.matchAll(/<a [^>]*target="_blank"[^>]*>[\s\S]*?<\/a>/g)].map((m) => m[0]);
+    expect(links.length).toBeGreaterThan(0);
+    for (const link of links) expect(link).toContain("(opens in a new tab)");
+  });
+
+  it("names the two scrolling boxes of the provenance block, so a screen reader can say what they are", () => {
+    expect(html).toContain('<pre tabindex="0" role="group" aria-label="qemu_command_line">');
+    expect(html).toContain('<pre tabindex="0" role="group" aria-label="swtpm_command_line">');
   });
 
   it("says what was not read and what that costs the reader", () => {
@@ -380,6 +420,21 @@ describe("the strip of seven stops after the story", () => {
     }
   });
 
+  it("draws each small board close on the parts its stop is about, and the last one whole", () => {
+    const places = [
+      ...html.matchAll(/class="overview-plate" style="width:([\d.]+)%;left:(-?[\d.]+)%;top:(-?[\d.]+)%"/g),
+    ];
+    expect(places.length).toBe(STOPS.length);
+    expect(Number(places.at(-1)![1])).toBe(100);
+    // No two neighbours are framed alike: the difference between stops can be seen at this size.
+    for (let n = 1; n < places.length; n++) expect(places[n][0]).not.toBe(places[n - 1][0]);
+    for (const stop of STOPS) expect(partsOf(stop).length).toBeGreaterThan(0);
+    for (const [, width, left] of places) {
+      expect(Number(left)).toBeLessThanOrEqual(0);
+      expect(Number(left)).toBeGreaterThanOrEqual(100 - Number(width) - 1e-9);
+    }
+  });
+
   it("lights more of the board at each stop, and all of it at the last", () => {
     const lit = STOPS.map((stop) => litAtEndOf(stop).length);
     for (let n = 1; n < lit.length; n++) expect(lit[n]).toBeGreaterThanOrEqual(lit[n - 1]);
@@ -410,7 +465,8 @@ describe("the navigation", () => {
       ["#/sources/glossary", "Sources"],
     ]) {
       const html = nav(hash);
-      expect(count(html, /<a /g)).toBe(4);
+      // The scrolled story has one link more: the way to the plain page.
+      expect(count(html, /<a /g)).toBe(hash === "" ? 5 : 4);
       expect(count(html, /aria-current="page"/g)).toBe(1);
       expect(html).toMatch(new RegExp(`<a href="[^"]+" aria-current="page">${name}</a>`));
     }

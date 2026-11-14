@@ -23,7 +23,7 @@ import { filterGlossary } from "../model/glossary";
 import { hrefOf, sectionId } from "../model/route";
 import { Foot, Head } from "./Experiments";
 import type { OpenEvidence } from "./Stage";
-import { ClaimItem, Digest } from "./sheetParts";
+import { ClaimItem, Digest, NewTab } from "./sheetParts";
 
 /** The run whose own account of how it was made is shown. */
 export const PROVENANCE_RUN = "normal-1";
@@ -171,6 +171,7 @@ function SourceEntry({ source }: { source: Source }) {
         <p className="entry-link">
           <a href={source.url} target="_blank" rel="noreferrer">
             {source.url}
+            <NewTab />
           </a>
         </p>
       )}
@@ -186,6 +187,7 @@ function SourceEntry({ source }: { source: Source }) {
         <p className="entry-link">
           <a href={source.licence_url} target="_blank" rel="noreferrer">
             {source.licence_url}
+            <NewTab />
           </a>
         </p>
       )}
@@ -212,6 +214,7 @@ function SourceEntry({ source }: { source: Source }) {
               <li key={file.id}>
                 <a href={file.url} target="_blank" rel="noreferrer">
                   {file.path}
+                  <NewTab />
                 </a>
                 <span>
                   {file.project}. Read at: {file.read_at}. {file.licence}
@@ -328,7 +331,7 @@ function Provenance() {
       {(["qemu_command_line", "swtpm_command_line"] as const).map((field) => (
         <div key={field} className="command">
           <p className="sheet-run">{field}</p>
-          <pre tabIndex={0} aria-label={field}>
+          <pre tabIndex={0} role="group" aria-label={field}>
             {p[field]}
           </pre>
         </div>

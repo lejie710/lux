@@ -132,16 +132,75 @@ function lookedAt(step: SceneStep): readonly Part[] {
  * window frames the board around this point.
  */
 export function focusAt(index: number): number {
+  const { left, right } = frameAt(index);
+  return (left + right) / 2;
+}
+
+/**
+ * How much of the board's width a step looks at, as a fraction of the picture's width: from the left edge of
+ * the leftmost part the step is about to the right edge of the rightmost. A narrow window draws the board
+ * large and makes it smaller only as far as this stretch needs to stay in view.
+ */
+export function spanAt(index: number): number {
+  const { left, right } = frameAt(index);
+  return right - left;
+}
+
+/** The stretch of the board a step looks at, as fractions of the picture's width. */
+function frameAt(index: number): { left: number; right: number } {
   const after = STEPS.slice(index).find((step) => lookedAt(step).length > 0);
   const before = STEPS.slice(0, index)
     .reverse()
     .find((step) => lookedAt(step).length > 0);
   const step = after ?? before;
-  if (!step) return 0.5;
+  if (!step) return { left: 0.5, right: 0.5 };
   const parts = lookedAt(step);
-  const left = Math.min(...parts.map((part) => PART_BOXES[part].left));
-  const right = Math.max(...parts.map((part) => PART_BOXES[part].right));
-  return (left + right) / 2;
+  return {
+    left: Math.min(...parts.map((part) => PART_BOXES[part].left)),
+    right: Math.max(...parts.map((part) => PART_BOXES[part].right)),
+  };
+}
+
+/**
+ * The step a key leads to from step `at` of `count`: Space and Page Down go one step on, Shift with Space
+ * and Page Up one step back. One press is one step, however long the stretch of scrolling behind it. Null
+ * for every other key, and at the two ends, where the key is left to the browser.
+ */
+export function stepKey(key: { key: string; shiftKey?: boolean }, at: number, count: number): number | null {
+  const on = key.key === "PageDown" || (key.key === " " && !key.shiftKey);
+  const back = key.key === "PageUp" || (key.key === " " && key.shiftKey);
+  if (!on && !back) return null;
+  const to = at + (on ? 1 : -1);
+  return to >= 0 && to < count ? to : null;
+}
+
+/**
+ * How a small picture of the board frames some of its parts: how many times wider than its frame the board
+ * is drawn, and where its left and top edges lie, as percentages of the frame's width and height. The parts
+ * are centred and the board never leaves a gap at an edge. `shape` is the frame's width over its height.
+ * With no parts, or with `whole`, the board is drawn once, at the frame's foot.
+ */
+export function tileFrame(
+  parts: readonly Part[],
+  shape: number,
+  whole = false,
+): { zoom: number; left: number; top: number } {
+  // The board picture is 16 to 10: its height in units of the frame's height.
+  const tall = (zoom: number) => zoom * 100 * shape * (10 / 16);
+  if (whole || parts.length === 0) return { zoom: 1, left: 0, top: 100 - tall(1) };
+  const boxes = parts.map((part) => PART_BOXES[part]);
+  const left = Math.min(...boxes.map((box) => box.left));
+  const right = Math.max(...boxes.map((box) => box.right));
+  const top = Math.min(...boxes.map((box) => box.top));
+  const bottom = Math.max(...boxes.map((box) => box.bottom));
+  // The parts take at most four fifths of the frame's width; a single small part is not drawn larger than 2.4.
+  const zoom = Math.min(2.4, Math.max(1, 0.8 / (right - left)));
+  const clamp = (value: number, low: number) => Math.min(0, Math.max(low, value));
+  return {
+    zoom,
+    left: clamp(50 - (zoom * 100 * (left + right)) / 2, 100 - zoom * 100),
+    top: clamp(50 - (tall(zoom) * (top + bottom)) / 2, 100 - tall(zoom)),
+  };
 }
 
 /** The picture of a step in words, for a reader who cannot see it: what is in view, and which parts are lit. */

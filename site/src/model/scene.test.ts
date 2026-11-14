@@ -2,7 +2,19 @@
 import { describe, expect, it } from "vitest";
 import { OPENING, STOPS, headline, stop } from "../content/load";
 import { PARTS } from "../content/types";
-import { PART_BOXES, STEPS, STEP_COUNT, firstStepOf, focusAt, layersAt, pictureLabel, splitEmphasis } from "./scene";
+import {
+  PART_BOXES,
+  STEPS,
+  STEP_COUNT,
+  firstStepOf,
+  focusAt,
+  layersAt,
+  pictureLabel,
+  spanAt,
+  splitEmphasis,
+  stepKey,
+  tileFrame,
+} from "./scene";
 
 const litParts = (n: number) => PARTS.filter((part) => layersAt(STEPS[n]).parts[part].on);
 const strongParts = (n: number) => PARTS.filter((part) => layersAt(STEPS[n]).parts[part].strong);
@@ -190,15 +202,63 @@ describe("focusAt", () => {
     }
     expect(focusAt(STEP_COUNT - 1)).toBe(focusAt(at("s7-exit-events")));
   });
-  it("keeps every part stop 1 lights inside a window two thirds of the board wide", () => {
-    const { power, processor } = PART_BOXES;
-    expect(Math.max(power.right, processor.right) - Math.min(power.left, processor.left)).toBeLessThanOrEqual(2 / 3);
+  it("says how wide a stretch of the board a step looks at, and holds it while the board is dark", () => {
+    const { power, processor, security } = PART_BOXES;
+    expect(spanAt(2)).toBeCloseTo(Math.max(power.right, processor.right) - Math.min(power.left, processor.left));
+    expect(spanAt(1)).toBe(spanAt(2));
+    expect(spanAt(at("s6-verify"))).toBeCloseTo(security.right - security.left);
+    for (let n = 0; n < STEP_COUNT; n++) {
+      expect(spanAt(n)).toBeGreaterThan(0);
+      expect(spanAt(n)).toBeLessThanOrEqual(1);
+    }
   });
   it("knows where every part lies", () => {
     for (const part of PARTS) {
       expect(PART_BOXES[part].left).toBeLessThan(PART_BOXES[part].right);
       expect(PART_BOXES[part].right).toBeLessThanOrEqual(1);
     }
+  });
+});
+
+describe("stepKey", () => {
+  it("goes one step on for Space and Page Down, and one step back for Shift with Space and Page Up", () => {
+    for (let n = 0; n < STEP_COUNT - 1; n++) {
+      expect(stepKey({ key: " " }, n, STEP_COUNT)).toBe(n + 1);
+      expect(stepKey({ key: "PageDown" }, n, STEP_COUNT)).toBe(n + 1);
+    }
+    for (let n = 1; n < STEP_COUNT; n++) {
+      expect(stepKey({ key: " ", shiftKey: true }, n, STEP_COUNT)).toBe(n - 1);
+      expect(stepKey({ key: "PageUp" }, n, STEP_COUNT)).toBe(n - 1);
+    }
+  });
+  it("leaves the key to the browser at the two ends, so the page before and after the story can be reached", () => {
+    expect(stepKey({ key: "PageUp" }, 0, STEP_COUNT)).toBeNull();
+    expect(stepKey({ key: " " }, STEP_COUNT - 1, STEP_COUNT)).toBeNull();
+  });
+  it("leaves every other key alone", () => {
+    for (const key of ["ArrowDown", "ArrowUp", "Enter", "Tab", "Home", "End", "a"])
+      expect(stepKey({ key }, 3, STEP_COUNT)).toBeNull();
+  });
+});
+
+describe("tileFrame", () => {
+  it("draws the whole board once, at the foot of its frame, when every part is lit or none is named", () => {
+    expect(tileFrame(PARTS, 2, true)).toEqual({ zoom: 1, left: 0, top: -25 });
+    expect(tileFrame([], 2)).toEqual({ zoom: 1, left: 0, top: -25 });
+  });
+  it("draws a small part large, centred, and never past an edge of the board", () => {
+    for (const part of PARTS) {
+      const { zoom, left, top } = tileFrame([part], 2);
+      expect(zoom).toBeGreaterThan(1);
+      expect(zoom).toBeLessThanOrEqual(2.4);
+      expect(left).toBeLessThanOrEqual(0);
+      expect(left).toBeGreaterThanOrEqual(100 - zoom * 100 - 1e-9);
+      expect(top).toBeLessThanOrEqual(0);
+      expect(top).toBeGreaterThanOrEqual(100 - zoom * 125 - 1e-9);
+    }
+  });
+  it("draws parts that lie far apart smaller, so both are in the frame", () => {
+    expect(tileFrame(["power", "processor"], 2).zoom).toBeLessThan(tileFrame(["processor"], 2).zoom);
   });
 });
 

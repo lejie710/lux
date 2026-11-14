@@ -85,7 +85,11 @@ export function EvidencePanel({ screen, card = null, atClaims, onClose }: Eviden
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       const controls = [...(sheet.current?.querySelectorAll<HTMLElement>(CONTROLS) ?? [])];
-      const result = panelKey(e, controls.indexOf(document.activeElement as HTMLElement), controls.length);
+      const active = document.activeElement as HTMLElement | null;
+      // Focus on something in the panel that is not a control (the heading a citation marker lands on):
+      // Tab then goes on from there in the page's own order.
+      const loose = Boolean(active && active !== sheet.current && sheet.current?.contains(active));
+      const result = panelKey(e, controls.indexOf(active as HTMLElement), controls.length, loose);
       if (!result) return;
       e.preventDefault();
       if (result.action === "close") close.current();
@@ -128,6 +132,25 @@ export function EvidencePanel({ screen, card = null, atClaims, onClose }: Eviden
           : screen.support && <p className="sheet-support">{screen.support}</p>}
         {screen.pilot_label && <p className="sheet-pilot">{screen.pilot_label}</p>}
         {status && <p className="sheet-pilot">{status}</p>}
+
+        {screen.handover && <p className="sheet-caption">{screen.handover.note}</p>}
+
+        {!card && screen.question && (
+          <section>
+            <h3>The question</h3>
+            <p className="sheet-prose">{screen.question}</p>
+          </section>
+        )}
+        {!card && screen.measure && screen.measure.length > 0 && (
+          <section>
+            <h3>The measure</h3>
+            {screen.measure.map((text) => (
+              <p key={text} className="sheet-prose">
+                {text}
+              </p>
+            ))}
+          </section>
+        )}
 
         {!card && screen.sides && (
           <section>
@@ -204,7 +227,13 @@ export function EvidencePanel({ screen, card = null, atClaims, onClose }: Eviden
 
         {!card && detail.other_fields && detail.other_fields.length > 0 && (
           <section>
-            <h3>{evidence?.recorded ? "Other fields of the recording" : "The nearest the recording has"}</h3>
+            <h3>
+              {!detail.other_fields.every((field) => field.file.startsWith("recordings/"))
+                ? "Also on file"
+                : evidence?.recorded
+                  ? "Other fields of the recording"
+                  : "The nearest the recording has"}
+            </h3>
             <ul className="sheet-rows">
               {detail.other_fields.map((field) => (
                 <li key={`${field.file}-${field.field}`}>

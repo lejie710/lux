@@ -79,12 +79,21 @@ export function App({ mode, route: first = STORY }: { mode: Mode; route?: Route 
     returnTo.current = null;
   }, [subject]);
 
+  // After a change of page (not on the first one) focus goes to the new page's heading, so the change is
+  // read out and the next Tab starts at the top of the new page.
+  const shownPage = useRef(page);
+  useEffect(() => {
+    if (shownPage.current === page) return;
+    shownPage.current = page;
+    document.querySelector<HTMLElement>("main h1")?.focus({ preventScroll: true });
+  }, [page]);
+
   const behind = Boolean(subject);
   const frozen = page === "story" && mode.kind === "frozen";
   return (
     <>
       {/* Behind an open panel the page is out of reach: no focus, no clicks, not read out. */}
-      <Nav page={page} inert={behind} />
+      <Nav page={page} inert={behind} plain={page === "story" && mode.kind === "scroll"} />
       <main id="top" inert={behind} data-page={page}>
         {page === "experiments" && <Experiments onOpen={open} />}
         {page === "sources" && <Sources onOpen={open} />}
@@ -93,7 +102,7 @@ export function App({ mode, route: first = STORY }: { mode: Mode; route?: Route 
           mode.kind === "still" &&
           STEPS.map((step, n) => (
             <section key={step.id} className="still-step" id={`step-${n}`}>
-              <Stage current={n} solo onOpen={open} />
+              <Stage current={n} solo anchors={false} onOpen={open} />
             </section>
           ))}
         {page === "story" && mode.kind === "frozen" && (
@@ -121,7 +130,7 @@ export function App({ mode, route: first = STORY }: { mode: Mode; route?: Route 
  * markers, one per step, passes the middle of the window.
  */
 function ScrollScene({ onOpen }: { onOpen: OpenEvidence }) {
-  const { i, markers } = useStepScroll();
+  const { i, markers, go } = useStepScroll();
   // The step is spoken only after it has changed once: a page that has just loaded says nothing.
   const moved = useRef(false);
   if (i !== 0) moved.current = true;
@@ -131,7 +140,7 @@ function ScrollScene({ onOpen }: { onOpen: OpenEvidence }) {
   return (
     <section className="scene">
       <div className="pin">
-        <Stage current={i} onOpen={onOpen} />
+        <Stage current={i} onOpen={onOpen} onStep={go} />
       </div>
       <div className="track" aria-hidden="true">
         {STEPS.map((s, n) => (

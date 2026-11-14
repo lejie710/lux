@@ -142,7 +142,8 @@ export interface Screen extends BaseScreen {
   thread?: "secure-boot" | "measured-boot";
   /** The closing screen: the note under its picture, and the link to the earlier site. */
   picture_caption?: string;
-  handover?: { to: string; text: string; link_label: string; note: string };
+  /** `url` is null until the earlier site has a public address: the label is then words, not a link. */
+  handover?: { to: string; text: string; link_label: string; note: string; url: string | null };
 }
 
 export interface OpeningScreen extends Screen {

@@ -20,6 +20,11 @@ export function Digest({ label, value }: { label: string; value: string }) {
   );
 }
 
+/** Said after the words of a link that opens a new tab, for a reader who cannot see that it does. */
+export function NewTab() {
+  return <span className="sr-only"> (opens in a new tab)</span>;
+}
+
 /**
  * One claim: its number where the list is numbered, the label of its basis, its words, and the line that
  * says where it comes from.
@@ -39,10 +44,15 @@ export function ClaimItem({ claim, number }: { claim: Claim; number?: number }) 
           <p className="claim-source">
             <a href={file.url} target="_blank" rel="noreferrer">
               {source}
+              <NewTab />
             </a>
           </p>
         ) : (
-          <p className="claim-source">{source}</p>
+          <p className="claim-source">
+            {/* A pointer is not a citation: it is the place where the specification sends the reader elsewhere. */}
+            {claim.uefi_pointer && !claim.citation && `Where UEFI ${claim.uefi_pointer.version} points away: `}
+            {source}
+          </p>
         ))}
       {claim.note && <p className="claim-note">{claim.note}</p>}
     </li>

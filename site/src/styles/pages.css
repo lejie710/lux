@@ -45,6 +45,18 @@
 .page-foot .pill {
   text-align: left;
 }
+/* A page's evidence line, with the run it was recorded in named over it. */
+.page-line {
+  display: grid;
+  gap: 6px;
+  max-width: 100%;
+}
+.page-run {
+  margin: 0 0 0 20px;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--grey);
+}
 /* The part of a line the content asks to have set in colour. */
 .pill-line em {
   font-style: normal;
@@ -67,31 +79,14 @@
   color: var(--grey);
 }
 
-/* The experiments' first screen: the question on the left, the measure and the score on the right. */
+/* The experiments' first screen: under the statement, the score as the files have it, and nothing else. */
 .measure {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: clamp(28px, 5vw, 80px);
-  width: min(100%, 1080px);
-}
-.question {
-  margin: 0;
-  font-size: clamp(19px, 1.75vw, 25px);
-  font-weight: 600;
-  line-height: 1.35;
-  letter-spacing: -0.015em;
-  text-wrap: pretty;
-}
-.measure-line {
-  margin: 0 0 12px;
-  font-size: 15px;
-  line-height: 1.6;
-  color: var(--soft);
+  width: min(100%, 520px);
 }
 /* The score. Until one exists it says so, with the dashed edge of something that is not there. */
 .score {
-  margin: 20px 0 0;
-  padding: 12px 18px;
+  margin: 0;
+  padding: 14px 22px;
   border: 1px solid var(--line);
   border-radius: 16px;
   font-size: 14px;
@@ -146,30 +141,45 @@ dd[data-outcome="accepted"] {
 .page-screen[data-kind="side-by-side"] .eyebrow {
   margin-bottom: 8px;
 }
+/* The two sides share three rows, so the pictures, the statements and the lines stand level whatever
+   their lengths: a side's own box is dissolved and its three parts are placed in its column. */
 .sides {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: clamp(20px, 4vw, 64px);
-  width: min(100%, var(--page-width));
-}
-.side {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  min-width: 0;
+  grid-template-rows: auto auto auto;
+  justify-items: center;
+  align-items: start;
+  gap: 10px clamp(16px, 3vw, 48px);
+  width: min(100%, 1320px);
   text-align: center;
 }
+.side {
+  display: contents;
+}
+.side:nth-child(1) > * {
+  grid-column: 1;
+}
+.side:nth-child(2) > * {
+  grid-column: 2;
+}
 .side img {
+  grid-row: 1;
   display: block;
   width: auto;
   max-width: 100%;
-  height: clamp(200px, 38svh, 420px);
+  height: clamp(200px, 46svh, 520px);
   aspect-ratio: 4 / 3;
   object-fit: contain;
 }
+.side .side-statement {
+  grid-row: 2;
+}
+.side .pill {
+  grid-row: 3;
+}
 .side-statement {
-  margin: -6px 0 0;
+  /* The picture has a dark margin of its own under the laptop: the statement sits a little into it. */
+  margin: clamp(-22px, -2svh, -8px) 0 0;
   font-size: clamp(19px, 1.7vw, 25px);
   font-weight: 700;
   line-height: 1.2;
@@ -195,6 +205,8 @@ dd[data-outcome="accepted"] {
 .open-items {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
+  /* A card is as tall as what it holds: one with a single line is not stretched to match a full one. */
+  align-items: start;
   gap: 18px;
   width: min(100%, var(--page-width));
   margin: 0;
@@ -231,8 +243,8 @@ dd[data-outcome="accepted"] {
   margin: 0;
 }
 .card-label {
-  font-family: var(--mono);
-  font-size: 12.5px;
+  font-size: 13px;
+  font-weight: 600;
   color: var(--grey);
 }
 .card-status {
@@ -664,11 +676,9 @@ dd[data-outcome="accepted"] {
 .overview-strip a:focus-visible .overview-board {
   border-color: rgba(255, 197, 107, 0.6);
 }
+/* Where the board lies in its frame, and how large, is set per stop: close on the parts the stop is about. */
 .overview-plate {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
   aspect-ratio: 16 / 10;
 }
 .overview-plate img,
@@ -728,8 +738,6 @@ dd[data-outcome="accepted"] {
   .page-head .statement {
     font-size: clamp(29px, 8.2vw, 38px);
   }
-  .measure,
-  .sides,
   .cards,
   .open-items,
   .entries,
@@ -740,12 +748,31 @@ dd[data-outcome="accepted"] {
   .glossary {
     columns: 1;
   }
+  /* The two laptops stay side by side, small, each with its statement under it; the two lines follow,
+     one under the other, at the full width. */
   .sides {
-    gap: 36px;
+    grid-template-rows: auto auto auto auto;
+    gap: 8px 10px;
   }
   .side img {
     height: auto;
-    width: min(100%, 340px);
+    width: 100%;
+  }
+  .side .side-statement {
+    margin-top: -4px;
+    font-size: 16px;
+  }
+  .side .pill {
+    grid-column: 1 / -1;
+    justify-self: stretch;
+    margin-top: 8px;
+  }
+  .side:nth-child(2) .pill {
+    grid-row: 4;
+    margin-top: 0;
+  }
+  .page-run {
+    margin-left: 14px;
   }
   .page-foot {
     justify-content: flex-start;
@@ -775,14 +802,24 @@ dd[data-outcome="accepted"] {
 }
 
 /* One form of an experiment, where a card stands for more than one: its name as the recorder has it. */
-.card-form,
-.sheet-form-name {
-  margin: 6px 0 -6px;
-  font-family: var(--mono);
-  font-size: 12.5px;
-  color: var(--soft);
+.card-form {
+  display: grid;
+  gap: 2px;
+  margin: 8px 0 -6px;
 }
+.card-form-change {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--text);
+}
+.card-form-name,
 .sheet-form-name {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--grey);
+}
+.sheet .sheet-form-name {
   margin: 34px 0 -18px;
   padding-top: 18px;
   border-top: 1px solid var(--line);

@@ -157,7 +157,9 @@ export function shortened(value: string, keep = 8): string {
 export interface Subject {
   /** The screen's id, or the screen's and the card's with a slash between. */
   id: string;
-  screen: BaseScreen & Pick<PageScreen, "evidence" | "sides" | "cards" | "items" | "experiment" | "status">;
+  screen: BaseScreen &
+    Pick<PageScreen, "evidence" | "sides" | "cards" | "items" | "experiment" | "status" | "question" | "measure"> &
+    Pick<Screen, "handover">;
   card: Card | null;
 }
 
@@ -205,7 +207,11 @@ export function claimSource(claim: Claim): string {
   const cite = claim.citation ?? claim.uefi_pointer;
   if (cite)
     return `${cite.document} ${cite.version}, section ${cite.section}, ${cite.title}. PDF page ${cite.pdf_page}`;
-  if (claim.basis === "recording") return `${claim.file ?? `recordings/${claim.run}/recording.json`}: ${claim.field}`;
+  // A claim read from more than one run names each run's own file.
+  if (claim.basis === "recording") {
+    const files = (claim.run ?? "").split(", ").map((run) => `recordings/${run}/recording.json`);
+    return `${claim.file ?? files.join(", ")}: ${claim.field}`;
+  }
   return claim.source ?? "";
 }
 

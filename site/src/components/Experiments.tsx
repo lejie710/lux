@@ -1,6 +1,7 @@
-// The experiments page: the question and the measure, the two-run screen, the cards of the other
-// experiments, and what the specification leaves open. The words come from the content. What has been run,
-// compared and scored comes from the files on disk, so a card says "not yet run" until a recording exists.
+// The experiments page: the first screen with the state of the score, the two-run screen, the cards of the
+// other experiments, and what the specification leaves open. The words come from the content. What has been
+// run, compared and scored comes from the files on disk, so a card says "not yet run" until a recording
+// exists. The question and the measure are behind the first screen's "Open the evidence".
 import laptopAwake from "../assets/laptop-awake.webp";
 import laptopInside from "../assets/laptop-inside.webp";
 import { FILES } from "../content/files";
@@ -43,7 +44,7 @@ export function Experiments({ onOpen, files = FILES }: PageProps) {
             </ul>
           )}
           {screen.kind === "list" && <OpenItems screen={screen} />}
-          <Foot screen={screen} onOpen={onOpen} />
+          <Foot screen={screen} onOpen={onOpen} files={files} />
           {screen.kind === "side-by-side" && <p className="page-note">{PICTURE_NOTE}</p>}
         </section>
       ))}
@@ -58,7 +59,8 @@ export function Head({ screen, onOpen, first = false }: { screen: PageScreen; on
   return (
     <header className="page-head">
       {(screen.eyebrow ?? screen.title) && <p className="eyebrow">{screen.eyebrow ?? screen.title}</p>}
-      <Statement className="statement">
+      {/* A page's first heading can take focus, so a change of page is read out from its top. */}
+      <Statement className="statement" tabIndex={first ? -1 : undefined}>
         <Emphasised statement={screen.statement} />
         <button
           type="button"
@@ -79,15 +81,35 @@ export function Head({ screen, onOpen, first = false }: { screen: PageScreen; on
   );
 }
 
-/** The foot of a screen: its one evidence line, where it has one of its own, and the control behind it. */
-export function Foot({ screen, onOpen }: { screen: PageScreen; onOpen: OpenEvidence }) {
+/** What kind of run a line comes from, said after the run's name where it is not the normal run. */
+const RUN_KINDS: Record<string, string> = { pilot: "a pilot, shown and not counted", counted: "a counted run" };
+
+/**
+ * The foot of a screen: its one evidence line, where it has one of its own, with the run it was recorded in
+ * named over it, and the control behind it.
+ */
+export function Foot({ screen, onOpen, files = FILES }: { screen: PageScreen; onOpen: OpenEvidence; files?: Files }) {
+  const { evidence } = screen;
+  const run = evidence?.recorded ? evidence.run : null;
+  const kind = RUN_KINDS[files.runs.find((r) => r.name === run)?.kind ?? ""];
   return (
     <div className="page-foot">
-      {screen.evidence && <EvidencePill evidence={screen.evidence} mark />}
+      {evidence && (
+        <div className="page-line">
+          {run && (
+            <p className="page-run">
+              Run {run}
+              {kind && `, ${kind}`}
+            </p>
+          )}
+          <EvidencePill evidence={evidence} mark />
+        </div>
+      )}
       <button
         type="button"
         className="open-evidence"
         id={openerId(screen.id)}
+        aria-label={`Open the evidence: ${screen.statement.text}`}
         onClick={() => onOpen(screen.id, openerId(screen.id), false)}
       >
         Open the evidence
@@ -97,9 +119,9 @@ export function Foot({ screen, onOpen }: { screen: PageScreen; onOpen: OpenEvide
 }
 
 /**
- * The question, the measure, and the score. The score is read from the files: the two numbers once a score
- * is on file; a count of what is on file once a prediction or a counted run is; and until then the
- * content's own sentence, which says that there is nothing yet.
+ * The score, the one thing the first screen shows beside its statement. It is read from the files: the two
+ * numbers once a score is on file; a count of what is on file once a prediction or a counted run is; and
+ * until then the content's own sentence, which says that there is nothing yet.
  */
 function Measure({ screen, files }: { screen: PageScreen; files: Files }) {
   const sum = totals(files.scores);
@@ -107,16 +129,6 @@ function Measure({ screen, files }: { screen: PageScreen; files: Files }) {
   return (
     <div className="measure">
       <div>
-        <h2 className="label">The question</h2>
-        <p className="question">{screen.question}</p>
-      </div>
-      <div>
-        <h2 className="label">The measure</h2>
-        {(screen.measure ?? []).map((text) => (
-          <p key={text} className="measure-line">
-            {text}
-          </p>
-        ))}
         {sum ? (
           <dl className="score" data-claimed="true">
             <div>
@@ -177,7 +189,7 @@ function Sides({ screen }: { screen: PageScreen }) {
         const picture = pictureOf(side);
         return (
           <div key={side.id} className="side" data-outcome={side.outcome}>
-            <img src={picture.src} alt={picture.label} width={1280} height={960} decoding="async" />
+            <img src={picture.src} alt={picture.label} width={1280} height={960} />
             <h3 className="side-statement">
               <Emphasised statement={side.statement} />
             </h3>
@@ -197,13 +209,24 @@ export const STATUS_NAMES: Record<ExperimentStatus, string> = {
   scored: "Scored",
 };
 
+/** A line of a file as a sentence of the page: its first letter a capital, a full stop at its end. */
+const sentence = (text: string) => (text ? `${text[0].toUpperCase()}${text.slice(1).replace(/\.$/, "")}.` : "");
+
 /** What the files hold for one form of an experiment, as rows of a card. */
 function Result({ state, named }: { state: ExperimentState; named: boolean }) {
   const comparison = state.comparison?.file;
   const differing = comparison ? registersDiffering(comparison) : [];
   return (
     <>
-      {named && <p className="card-form">{state.experiment}</p>}
+      {named && (
+        <p className="card-form">
+          {/* The form in words, as its prediction or its recording says it; its name in the files beside it. */}
+          {(state.prediction?.change ?? state.run?.change) && (
+            <span className="card-form-change">{sentence(state.prediction?.change ?? state.run?.change ?? "")}</span>
+          )}
+          <span className="card-form-name">{state.experiment}</span>
+        </p>
+      )}
       <dl className="card-result">
         {state.prediction && (
           <div>
@@ -234,7 +257,7 @@ function Result({ state, named }: { state: ExperimentState; named: boolean }) {
           <div>
             <dt>First record that differs</dt>
             <dd>
-              {comparison.first_differing_event.index}, at stop {comparison.first_differing_event.stop}
+              record {comparison.first_differing_event.index}, at stop {comparison.first_differing_event.stop}
             </dd>
           </div>
         )}
@@ -293,7 +316,7 @@ function ExperimentCard({
           id={openerId(id)}
           onClick={() => onOpen(id, openerId(id), false)}
         >
-          Open the evidence<span className="sr-only"> of {card.label}</span>
+          Open the evidence<span className="sr-only">: {card.title}</span>
         </button>
       )}
     </li>

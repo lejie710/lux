@@ -57,22 +57,24 @@ The page opens at `http://127.0.0.1:5183/`. `npm test`, `npm run build` and `npm
 | `/?step=N` | The story frozen at step N, counted from 0 (the opening) to the last screen of stop 7, with nothing to scroll. Add `&evidence` to open that step's evidence |
 | `/#step-N` | The scrolled story, landed on step N. The seven marks at the foot of a stop lead to the first step of each stop this way |
 | `/#overview` | The strip after the story: the seven stops as seven small boards, each leading to its stop |
-| `/#/experiments` | The experiments: the question and the measure, the two runs side by side, a card per other experiment, and what the specification leaves open |
+| `/#/experiments` | The experiments: one statement and the score as the files have it, the two runs side by side, a card per other experiment, and what the specification leaves open. The question and the measure are behind the first screen's "Open the evidence" |
 | `/#/sources` | The sources: what was read or run, what was not read and what that costs, the limits, the glossary with a filter, one recording's provenance block, and what the project is |
 | `/#/experiments/<section>` | A page landed on one of its sections, named by the screen's `id` in the content (on the sources page also `read`, `not-read`, `limits`, `glossary`, `provenance`). Add `/evidence` to open that section's evidence, or `/<card>/evidence` for one card's |
+
+In the scrolled story one press of Space or Page Down is one step on, and Shift with Space or Page Up one step back; two controls that appear when the keyboard reaches them do the same. The first thing the keyboard reaches is a link to `/?static`, the whole story as a plain page.
 
 The experiments page shows what is on disk when the site is built, and nothing it is told elsewhere. A card belongs to the recording whose `run.experiment` is the card's `id`, or that `id` with a suffix (`boot-order-same` for `boot-order`). With no recording it says "Not yet run"; with a recording of a pilot, "Pilot", with the outcome, the registers that differ and the first differing record from the comparison file; with a prediction file, the number of rows and, behind the control, every row with its basis label; with a score file (format `lux-score/1`, looked for in `results/`, `recordings/scores/` and `recordings/<run>/score.json`), "Scored" and the two numbers. The headline score on the first screen is the sum over the score files, and the content's own sentence until there is one.
 
 ### Hosting
 
-Every page lives after the hash sign of one address, so a static host needs no rule for any address. `npm run build` writes `dist/` with relative paths, which works under any folder, and a `404.html` that leads back to the start. Two optional settings, read from the environment or from a `.env` file:
+Every page lives after the hash sign of one address, so a static host needs no rule for any address. `npm run build` writes `dist/` with relative paths, which works under any folder, and a `404.html` that leads back to the start. Two settings, read from the environment or from a `.env` file. Neither is needed to run the site locally. **A published build needs both**: without `LUX_BASE` the link in `404.html` is relative and is wrong for a missing address deeper than the site's folder, and without `LUX_SITE_URL` link previews cannot find their picture.
 
 | Setting | Use |
 |---|---|
 | `LUX_BASE` | The folder the site is served from, for example `/lux/`. Asset paths and the link in `404.html` then start there |
 | `LUX_SITE_URL` | The full public address. Link previews need an absolute address for their picture (`og.jpg`); without this setting the tag holds a relative one |
 
-The site's tests render pages to HTML without a browser. They check the experiments page with nothing on file, with a pilot and with a score, the comparison laid out from the committed files, the sources page against the content, the addresses of the pages, the step-to-picture mapping for every step, that every screen of the content has what a scene needs and that its evidence panel shows every claim, line, record and register the content names, the two address switches and the evidence panel's key and focus rules. They do not prove motion, layout or focus in a real window; those were checked by eye in one Chromium browser.
+The site's tests render pages to HTML without a browser. They check the experiments page with nothing on file, with a pilot and with a score, the comparison laid out from the committed files, the sources page against the content, the addresses of the pages, the step-to-picture mapping for every step, that every screen of the content has what a scene needs and that its evidence panel shows every claim, line, record and register the content names, the two address switches, the key that steps through the story, and the evidence panel's key and focus rules. They do not prove motion, layout or focus in a real window; those were checked by eye in one Chromium browser.
 
 ## How a run is trusted
 

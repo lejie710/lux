@@ -12,6 +12,7 @@ import {
   allScreens,
   basisLabel,
   claimNumbers,
+  claimSource,
   define,
   headline,
   recordedEvent,
@@ -26,6 +27,8 @@ import css from "./styles/lux.css?raw";
 const count = (html: string, re: RegExp) => [...html.matchAll(re)].length;
 /** Text as React writes it into HTML. */
 const esc = (text: string) => text.replace(/&/g, "&amp;").replace(/'/g, "&#x27;").replace(/"/g, "&quot;");
+/** A recorded line as it reads, without the marks that say where a long one may break. */
+const plain = (html: string) => html.replace(/<wbr\/?>|<\/?span[^>]*>|<\/?em>/g, "");
 const stopOne = headline(stop(1));
 const nothing = () => {};
 const at = (id: string) => STEPS.findIndex((step) => step.id === id);
@@ -75,7 +78,30 @@ describe("the scrolled page", () => {
 
   it("has the navigation, with the story marked as the page in view", () => {
     expect(html).toContain('<a href="#top" aria-current="page">The boot</a>');
-    expect(count(/<nav[\s\S]*?<\/nav>/.exec(html)![0], /<a /g)).toBe(4);
+    expect(count(/<nav[\s\S]*?<\/nav>/.exec(html)![0], /<a /g)).toBe(5);
+  });
+
+  it("leads to the plain page first, before anything else can take focus", () => {
+    const nav = /<nav[\s\S]*?<\/nav>/.exec(html)![0];
+    expect(nav).toMatch(/^<nav[^>]*><a class="skip" href="\?static">Read the boot as a plain page<\/a>/);
+    const still = renderToStaticMarkup(<App mode={{ kind: "still" }} />);
+    expect(still).not.toContain('class="skip"');
+  });
+
+  it("offers a step back and a step on, the first of which has nowhere to go at the opening", () => {
+    expect(html).toContain('<button type="button" disabled="">Previous step</button>');
+    expect(html).toContain('<button type="button">Next step</button>');
+  });
+
+  it("keeps every layer of the picture in the page, lit or not, so one step can fade into the next", () => {
+    expect(count(html, /class="lit" data-part="[a-z]+"/g)).toBe(PARTS.length + 1);
+    expect(count(html, /class="glow" data-part="[a-z]+"/g)).toBe(PARTS.length);
+    expect(html).toMatch(/class="ending" data-on="false"/);
+    expect(html).toMatch(/class="dawn"[^>]*data-on="false"/);
+  });
+
+  it("has no link that leads nowhere", () => {
+    expect(html).not.toContain('href="#"');
   });
 });
 
@@ -93,6 +119,23 @@ describe("?static: every step as a still section", () => {
     expect(count(html, /class="words /g)).toBe(STEPS.length);
     expect(html).not.toContain("inert");
     expect(count(html, /<h1/g)).toBe(1);
+  });
+
+  it("draws in each section only the layers its step shows", () => {
+    const lit = STEPS.reduce((sum, step) => sum + (step.view === "board" ? step.lit.length : 0), 0);
+    const whole = STEPS.filter((step) => step.view === "board" && step.lit.length === PARTS.length).length;
+    expect(count(html, /class="lit" data-part="[a-z]+" data-on="true"/g)).toBe(lit + whole);
+    expect(html).not.toMatch(/class="(lit|glow)" data-part="[a-z]+" data-on="false"/);
+    expect(html).not.toMatch(/class="(laptop|board|ending)" data-on="false"/);
+    expect(count(html, /class="dawn"/g)).toBe(1);
+  });
+
+  it("names every control for the evidence apart, and has marks where the scrolled page has links to stops", () => {
+    const names = [...html.matchAll(/class="open-evidence" id="[^"]+" aria-label="([^"]+)"/g)].map((m) => m[1]);
+    expect(names.length).toBe(STEPS.length - 2);
+    expect(new Set(names).size).toBe(names.length);
+    for (const name of names) expect(name.startsWith("Open the evidence: ")).toBe(true);
+    expect(html).not.toContain("Go to stop");
   });
 
   it("shows each step's end state: stop 1's section has power and the processor lit", () => {
@@ -171,7 +214,9 @@ describe("a stage", () => {
   it("has the citation marker, the evidence control and the rail at 1 of 7", () => {
     const { first, last } = claimNumbers(stopOne.id);
     expect(html).toContain(`aria-label="Claims ${first} to ${last}: where this comes from"`);
-    expect(html).toMatch(/<button type="button" class="open-evidence" id="evidence-open-s1-power-reset">/);
+    expect(html).toContain(
+      '<button type="button" class="open-evidence" id="evidence-open-s1-power-reset" aria-label="Open the evidence: Power and reset, screen 1 of 1">',
+    );
     expect(html).toContain('aria-label="Stop 1 of 7, screen 1 of 1"');
     expect(count(html, /<a href="#step-\d+" aria-label="Go to stop \d" data-on="true">/g)).toBe(1);
     expect(count(html, /<a href="#step-\d+" aria-label="Go to stop \d" data-on="false">/g)).toBe(6);
@@ -192,7 +237,9 @@ describe("a stage", () => {
     const inside = renderToStaticMarkup(<Stage current={1} solo onOpen={nothing} />);
     expect(inside).toContain(`<h2 class="statement statement-support">${esc(OPENING.support ?? "")}`);
     expect(inside).not.toContain('class="pill');
-    expect(inside).toContain('id="evidence-open-inside"');
+    // It has no evidence line of its own, so no control for one: its marker leads to the opening's claims.
+    expect(inside).not.toContain('id="evidence-open-inside"');
+    expect(inside).toContain('id="evidence-marker-inside"');
   });
 
   it("names the picture by what it shows, not by the note on why it was drawn so", () => {
@@ -201,7 +248,7 @@ describe("a stage", () => {
   });
 
   it("tells the board where to look, for windows too narrow to show all of it", () => {
-    expect(html).toMatch(/class="board" data-on="true" style="--focus:0\.\d+"/);
+    expect(html).toMatch(/class="board" data-on="true" style="--focus:0\.\d+;--span:0\.\d+"/);
   });
 });
 
@@ -234,8 +281,32 @@ describe("stops 2 to 7 on the stage", () => {
   it("quotes a console line as it was recorded, product name and all, and says it is the console", () => {
     const html = stage("s5-choice");
     expect(html).toContain('<span class="pill-type">Console</span>');
-    expect(html).toContain(esc(recordedLine("normal-1", "console", 0)));
+    expect(plain(html)).toContain(esc(recordedLine("normal-1", "console", 0)));
     expect(recordedLine("normal-1", "console", 0)).toContain("QEMU HARDDISK");
+  });
+
+  it("lets a long line break before the word from and after a slash, and changes no character of it", () => {
+    const line = recordedLine("normal-1", "console", 0);
+    const pill = renderToStaticMarkup(
+      <EvidencePill
+        evidence={{
+          recorded: true,
+          kind: "console",
+          run: "normal-1",
+          file: "recordings/normal-1/recording.json",
+          field: "console[0]",
+          position: 0,
+          text: line,
+        }}
+      />,
+    );
+    expect(count(pill, /class="pill-part"/g)).toBe(2);
+    expect(pill).toContain('</span> <span class="pill-part">from ');
+    expect(pill).toContain("/<wbr/>");
+    expect(plain(pill)).toContain(esc(line));
+    // A line with nothing to break at is plain text.
+    const short = renderToStaticMarkup(<EvidencePill evidence={screenOf("s6-start").evidence} />);
+    expect(short).not.toContain("pill-part");
   });
 
   it("names the protection a screen follows, in the content's own term", () => {
@@ -252,23 +323,33 @@ describe("stops 2 to 7 on the stage", () => {
   it("marks the pilot as a pilot, over the laptop with its inside awake and its screen dark", () => {
     const html = stage("s6-pilot-refusal");
     expect(html).toContain(`<p class="aside aside-pilot">${esc(screenOf("s6-pilot-refusal").pilot_label!)}</p>`);
-    expect(html).toMatch(/class="ending" data-on="true"/);
-    expect(html).toMatch(/class="dawn"[^>]*data-on="false"/);
-    expect(html).toMatch(/class="board" data-on="false"/);
+    expect(html).toMatch(/class="ending" data-on="true" data-low="true"/);
+    // A stage shown alone draws only what its step shows: no lit screen, and no board behind the laptop.
+    expect(html).not.toContain('class="dawn"');
+    expect(html).not.toContain('class="board"');
   });
 
-  it("ends with the screen lit, its own note under the picture, and the way on as a link that leads nowhere yet", () => {
+  it("ends with the screen lit, its own note under the picture, and the way on as words until it has an address", () => {
     const last = STEPS.at(-1)!;
     const html = stage(last.id);
+    const handover = last.screen.handover!;
     expect(html).toMatch(/class="dawn"[^>]*data-on="true"/);
     expect(html).toContain(`<p class="picture-note">${esc(last.screen.picture_caption!)}</p>`);
-    expect(html).toContain(esc(last.screen.handover!.text));
-    expect(html).toMatch(new RegExp(`<a href="#"[^>]*>${last.screen.handover!.link_label}</a>`));
+    expect(html).toContain(esc(handover.text));
+    // The content decides: a link where it holds an address, plain words where it holds none. Never a dead link.
+    if (handover.url) expect(html).toContain(`<a href="${handover.url}">${handover.link_label}</a>`);
+    else {
+      expect(html).toContain(`<span class="handover-pending">${handover.link_label}</span>`);
+      expect(html).not.toMatch(/<a [^>]*>Continue/);
+    }
+    expect(html).not.toContain('href="#"');
+    // What the way on is stands in the panel, where a keyboard and a touch screen can reach it.
+    expect(panelOf(last.id)).toContain(esc(handover.note));
   });
 
   it("lights the whole board once the display cable is lit", () => {
     expect(stage("s7-exit-call")).toMatch(/class="lit" data-part="whole" data-on="true"/);
-    expect(stage("s7-tables")).toMatch(/class="lit" data-part="whole" data-on="false"/);
+    expect(stage("s7-tables")).not.toContain('data-part="whole"');
   });
 });
 
@@ -344,6 +425,29 @@ describe("the evidence panel for every screen", () => {
     expect(panelOf("s7-tables")).toMatch(/<ol class="sheet-lines sheet-lines-long" tabindex="0"/);
   });
 
+  it("heads a file that is not a recording as such, and says where nothing was recorded", () => {
+    const html = panelOf("s2-earliest-code");
+    expect(html).toContain("<h3>Nothing was recorded here</h3>");
+    expect(html).toContain("<h3>Also on file</h3>");
+    expect(html).not.toContain("Other fields of the recording");
+    expect(panelOf("s1-power-reset")).toContain("<h3>The nearest the recording has</h3>");
+  });
+
+  it("marks the place where the specification points elsewhere as a pointer, not as the source of a claim", () => {
+    expect(panelOf("s6-verify")).toContain(
+      '<p class="claim-source">Where UEFI 2.11 points away: UEFI Specification 2.11, section 2.6.4,',
+    );
+  });
+
+  it("names each run's own file for a claim read from more than one run", () => {
+    expect(claimSource({ text: "", basis: "recording", run: "normal-1, e2", field: "run.kind" })).toBe(
+      "recordings/normal-1/recording.json, recordings/e2/recording.json: run.kind",
+    );
+    expect(claimSource({ text: "", basis: "recording", run: "e2", field: "run.kind" })).toBe(
+      "recordings/e2/recording.json: run.kind",
+    );
+  });
+
   it("says where the stage name comes from, at the stops that have one", () => {
     const html = panelOf("s3-first-records");
     expect(html).toContain(esc(stop(3).stage_name!.attribution));
@@ -416,9 +520,32 @@ describe("the stylesheet", () => {
   it("lets the opening rest for a full window, and the last step hold until the section ends", () => {
     const flat = css.replace(/\s+/g, " ");
     expect(flat).toContain('.marker[data-length="long"] { height: 150svh; }');
-    expect(flat).toContain('.marker[data-length="short"] { height: 64svh; }');
+    expect(flat).toContain('.marker[data-length="short"] { height: 90svh; }');
     expect(flat).toContain(".marker:last-child { height: 190svh; }");
     expect(flat).toContain(".track { margin-top: -100svh;");
+  });
+
+  it("makes no stretch of scrolling shorter than a window's own paging, so no screen can be passed over", () => {
+    // Space and Page Down move a window by about seven eighths of its height.
+    const heights = [...css.matchAll(/\.marker[^{]*\{\s*height:\s*(\d+)svh/g)].map((m) => Number(m[1]));
+    expect(heights.length).toBe(4);
+    for (const height of heights) expect(height).toBeGreaterThanOrEqual(88);
+  });
+
+  it("gives an unlit mark of the rail an edge that can be seen: three to one on black", () => {
+    const alpha = Number(
+      /\.rail i \{[^}]*background: rgba\(255, 255, 255, ([\d.]+)\)/.exec(css.replace(/\s+/g, " "))![1],
+    );
+    const level = (255 * alpha) / 255;
+    const luminance = level <= 0.03928 ? level / 12.92 : ((level + 0.055) / 1.055) ** 2.4;
+    expect((luminance + 0.05) / 0.05).toBeGreaterThanOrEqual(3);
+  });
+
+  it("draws the board large on a tall stage, and smaller only as far as a step's parts need", () => {
+    const flat = css.replace(/\s+/g, " ");
+    expect(flat).toMatch(/@container \(max-aspect-ratio: 4 \/ 5\) \{ \.board \{[^}]*--wide: 250cqw;/);
+    expect(flat).toMatch(/--zoom: min\(1, [\d.]+ \/ var\(--span\)\);/);
+    expect(flat).toContain("transform: translateX(var(--pan)) scale(var(--zoom));");
   });
 
   it("adds the stronger light and lights the screen by opacity alone", () => {
