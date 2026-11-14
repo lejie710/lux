@@ -702,11 +702,17 @@
         "text": "Three more pilots were run before any prediction existed.",
         "emphasis": "before any prediction"
       },
-      "support": "They were run during research with other tooling and other keys, and none has been recorded again with this recorder, so no result is shown.",
+      "support": "All three have since been recorded with this recorder, and they stay pilots, shown and never counted.",
       "evidence": {
-        "recorded": false,
-        "kind": "not-recorded",
-        "label": "No committed recording exists for these three pilots. Nothing is shown as evidence here."
+        "recorded": true,
+        "kind": "console",
+        "run": "e1",
+        "file": "recordings/e1/recording.json",
+        "field": "console[2]",
+        "position": 2,
+        "text": "LUX-LOADER B: started, boot services active",
+        "highlight": "LUX-LOADER B",
+        "caption": "From the pilot with one byte changed and Secure Boot switched off. The normal run prints the letter A in this place: the changed byte is that letter."
       },
       "status_source": "README.md, section 'Pilots and counted experiments'",
       "cards": [
@@ -715,13 +721,23 @@
           "label": "E1",
           "title": "One byte of the loader, Secure Boot off",
           "change": "The same byte as in the pilot above, with Secure Boot switched off.",
-          "status": "pilot, recorded during research, not yet re-recorded with this recorder",
+          "status": "pilot, recorded with this recorder, shown and not counted",
           "counted": false,
-          "result": null,
-          "result_note": "No result is shown until this run is recorded with this recorder.",
+          "result": {
+            "run": "e1",
+            "comparison": "recordings/comparisons/normal-1_vs_e1.json"
+          },
+          "result_note": "The result is read from the recording and from its comparison with the normal run.",
           "status_source": "README.md, section 'Pilots and counted experiments'",
-          "specification_note": "What the UEFI text covers, not a result of this run.",
+          "specification_note": "The first claim is read from the recording. The others say what the UEFI text covers and are not results of this run.",
           "claims": [
+            {
+              "text": "The changed loader ran. Registers 4 and 7 differ from the normal run, and no other register does.",
+              "basis": "recording",
+              "run": "normal-1, e1",
+              "file": "recordings/comparisons/normal-1_vs_e1.json",
+              "field": "outcome, pcrs_differing, pcrs_same"
+            },
             {
               "text": "When the Secure Boot variable reads 0, signature verification of drivers and boot applications is not active during that boot.",
               "basis": "uefi-required",
@@ -755,13 +771,23 @@
           "label": "E4",
           "title": "Secure Boot switched off, nothing else",
           "change": "The loader is untouched and the keys stay enrolled. Only the Secure Boot switch is turned off.",
-          "status": "pilot, recorded during research, not yet re-recorded with this recorder",
+          "status": "pilot, recorded with this recorder, shown and not counted",
           "counted": false,
-          "result": null,
-          "result_note": "No result is shown until this run is recorded with this recorder.",
+          "result": {
+            "run": "e4",
+            "comparison": "recordings/comparisons/normal-1_vs_e4.json"
+          },
+          "result_note": "The result is read from the recording and from its comparison with the normal run.",
           "status_source": "README.md, section 'Pilots and counted experiments'",
-          "specification_note": "What the UEFI text covers, not a result of this run.",
+          "specification_note": "The first claim is read from the recording. The others say what the UEFI text covers and are not results of this run.",
           "claims": [
+            {
+              "text": "The untouched loader ran. Register 7 differs from the normal run, and no other register does.",
+              "basis": "recording",
+              "run": "normal-1, e4",
+              "file": "recordings/comparisons/normal-1_vs_e4.json",
+              "field": "outcome, pcrs_differing, pcrs_same"
+            },
             {
               "text": "UEFI 2.11 defines no switch that turns checking off while the keys stay enrolled. The starting value of the Secure Boot variable is set by platform policy.",
               "basis": "uefi-platform",
@@ -795,13 +821,23 @@
           "label": "E5",
           "title": "A signed loader whose hash is on the forbidden list",
           "change": "The loader is untouched and correctly signed. Its hash is added to the forbidden list, dbx.",
-          "status": "pilot, recorded during research, not yet re-recorded with this recorder",
+          "status": "pilot, recorded with this recorder, shown and not counted",
           "counted": false,
-          "result": null,
-          "result_note": "No result is shown until this run is recorded with this recorder.",
+          "result": {
+            "run": "e5",
+            "comparison": "recordings/comparisons/normal-1_vs_e5.json"
+          },
+          "result_note": "The result is read from the recording and from its comparison with the normal run.",
           "status_source": "README.md, section 'Pilots and counted experiments'",
-          "specification_note": "What the UEFI text covers, not a result of this run.",
+          "specification_note": "The first claim is read from the recording. The others say what the UEFI text covers and are not results of this run.",
           "claims": [
+            {
+              "text": "The signed loader was refused. Registers 4, 5 and 7 differ from the normal run, and no other register does.",
+              "basis": "recording",
+              "run": "normal-1, e5",
+              "file": "recordings/comparisons/normal-1_vs_e5.json",
+              "field": "outcome, pcrs_differing, pcrs_same"
+            },
             {
               "text": "Verification must not succeed when the forbidden list holds the hash of the image, even if the allowed list would accept it.",
               "basis": "uefi-required",
@@ -843,11 +879,39 @@
         }
       ],
       "detail": {
-        "console_lines": [],
+        "console_lines": [
+          {
+            "run": "normal-1",
+            "positions": [
+              2
+            ]
+          },
+          {
+            "run": "e1",
+            "positions": [
+              2
+            ]
+          },
+          {
+            "run": "e4",
+            "positions": [
+              2
+            ]
+          },
+          {
+            "run": "e5",
+            "positions": [
+              0,
+              1,
+              2,
+              3
+            ]
+          }
+        ],
         "loader_report_lines": [],
         "events": [],
         "pcrs": [],
-        "explanation": "These three experiments were tried during the early research, before this recorder existed and before any prediction was written. That makes them pilots: they can be shown, and they can never be counted. This recorder can stage all three, and it has not booted any of them, so there is no committed recording to show. Each card gives the change and what the UEFI text covers, and no result.",
+        "explanation": "These three experiments were tried during the early research, before any prediction was written. That makes them pilots: they can be shown, and they can never be counted. Each has since been recorded with this recorder, from the same variable store template as the normal run, and compared with it. Each card gives the change, what its comparison file holds, and what the UEFI text covers.",
         "definitions": [
           {
             "glossary": "pilot"
@@ -870,11 +934,22 @@
       },
       "claims": [
         {
-          "text": "Only the pilot with one byte changed and Secure Boot on has a committed recording. Its recording is marked as a pilot.",
+          "text": "Each of the three recordings is marked as a pilot and carries no prediction.",
           "basis": "recording",
-          "run": "e2",
-          "file": "recordings/e2/recording.json",
-          "field": "run.kind"
+          "run": "e1, e4, e5",
+          "field": "run.kind, provenance.prediction"
+        },
+        {
+          "text": "All three were made from the same variable store template as the normal run.",
+          "basis": "recording",
+          "run": "normal-1, e1, e4, e5",
+          "field": "provenance.vars_template_sha256"
+        },
+        {
+          "text": "With one byte changed and Secure Boot switched off, the loader printed its first line with the letter B where the normal run has A.",
+          "basis": "recording",
+          "run": "normal-1, e1",
+          "field": "console[2]"
         }
       ],
       "picture": null

@@ -70,7 +70,7 @@ Fields that only some kinds have:
 | `closing` | `picture_caption`, `handover` (the link to the earlier site) |
 | `intro` | `eyebrow`, `question`, `measure` (list of text), `score` (`claimed` is false until a counted experiment has run) |
 | `side-by-side` | `eyebrow`, `experiment`, `status` (`label`, `text`, `counted`), `change` (`text`, `file`, `field`), `sides`: exactly two, each `{id, run, label, statement, outcome, picture, evidence}` with a statement of at most 14 words and a recorded evidence line |
-| `cards` | `eyebrow`, `status_source`, `cards`: each `{id, label, title, status, counted, result, claims}`, plus `change`, `result_note`, `specification_note` on pilots. `result` is null until the run is recorded |
+| `cards` | `eyebrow`, `status_source`, `cards`: each `{id, label, title, status, counted, result, claims}`, plus `change`, `result_note`, `specification_note` on pilots. `result` is null until the run is recorded, and then names the run and its comparison file (`{run, comparison}`); what the run showed is read from those files, not repeated here |
 | `list` | `eyebrow`, `items`: each `{id, title, text, claims}` |
 | `sources-page`, `about` | `title`; `about` also has `paragraphs` |
 

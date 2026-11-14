@@ -185,7 +185,7 @@
         "text": "One boot was recorded, then one thing was changed.",
         "emphasis": "one thing was changed"
       },
-      "support": "Lux asks what the specification requires, what it leaves open and what this firmware does, and so far it shows one pilot and claims no score.",
+      "support": "Lux asks what the specification requires, what it leaves open and what this firmware does, and so far it shows four pilots and claims no score.",
       "evidence": {
         "recorded": true,
         "kind": "console",
@@ -523,8 +523,14 @@
         "recordings/normal-1/recording.json",
         "recordings/normal-2/recording.json",
         "recordings/e2/recording.json",
+        "recordings/e1/recording.json",
+        "recordings/e4/recording.json",
+        "recordings/e5/recording.json",
         "recordings/comparisons/normal-1_vs_normal-2.json",
-        "recordings/comparisons/normal-1_vs_e2.json"
+        "recordings/comparisons/normal-1_vs_e2.json",
+        "recordings/comparisons/normal-1_vs_e1.json",
+        "recordings/comparisons/normal-1_vs_e4.json",
+        "recordings/comparisons/normal-1_vs_e5.json"
       ],
       "how_used": "Every evidence line on the site is copied from one of these files, with the file, the field and the index given. The raw event log each recording was built from is stored beside it, so it can be decoded with another tool.",
       "claims": [
