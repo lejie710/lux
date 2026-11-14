@@ -149,11 +149,10 @@
       },
       {
         "id": "opening-pilot",
-        "text": "The changed run committed so far is labelled a pilot. It is shown and not counted, and no score is claimed.",
+        "text": "Four changed runs are labelled pilots: they are shown and not counted. Four more are labelled counted, and each names the prediction it was made against.",
         "basis": "recording",
-        "run": "normal-1, e2",
-        "file": "recordings/comparisons/normal-1_vs_e2.json",
-        "field": "changed.kind"
+        "run": "e1, e2, e4, e5, boot-order-different-1, boot-order-same-1, signature-byte-1, signature-byte-off-1",
+        "field": "run.kind, provenance.prediction"
       }
     ],
     "picture": {

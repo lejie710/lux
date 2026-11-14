@@ -185,7 +185,7 @@
         "text": "One boot was recorded, then one thing was changed.",
         "emphasis": "one thing was changed"
       },
-      "support": "Lux asks what the specification requires, what it leaves open and what this firmware does, and so far it shows four pilots and claims no score.",
+      "support": "Lux asks what the specification requires, what it leaves open and what this firmware does, and it shows four pilots, not counted, and four counted experiments with their scores.",
       "evidence": {
         "recorded": true,
         "kind": "console",
