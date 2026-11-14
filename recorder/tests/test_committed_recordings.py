@@ -3,7 +3,7 @@ import hashlib
 import json
 import unittest
 
-from recorder import bootentries, compare, eventlog, gate, keys, recording
+from recorder import bootentries, compare, eventlog, experiments, gate, keys, prediction, recording
 from recorder.banks import banks_from_hex
 from recorder.tests import helpers
 
@@ -13,15 +13,27 @@ PILOTS = ("e1", "e2", "e4", "e5")
 # The normal runs of the boot order experiments: two boot entries, original order, each form twice.
 TWO_ENTRY_RUNS = ("normal-two-same-1", "normal-two-same-2",
                   "normal-two-different-1", "normal-two-different-2")
-ALL_RUNS = NORMAL_RUNS + PILOTS + TWO_ENTRY_RUNS
+# The counted runs, each booted once after its prediction was committed: run, experiment, normal run.
+COUNTED = (("signature-byte-1", "signature-byte", "normal"),
+           ("signature-byte-off-1", "signature-byte-off", "normal"),
+           ("boot-order-same-1", "boot-order-same", "normal-two-same"),
+           ("boot-order-different-1", "boot-order-different", "normal-two-different"))
+COUNTED_RUNS = tuple(run for run, _, _ in COUNTED)
+# The runs recorded without a prediction: normal runs and pilots.
+UNPREDICTED_RUNS = NORMAL_RUNS + PILOTS + TWO_ENTRY_RUNS
+ALL_RUNS = UNPREDICTED_RUNS + COUNTED_RUNS
 # The repeat of each normal run.
 REPEATS = (("normal-1", "normal-2"), ("normal-two-same-1", "normal-two-same-2"),
            ("normal-two-different-1", "normal-two-different-2"))
-# Every committed comparison: the repeats, and each pilot against normal-1.
-PAIRS = REPEATS + tuple(("normal-1", pilot) for pilot in PILOTS)
+# Every committed comparison: the repeats, each pilot against normal-1, each counted run
+# against the first recording of its normal run.
+PAIRS = (REPEATS + tuple(("normal-1", pilot) for pilot in PILOTS)
+         + tuple((f"{normal}-1", run) for run, _, normal in COUNTED))
 # Number of events each committed event log holds.
 EVENT_COUNTS = {"normal-1": 28, "normal-2": 28, "e1": 27, "e2": 26, "e4": 27, "e5": 27,
-                **{run: 30 for run in TWO_ENTRY_RUNS}}
+                **{run: 30 for run in TWO_ENTRY_RUNS},
+                "signature-byte-1": 26, "signature-byte-off-1": 27,
+                "boot-order-same-1": 30, "boot-order-different-1": 30}
 AUTHORITY = "EV_EFI_VARIABLE_AUTHORITY"
 
 
@@ -116,7 +128,9 @@ class CommittedRecordings(unittest.TestCase):
     def test_recordings_were_made_with_the_committed_keys_and_loader(self) -> None:
         manifest = keys.verify(helpers.TESTKEYS)
         fingerprints = keys.fingerprints(helpers.TESTKEYS)
-        for run in ALL_RUNS:
+        for run in COUNTED_RUNS:
+            self.assertEqual(self._load(run)["provenance"]["keys"], fingerprints)
+        for run in UNPREDICTED_RUNS:
             provenance = self._load(run)["provenance"]
             self.assertEqual(provenance["keys"], fingerprints)
             template = (bootentries.TEMPLATE_SHA256 if run in TWO_ENTRY_RUNS
@@ -134,6 +148,9 @@ class CommittedRecordings(unittest.TestCase):
     def test_every_committed_recording_is_listed_here(self) -> None:
         on_disk = {path.parent.name for path in RECORDINGS.glob("*/recording.json")}
         self.assertEqual(on_disk, set(ALL_RUNS))
+        self.assertEqual(set(EVENT_COUNTS), set(ALL_RUNS))
+        on_file = {path.name for path in (RECORDINGS / "comparisons").glob("*.json")}
+        self.assertEqual(on_file, {f"{baseline}_vs_{changed}.json" for baseline, changed in PAIRS})
         for run in PILOTS:
             self.assertEqual((self._load(run)["run"]["experiment"], self._load(run)["run"]["kind"]),
                              (run, "pilot"))
@@ -241,6 +258,112 @@ class OtherPilots(unittest.TestCase):
         self.assertIsNotNone(self._load("e1")["run"]["change_detail"]["loader_byte"])
         self.assertIsNone(self._load("e4")["run"]["change_detail"]["loader_byte"])
         self.assertIsNone(self._load("e5")["run"]["change_detail"]["loader_byte"])
+
+
+class CountedRuns(unittest.TestCase):
+    """The four counted runs: one recording each, under an unedited prediction, with a score that
+    follows from the committed files.
+
+    The tests pin what the files say. They do not say that a prediction was right; the score
+    files do, row by row.
+    """
+
+    def _load(self, run: str) -> dict:
+        return recording.load_json(RECORDINGS / run / "recording.json", recording.RECORDING_FORMAT)
+
+    def _score(self, experiment: str) -> dict:
+        return recording.load_json(RECORDINGS / "scores" / f"{experiment}.json", prediction.SCORE_FORMAT)
+
+    def test_each_counted_experiment_has_exactly_one_recording(self) -> None:
+        counted: dict[str, list[str]] = {}
+        for path in sorted(RECORDINGS.glob("*/recording.json")):
+            run = json.loads(path.read_text(encoding="utf-8"))["run"]
+            if run["kind"] == experiments.KIND_COUNTED:
+                counted.setdefault(run["experiment"], []).append(path.parent.name)
+        self.assertEqual(counted, {experiment: [run] for run, experiment, _ in COUNTED})
+
+    def test_each_run_was_recorded_under_the_prediction_that_is_still_on_file(self) -> None:
+        for run, experiment, _ in COUNTED:
+            document = self._load(run)
+            file = helpers.REPOSITORY / "predictions" / f"{experiment}.json"
+            self.assertTrue(prediction.unchanged_since_run(document, file), run)
+            stored = document["provenance"]["prediction"]
+            self.assertEqual(stored["path"], f"predictions/{experiment}.json")
+            self.assertEqual(len(stored["commit"]), 40)
+            self.assertEqual(document["run"]["experiment_sha256"],
+                             experiments.fingerprint(experiments.get(experiment)), run)
+
+    def test_each_score_file_follows_from_the_committed_files(self) -> None:
+        for run, experiment, normal in COUNTED:
+            comparison_file = RECORDINGS / "comparisons" / f"{normal}-1_vs_{run}.json"
+            comparison = recording.load_json(comparison_file, compare.COMPARISON_FORMAT)
+            predicted = prediction.load(helpers.REPOSITORY / "predictions" / f"{experiment}.json")
+            self.assertTrue(prediction.fits_baseline(predicted, comparison), run)
+            stored = self._score(experiment)
+            for key, value in prediction.score(predicted, comparison).items():
+                self.assertEqual(stored[key], value, (run, key))
+            self.assertEqual(stored["run"], run)
+            self.assertEqual(stored["prediction"], self._load(run)["provenance"]["prediction"])
+            self.assertEqual(stored["comparison_sha256"], recording.sha256_of_file(comparison_file))
+            self.assertEqual(stored["changed_recording_sha256"],
+                             recording.sha256_of_file(RECORDINGS / run / "recording.json"))
+            self.assertEqual(stored["baseline_recording_sha256"],
+                             recording.sha256_of_file(RECORDINGS / f"{normal}-1" / "recording.json"))
+            self.assertEqual(stored["repeat_comparison_sha256"], recording.sha256_of_file(
+                RECORDINGS / "comparisons" / f"{normal}-1_vs_{normal}-2.json"))
+
+    def test_there_is_one_score_file_per_counted_run_and_no_other(self) -> None:
+        on_file = {path.name for path in (RECORDINGS / "scores").glob("*.json")}
+        self.assertEqual(on_file, {f"{experiment}.json" for _, experiment, _ in COUNTED})
+
+    def test_the_two_numbers_are_the_sum_over_the_score_files(self) -> None:
+        scores = [self._score(experiment) for _, experiment, _ in COUNTED]
+        totals = [sum(score[key] for score in scores)
+                  for key in ("required_met", "required_total", "open_correct", "open_total")]
+        self.assertEqual(totals, [6, 6, 72, 72])
+        self.assertEqual([score["mismatches"] for score in scores], [[], [], [], []])
+
+    def test_the_signature_recordings_prove_which_byte_was_changed(self) -> None:
+        # Every scored row of these two runs would look the same with another refused or accepted
+        # loader, so the proof that the signature byte was changed is in these fields alone.
+        signed = keys.verify(helpers.TESTKEYS)
+        for run, edits in (("signature-byte-1", []), ("signature-byte-off-1", ["secure-boot-off"])):
+            document = self._load(run)
+            detail = document["run"]["change_detail"]
+            self.assertEqual(detail["loader_byte"], {"file_offset": 40170, "old_value": 0xDA,
+                                                     "new_value": 0xDB,
+                                                     "area": "signature area, signature value"})
+            self.assertEqual((detail["store_edits"], detail["firmware_replaced"]), (edits, False))
+            loader = document["provenance"]["loader"]
+            self.assertEqual(loader["authenticode_sha256"], signed["loader_authenticode_sha256"])
+            self.assertNotEqual(loader["file_sha256"],
+                                self._load("normal-1")["provenance"]["loader"]["file_sha256"])
+            self.assertEqual(document["provenance"]["vars_template_sha256"],
+                             signed["vars_template_sha256"])
+
+    def test_the_boot_order_recordings_prove_which_order_was_booted(self) -> None:
+        stores = set()
+        order = list(bootentries.option_names(bootentries.ORDER_B_FIRST))
+        for run in ("boot-order-same-1", "boot-order-different-1"):
+            document = self._load(run)
+            self.assertEqual(document["run"]["change_detail"]["boot_order"], order)
+            self.assertEqual(document["provenance"]["boot_order"], order)
+            self.assertNotEqual(document["provenance"]["vars_template_sha256"],
+                                bootentries.TEMPLATE_SHA256)
+            stores.add(document["provenance"]["vars_template_sha256"])
+            self.assertEqual(document["console"][0],
+                             'BdsDxe: loading Boot0003 "Lux entry B" from ' + r"\EFI\LUX\B.EFI")
+        self.assertEqual(len(stores), 1)        # both forms were booted from the same changed store
+
+    def test_the_signature_runs_equal_the_pilots_their_predictions_named(self) -> None:
+        def records(document: dict) -> list[tuple]:
+            return [(row["pcr"], row["type"], row["digest_sha256"]) for row in document["events"]]
+
+        for run, pilot in (("signature-byte-1", "e2"), ("signature-byte-off-1", "e4")):
+            counted, earlier = self._load(run), self._load(pilot)
+            for field in ("console", "loader_report", "pcrs", "vars_after_sha256"):
+                self.assertEqual(counted[field], earlier[field], (run, field))
+            self.assertEqual(records(counted), records(earlier), run)
 
 
 if __name__ == "__main__":
