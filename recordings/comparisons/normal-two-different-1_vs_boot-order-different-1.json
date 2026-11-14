@@ -1,0 +1,194 @@
+{
+  "baseline": {
+    "experiment": "normal-two-different",
+    "kind": "normal",
+    "recording_sha256": "efee1610f1e04e413ffaa05164b5df8f1e2efe6669ffc71405b9396dd1a57075",
+    "run": "normal-two-different-1"
+  },
+  "changed": {
+    "experiment": "boot-order-different",
+    "kind": "counted",
+    "recording_sha256": "c72bdfacc169f4e201819a2c45dc8abdc1829561e8456f7ea9ffc337f2b1ffa6",
+    "run": "boot-order-different-1"
+  },
+  "console_first_differing_line": 1,
+  "console_first_differing_text": {
+    "baseline": "BdsDxe: loading Boot0002 \"Lux entry A\" from \\EFI\\LUX\\A.EFI",
+    "changed": "BdsDxe: loading Boot0003 \"Lux entry B\" from \\EFI\\LUX\\B.EFI"
+  },
+  "events_only_in_baseline": [
+    {
+      "digest_sha256": "6fefab5c7f39cab95876143225a19b4674e522a12ff9f80b64c841f50fe9fe30",
+      "index": 14,
+      "pcr": 1,
+      "type": "EV_EFI_VARIABLE_BOOT"
+    },
+    {
+      "digest_sha256": "00c5018d3157edb92f96a08ba685a1c5913c5dd5fa2228b021dd9d4970eee50f",
+      "index": 28,
+      "pcr": 4,
+      "type": "EV_EFI_BOOT_SERVICES_APPLICATION"
+    }
+  ],
+  "events_only_in_changed": [
+    {
+      "digest_sha256": "af165fc35b8a79bd6a5146f7dd669e7004c22a81cce51c81c5df5ae29fe0651d",
+      "index": 14,
+      "pcr": 1,
+      "type": "EV_EFI_VARIABLE_BOOT"
+    },
+    {
+      "digest_sha256": "cef0a97471078a2922c8a96d3ce30512b368882b041d2d148bb9c26704891432",
+      "index": 28,
+      "pcr": 4,
+      "type": "EV_EFI_BOOT_SERVICES_APPLICATION"
+    }
+  ],
+  "first_differing_event": {
+    "baseline": {
+      "digest_sha256": "6fefab5c7f39cab95876143225a19b4674e522a12ff9f80b64c841f50fe9fe30",
+      "pcr": 1,
+      "type": "EV_EFI_VARIABLE_BOOT"
+    },
+    "changed": {
+      "digest_sha256": "af165fc35b8a79bd6a5146f7dd669e7004c22a81cce51c81c5df5ae29fe0651d",
+      "pcr": 1,
+      "type": "EV_EFI_VARIABLE_BOOT"
+    },
+    "index": 14,
+    "stop": 5
+  },
+  "format": "lux-comparison/1",
+  "identical": false,
+  "loader_report_first_differing_line": null,
+  "other_fields_differing": [
+    "event_log.sha256",
+    "provenance.boot_order",
+    "provenance.vars_template_sha256",
+    "vars_after_sha256"
+  ],
+  "outcome": {
+    "baseline": "accepted",
+    "changed": "accepted"
+  },
+  "pcrs_differing": {
+    "sha1": [
+      1,
+      4
+    ],
+    "sha256": [
+      1,
+      4
+    ],
+    "sha384": [
+      1,
+      4
+    ],
+    "sha512": [
+      1,
+      4
+    ]
+  },
+  "pcrs_same": {
+    "sha1": [
+      0,
+      2,
+      3,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23
+    ],
+    "sha256": [
+      0,
+      2,
+      3,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23
+    ],
+    "sha384": [
+      0,
+      2,
+      3,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23
+    ],
+    "sha512": [
+      0,
+      2,
+      3,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23
+    ]
+  },
+  "refusal_lines": {
+    "baseline": [],
+    "changed": []
+  }
+}

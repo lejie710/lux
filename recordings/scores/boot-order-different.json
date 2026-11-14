@@ -1,0 +1,127 @@
+{
+  "baseline_recording_sha256": "efee1610f1e04e413ffaa05164b5df8f1e2efe6669ffc71405b9396dd1a57075",
+  "changed_recording_sha256": "c72bdfacc169f4e201819a2c45dc8abdc1829561e8456f7ea9ffc337f2b1ffa6",
+  "comparison_sha256": "0580657f75c2fd561763d4f5252e5de1594ef875c08d06feebf8ca5bedfe800c",
+  "experiment": "boot-order-different",
+  "format": "lux-score/1",
+  "mismatches": [],
+  "open_correct": 19,
+  "open_total": 19,
+  "prediction": {
+    "commit": "b6270c12784b33e538577b036c5850cda57cdbf6",
+    "parameters": {},
+    "path": "predictions/boot-order-different.json",
+    "sha256": "8356de599a86a9d25d64bef1d2b66eeec7f51e5ae50b6eca5e4a489a89de242d"
+  },
+  "repeat_comparison_sha256": "528fc43f2a639e3e433f9a7ac15d6e445f11e3935a846908200ce60209fd3c70",
+  "required_met": 2,
+  "required_total": 2,
+  "rows": [
+    {
+      "basis": "uefi-required",
+      "held": true,
+      "id": "continues"
+    },
+    {
+      "basis": "uefi-required",
+      "held": true,
+      "id": "entry-b-first"
+    },
+    {
+      "basis": "this-firmware",
+      "held": true,
+      "id": "first-console-line"
+    },
+    {
+      "basis": "this-firmware",
+      "held": true,
+      "id": "console-first-difference"
+    },
+    {
+      "basis": "this-firmware",
+      "held": true,
+      "id": "no-refusal"
+    },
+    {
+      "basis": "uefi-platform",
+      "held": true,
+      "id": "order-measured-as-written"
+    },
+    {
+      "basis": "this-firmware",
+      "held": true,
+      "id": "first-event"
+    },
+    {
+      "basis": "this-firmware",
+      "held": true,
+      "id": "first-event-stop"
+    },
+    {
+      "basis": "this-firmware",
+      "held": true,
+      "id": "pcr0-same"
+    },
+    {
+      "basis": "this-firmware",
+      "held": true,
+      "id": "pcr1-differs"
+    },
+    {
+      "basis": "this-firmware",
+      "held": true,
+      "id": "pcr2-same"
+    },
+    {
+      "basis": "this-firmware",
+      "held": true,
+      "id": "pcr3-same"
+    },
+    {
+      "basis": "this-firmware",
+      "held": true,
+      "id": "pcr4-differs"
+    },
+    {
+      "basis": "this-firmware",
+      "held": true,
+      "id": "pcr5-same"
+    },
+    {
+      "basis": "this-firmware",
+      "held": true,
+      "id": "pcr6-same"
+    },
+    {
+      "basis": "tcg-unread",
+      "held": true,
+      "id": "pcr7-same"
+    },
+    {
+      "basis": "this-firmware",
+      "held": true,
+      "id": "events-only-in-normal-run"
+    },
+    {
+      "basis": "this-firmware",
+      "held": true,
+      "id": "events-only-in-changed-run"
+    },
+    {
+      "basis": "this-firmware",
+      "held": true,
+      "id": "second-loader-measured"
+    },
+    {
+      "basis": "this-firmware",
+      "held": true,
+      "id": "loader-report-equal"
+    },
+    {
+      "basis": "this-firmware",
+      "held": true,
+      "id": "nothing-else-differs"
+    }
+  ],
+  "run": "boot-order-different-1"
+}
