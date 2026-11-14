@@ -1,8 +1,8 @@
 # Mutation checks
 
-A test suite that passes proves little unless it can also fail. For four rules the project's question depends on, the rule was broken on purpose, the full suite was run, and the rule was restored. Each time at least one test had to fail. All four did.
+A test suite that passes proves little unless it can also fail. For seven rules the project's question depends on, the rule was broken on purpose, the full suite was run, and the rule was restored. Each time at least one test had to fail. All seven did.
 
-Suite before and after each check: `Ran 231 tests`, `OK (skipped=5)`. The five skipped tests are the integration test that boots the virtual machine; it was not part of these checks. The checks were repeated after the review changes, and the lists below are from that repeat.
+Checks 1 to 4 were made on the recorder as reviewed. Suite before and after each: `Ran 231 tests`, `OK (skipped=5)`. They were repeated after the review changes, and their lists are from that repeat. Checks 5 to 7 were made when the predictions of the counted experiments were written, on the rules that work added. Suite before and after each: `Ran 356 tests`, `OK (skipped=6)`. The skipped tests are the integration test that boots the virtual machine; it was not part of these checks.
 
 ## 1. The extend order in the replay
 
@@ -59,10 +59,41 @@ Suite before and after each check: `Ran 231 tests`, `OK (skipped=5)`. The five s
   - `test_session_runner.WholeRun.test_a_prediction_edited_behind_git_is_refused_before_anything_starts`
 - **Why it matters.** The second of these uses a real temporary git repository and the real `git update-index --assume-unchanged`: it is the case that passed the gate before the review. Without this rule a recording could store the hash of an edited prediction next to a commit that holds another text.
 
+## 5. The two stores of a boot order experiment differ in one variable
+
+- **Rule.** The variable store with the changed boot order is accepted only if it differs from the store with the original order in the value of `BootOrder` and in no other byte.
+- **File.** `recorder/staging.py`, function `require_only_boot_order_differs`.
+- **Change.** `if not varstore.only_this_variable_differs(original, changed, "BootOrder"):` became `if False and not ...`, so only the order itself was still checked.
+- **Result.** 2 tests failed:
+  - `test_counted_set.TwoEntryStaging.test_a_changed_order_store_that_differs_in_anything_else_is_refused`
+  - `test_session_runner.Preparation.test_a_changed_order_store_that_differs_in_anything_else_is_not_kept`
+- **Why it matters.** The experiment claims to change one thing. This rule is the proof, taken from the two files before any boot. Without it a store that also differed elsewhere would be booted, and its effect would be blamed on the order.
+
+## 6. Nothing of the changed boot order is made before a prediction is committed
+
+- **Rule.** `prepare --changed-boot-order` is refused unless a boot order prediction is committed.
+- **File.** `recorder/cli.py`, function `_prepare`.
+- **Change.** The call `_require_boot_order_prediction()` was removed.
+- **Result.** 3 tests failed:
+  - `test_counted_set.ChangedBootOrderCommand.test_it_is_refused_without_a_prediction`
+  - `test_counted_set.ChangedBootOrderCommand.test_it_is_refused_while_the_prediction_is_not_committed`
+  - `test_counted_set.ChangedBootOrderCommand.test_a_prediction_for_another_experiment_does_not_open_it`
+- **Why it matters.** The store with the changed order is the changed configuration of a counted experiment. If it could be made early, it could be tried out early, and the prediction would no longer be blind.
+
+## 7. A changed run is compared with the normal run it changes
+
+- **Rule.** `compare` refuses a changed run against a recording of another normal run than the one its experiment names.
+- **File.** `recorder/compare.py`, function `require_comparable`.
+- **Change.** `if baseline["run"]["experiment"] != expected:` became `if False and ...`.
+- **Result.** 2 tests failed:
+  - `test_counted_set.BaselineRules.test_a_boot_order_run_is_compared_with_its_two_entry_normal_run_only`
+  - `test_counted_set.BaselineRules.test_a_pilot_is_compared_with_the_plain_normal_run_only`
+- **Why it matters.** There are three normal runs now. The plain one and the two-entry ones differ in register 1 by themselves. A boot order run compared with the plain normal run would show that difference as if the changed order had caused it.
+
 ## How to repeat a check
 
 Make the change by hand, run `python3 -m unittest discover -s recorder/tests -t .`, confirm the named tests fail, then restore the file with `git checkout -- <file>` and run the suite again.
 
 ## What these checks do not show
 
-Four rules were checked, not every line. The checks say nothing about the code that only runs with a real virtual machine (`session.QemuMachine`); that code is exercised by the integration test and by the committed recordings, not by mutation.
+Seven rules were checked, not every line. The checks say nothing about the code that only runs with a real virtual machine (`session.QemuMachine`); that code is exercised by the integration test and by the committed recordings, not by mutation.

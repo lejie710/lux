@@ -1,6 +1,6 @@
 # Lux recorder: design
 
-Status: third version. The first was written before the code. The second matched the package as first built. This one matches the package after an independent review of that build; section 11 lists every point where building or review proved an earlier version wrong or incomplete.
+Status: fourth version. The first was written before the code. The second matched the package as first built. The third matched the package after an independent review of that build. This one adds how the counted experiments are staged (decisions D6 to D8), written when their predictions were committed and before any of them was run. Section 11 lists every point where building or review proved an earlier version wrong or incomplete.
 
 ## 1. Purpose and the question
 
@@ -13,6 +13,8 @@ The recorder is the part that produces evidence. It boots open-source UEFI firmw
 Scope: open-source firmware in a virtual machine with a software TPM, under software emulation. Nothing here describes any vendor's firmware on real hardware.
 
 Two kinds of changed run exist. A **pilot** was run before any prediction existed; it is shown and never counted. A **counted** run needs a committed prediction first, and the recorder enforces that (section 6).
+
+Every changed run is compared with a **normal run**, and there are three of them. The plain one has the boot options the firmware makes for itself. The two others have two boot entries added, and exist because a boot order can only be changed where there are two things to order (decision D6). Each experiment names the normal run it changes, and is compared with no other.
 
 ## 2. Pipeline
 
@@ -54,21 +56,23 @@ The package is `recorder/`. Modules marked *pure* touch no process, socket or cl
 
 **`keys`** owns the committed Secure Boot test keys (PK, KEK, db) in `recorder/testkeys/`, and the owner identifier used in every signature list. It loads the keys, checks them against a hash manifest, and reports fingerprints. The manifest also pins the variable store template, the packaged firmware file, and the versions of the tools that created the key set. It can generate keys only through an explicit option that refuses when the directory holds anything besides its README, because PCR 7 depends on the certificate bytes and new keys would silently invalidate every recording.
 
-**`pe`** (*pure*) reads PE/COFF headers: section table, the certificate table (the signature area), and the Authenticode SHA-256 of an image. The recorder uses it to predict the PCR 4 image digest before a boot and to prove where a changed byte lies.
+**`pe`** (*pure*) reads PE/COFF headers: section table, the certificate table (the signature area), and the Authenticode SHA-256 of an image. The recorder uses it to predict the PCR 4 image digest before a boot and to prove where a changed byte lies. It also reads what the signature area is made of (the entry header, the image digest that was signed, the signer's certificate, the signed attributes, the signature value, padding), so that a changed byte there can be named by its part.
 
-**`loader`** builds the assembly loader with the installed assembler and linker (no timestamp), and verifies the committed signed loader against the manifest. Signing output is not repeatable, so the signed file is a fixed committed artifact, not a build product. It also makes changed copies: one byte inside a section, or one byte inside the signature area, each refused unless `pe` confirms the location.
+**`loader`** builds the assembly loader with the installed assembler and linker (no timestamp), and verifies the committed signed loader against the manifest. Signing output is not repeatable, so the signed file is a fixed committed artifact, not a build product. It also makes changed copies: one byte inside a section, or one byte inside the signature area, each refused unless `pe` confirms the location. And it verifies the second signed loader (decision D7).
 
 **`enrol`** (*pure*) builds the small UEFI program that writes the keys through the firmware's `SetVariable` service. Its machine code is written out byte by byte in Python (decision D5).
 
-**`varstore`** (*pure*) reads the variable store file record by record and makes the offline edits experiments need: switch the firmware's enable switch off, reverse `BootOrder`, append a revocation entry.
+**`varstore`** (*pure*) reads the variable store file record by record and makes the offline edits experiments need: switch the firmware's enable switch off, append a revocation entry. It builds the values of a boot option and of `BootOrder`, reads the order back, and answers whether two stores differ in the value of one variable and in nothing else. It does not edit the boot order (decision D6).
 
-**`experiments`** (*pure*) holds each experiment as a small frozen description: identifier, kind (`normal`, `pilot`, `counted`), which loader variant goes on the disk, edits to the variable store, firmware file, the one sentence saying what changed, and the names of the parameters its prediction must carry. Descriptions are data. Adding an experiment adds a description, not a code path. Eight exist: `normal`; the pilots `e1`, `e2`, `e4`, `e5`; and the counted `boot-order`, `signature-byte` and `rebuilt-firmware`. A description never holds a value that decides what a counted experiment tests; that value lives in the prediction (section 6).
+**`bootentries`** (*pure*) holds the two boot entries of the boot order experiments as data: their numbers, labels and file paths, the two orders, and the pinned hash of the store that holds them.
 
-**`staging`** turns a description into a fresh run directory: boot disk tree, a copy of the template store, the changed loader. It checks the firmware file against its pinned hash and takes an experiment's parameters from the committed prediction only. It does not start anything. Run directories live under a Linux path because unix sockets do not work on the Windows-mounted drive.
+**`experiments`** (*pure*) holds each experiment as a small frozen description: identifier, kind (`normal`, `pilot`, `counted`), which loader variant goes on the disk, edits to the variable store, firmware file, the one sentence saying what changed, the names of the parameters its prediction must carry, the variable store it starts from, the loader behind the second boot entry, and the normal run it is compared with. Descriptions are data. Adding an experiment adds a description, not a code path. Twelve exist: the normal runs `normal`, `normal-two-same` and `normal-two-different`; the pilots `e1`, `e2`, `e4`, `e5`; and the counted `boot-order-same`, `boot-order-different`, `signature-byte`, `signature-byte-off` and `rebuilt-firmware`. A description never holds a value that decides what a counted experiment tests; that value lives in the prediction (section 6).
+
+**`staging`** turns a description into a fresh run directory: boot disk tree, a copy of the template store, the changed loader. It checks the firmware file against its pinned hash and takes an experiment's parameters from the committed prediction only. For a run with the changed boot order it proves, from the two store files, that they differ in the value of `BootOrder` alone. It does not start anything. Run directories live under a Linux path because unix sockets do not work on the Windows-mounted drive.
 
 **`session`** starts swtpm and QEMU, speaks QMP (the machine protocol QEMU offers on a socket), watches the serial file, and performs the one ending: pause, save memory, kill QEMU while paused, read the PCRs from the still-running swtpm, stop swtpm. QEMU runs under an outer `timeout` in a process group of its own; cleanup kills the group and then checks that nothing of it is left. A `finally` path stops both processes, and a failure deletes the saved guest memory. The waiting logic (`run_boot`) talks only to a `Machine` and a `Clock` interface; `QemuMachine` is the real implementation.
 
-**`preparation`** verifies the keys and the firmware file, builds the loader, and makes the variable store template with one enrolment boot (D4).
+**`preparation`** verifies the keys and the firmware file, builds the loader, and makes the variable store templates, each with one enrolment boot (D4, D6). The store with the changed boot order is made by a separate function, which the command line calls only after a boot order prediction is committed.
 
 **`runner`** records one named run and is the only place where the steps meet, in this order: prediction gate and repeat precondition (counted runs), staging, boot, parsing, agreement gate, outcome rule, recording.
 
@@ -82,9 +86,9 @@ The package is `recorder/`. Modules marked *pure* touch no process, socket or cl
 
 **`recording`** (*pure*) builds the recording dictionary and writes it deterministically: UTF-8, LF line ends, two-space indent, sorted keys, lowercase hex. It is also the one home of the file hash helper.
 
-**`compare`** (*pure*) compares two recordings on the compared fields only and produces the comparison document (section 5). It also refuses pairs whose comparison would prove nothing, and checks that a comparison really is the repeat precondition.
+**`compare`** (*pure*) compares two recordings on the compared fields only and produces the comparison document (section 5). It also refuses pairs whose comparison would prove nothing, among them a changed run against another normal run than the one it changes, and checks that a comparison really is the repeat precondition.
 
-**`prediction`** (*pure* except one git query) loads and validates prediction files, answers "is a prediction for this experiment committed, and is the file on disk byte for byte the committed one", and scores a comparison against a prediction.
+**`prediction`** (*pure* except one git query) loads and validates prediction files, answers "is a prediction for this experiment committed, and is the file on disk byte for byte the committed one", and scores a comparison against a prediction. It also answers whether a comparison was made against the baseline recording a prediction names.
 
 **`storymap`** (*pure*) assigns each event to a story stop from declared rules (section 7).
 
@@ -146,7 +150,8 @@ Hashes and long lines are shortened with `…`; everything else is the committed
 
 Field notes:
 
-- `run.change_detail` is `null` for a run that changes nothing. Otherwise it is `{"loader_byte": {"file_offset", "old_value", "new_value", "area"} or null, "store_edits": [names], "firmware_replaced": true or false}`. `area` is where the file's own headers place the changed byte (`section .data`, `signature area`), so a reader can check that exactly one byte in that area differs.
+- `run.change_detail` is `null` for a run that changes nothing. Otherwise it is `{"loader_byte": {"file_offset", "old_value", "new_value", "area"} or null, "store_edits": [names], "firmware_replaced": true or false}`. `area` is where the file's own headers place the changed byte (`section .data`, or `signature area, signature value` with the part of the signature area named), so a reader can check that exactly one byte in that area differs. A run whose boot order was changed carries one more field, `"boot_order"`: the option names in the order the run started with.
+- A run with two boot entries has two more fields in `provenance`: `boot_entries` (per entry: its letter, its `Boot####` variable, the file's path, the file's SHA-256 and Authenticode SHA-256) and `boot_order` (the option names in the order the store listed them before the boot). `provenance.loader` then describes the file behind entry A. Runs with the firmware's own boot options carry neither field.
 - `run.experiment_sha256` is the SHA-256 of the experiment's description as the code held it at the time of the run.
 - `provenance.tools` lists only what a run uses. The tools that created the key set once are recorded in `recorder/testkeys/MANIFEST.json`. `host_os` is the system's name and release number without the point release.
 - `provenance.prediction` is `null` for normal and pilot runs. For a counted run it holds the prediction file's repository path, SHA-256, the commit that contains it, and its `parameters`.
@@ -208,6 +213,9 @@ A changed run that reached neither the marker nor a refusal is recorded as `time
     {"index": 25, "pcr": 4, "type": "EV_EFI_ACTION", "digest_sha256": "7044…28a6"},
     {"index": 26, "pcr": 4, "type": "EV_EFI_ACTION", "digest_sha256": "3d67…33ba"}],
   "console_first_differing_line": 2,
+  "console_first_differing_text": {
+    "baseline": "BdsDxe: starting Boot0001 … Sata(0x0,0xFFFF,0x0)",
+    "changed": "BdsDxe: failed to load Boot0001 … Access Denied"},
   "loader_report_first_differing_line": 1,
   "other_fields_differing": ["event_log.bytes", "event_log.events", "event_log.sha256",
     "gate.counts.content_digests_recomputed", "outcome.trigger",
@@ -215,13 +223,13 @@ A changed run that reached neither the marker nor a refusal is recorded as `time
 }
 ```
 
-Events are matched as (PCR, type, SHA-256 digest) in log order. "Only in one run" lists events with no equal partner in the other run; partners are used up one by one, so an event that occurs twice in one run and once in the other is listed once. Registers are compared in all four banks and all 24 indexes. `other_fields_differing` lists every remaining differing field as a dotted path. Left out of it are the `may_vary` fields, the parts with their own block (events, registers, both console lists, the outcome), and the fields that say which experiment a run is (`run.experiment`, `run.experiment_sha256`, `run.kind`, `run.change`, `run.change_detail`): those differ for every experiment by definition, and both experiments are named in the header.
+Events are matched as (PCR, type, SHA-256 digest) in log order. "Only in one run" lists events with no equal partner in the other run; partners are used up one by one, so an event that occurs twice in one run and once in the other is listed once. Two equal events that stand at different places in the two logs are partners, so an exchange of places is not reported. Registers are compared in all four banks and all 24 indexes. `console_first_differing_text` holds the text of the first console line that differs, as each run has it, with `null` for a run that has no line there; it is what lets a prediction say which boot option was tried first. `other_fields_differing` lists every remaining differing field as a dotted path. Left out of it are the `may_vary` fields, the parts with their own block (events, registers, both console lists, the outcome), and the fields that say which experiment a run is (`run.experiment`, `run.experiment_sha256`, `run.kind`, `run.change`, `run.change_detail`, `provenance.prediction`): those differ for every experiment by definition, and both experiments are named in the header.
 
 With `identical: true` every difference field is empty. Comparison files live in `recordings/comparisons/<baseline>_vs_<changed>.json`.
 
-**Pairs that are refused.** `compare` exits with an error and writes nothing when both files have the same hash, when both recordings carry the same `recorded_at` (a renamed copy differs only in fields a comparison ignores, so it would otherwise come out identical), when either recording's `gate.passed` is not true, or when the baseline is not a recording of the normal run.
+**Pairs that are refused.** `compare` exits with an error and writes nothing when both files have the same hash, when both recordings carry the same `recorded_at` (a renamed copy differs only in fields a comparison ignores, so it would otherwise come out identical), when either recording's `gate.passed` is not true, when the baseline is not a recording of a normal run, or when a changed run is put against another normal run than the one its experiment changes.
 
-**The repeat precondition.** Two normal runs must match before any experiment counts. In code that is a comparison whose two sides are both `normal`, are two different recordings, and are `identical`. `record` requires it on disk before a counted experiment is booted (the two recordings it names must still have the stored hashes), and `check` requires it again, for the same baseline, before a counted run is scored.
+**The repeat precondition.** Two normal runs must match before any experiment counts. In code that is a comparison whose two sides are recordings of the same normal run, are two different recordings, and are `identical`. It is required per normal run: a boot order experiment needs the repeat of its own two-entry normal run, not the repeat of the plain one. `record` requires it on disk before a counted experiment is booted (the two recordings it names must still have the stored hashes), and `check` requires it again, for the same baseline, before a counted run is scored. The committed repeats are `recordings/comparisons/<normal run>-1_vs_<normal run>-2.json`.
 
 ## 6. The prediction file format
 
@@ -233,6 +241,9 @@ One file per counted experiment: `predictions/<experiment-id>.json`.
   "experiment": "signature-byte",
   "written": "2026-11-20",
   "change": "one byte changed inside the loader's signature area, Secure Boot on",
+  "wrong_if": ["(a sentence saying what result would prove the prediction wrong)"],
+  "not_scored": ["(an expectation no field of a comparison can show)"],
+  "baseline": {"run": "normal-1", "recording_sha256": "…"},
   "parameters": {"signature_area_offset": 64},
   "rows": [
     {"id": "refused", "field": "outcome.changed", "expect": "refused",
@@ -259,15 +270,29 @@ The four basis labels:
 
 Validation rejects a row whose label and citation do not fit this table. Pages are page numbers of the published PDF file.
 
-A row's `field` is a dotted path into the comparison document of section 5, and it carries exactly one expectation: `expect` (the field equals this value), `expect_contains` (the field is a list holding all of these) or `expect_excludes` (the field is a list holding none of these). A field the comparison does not have is an error, never a pass.
+A row's `field` is a dotted path into the comparison document of section 5, and it carries exactly one expectation:
+
+| Key | The row holds when |
+|---|---|
+| `expect` | the field equals this value |
+| `expect_one_of` | the field equals one of these values. This is how a row says "either X or Y" where a specification leaves a choice open; at least two values, all named before the run |
+| `expect_contains` | the field is a list holding all of these |
+| `expect_excludes` | the field is a list holding none of these |
+| `expect_text_contains` | the field is a text that contains this text |
+
+A field the comparison does not have is an error, never a pass. A block that is `null` in the comparison (no event differs, for example) gives `null` for every path into it, so a row that expected a value there is a mismatch and the score is still made.
+
+A row also says where its expectation comes from: its `basis` label with what that label needs (table above), and a `reason` of one sentence. A caveat that does not fit that sentence goes into `note`.
+
+Three more parts of a prediction are not rows. `wrong_if` says in plain sentences, before the run, what result would prove the prediction wrong. `not_scored` lists expectations that no field of a comparison can show (the value of `BootCurrent`, for example, which the loader does not read); they are on record and are not counted. `baseline` names the normal recording the rows were written against, with its SHA-256: row values such as event numbers only mean something against that recording, and `check` refuses a comparison made against another one. A file may carry further descriptive parts (the committed ones describe the changed byte, or the two boot entries); the recorder does not read them, and tests check them against the code.
 
 **Parameters.** Some experiments need a value that decides what they test. Such a value is part of the prediction, never of the code or the command line:
 
 | Experiment | Parameter | Meaning |
 |---|---|---|
-| `signature-byte` | `signature_area_offset` | Which byte of the signature area is changed, counted from the start of that area. The area holds a certificate header, the signature itself and padding; the choice of byte decides what the experiment tests |
+| `signature-byte`, `signature-byte-off` | `signature_area_offset` | Which byte of the signature area is changed, counted from the start of that area. The area holds an entry header, the signed image digest, the signer's certificate, the signed attributes, the signature value and padding; the choice of byte decides what the experiment tests (decision D8) |
 | `rebuilt-firmware` | `firmware_sha256` | SHA-256 of the rebuilt firmware file. Staging refuses any other file |
-| `boot-order` | none | |
+| `boot-order-same`, `boot-order-different` | none | The changed order is fixed in the code (`bootentries`): B, A, then the firmware's own two options |
 
 A prediction must carry exactly the parameters its experiment names. Staging reads them from the committed prediction, and the recording stores them.
 
@@ -277,7 +302,9 @@ A prediction must carry exactly the parameters its experiment names. Staging rea
 2. the file names this experiment, its `change` sentence is word for word the experiment's, and its parameters are exactly the ones the experiment needs;
 3. git tracks the file, reports no uncommitted change, can name the commit that last changed it, and that commit is part of the current history;
 4. the bytes on disk have the same SHA-256 as the file read out of that commit. Git's "nothing changed" answer is not trusted alone, because git can be told to stop looking at a file;
-5. the repeat precondition holds on disk (section 5).
+5. the repeat precondition holds on disk for the normal run this experiment changes (section 5).
+
+The boot order experiments have one more step before `record`, and the same rule guards it: `prepare --changed-boot-order` makes the variable store with the changed order, and it is refused unless a boot order prediction passes points 1 to 4. So nothing of the changed configuration exists on a machine before the prediction is committed.
 
 If git cannot answer, the answer is no. The recording stores the prediction's path, SHA-256, commit and parameters, and the fingerprint of the experiment's description.
 
@@ -306,7 +333,7 @@ If git cannot answer, the answer is no. The recording stores the prediction's pa
 
 The result is two pairs of numbers: `uefi-required` rows met, and open rows (the other three labels) predicted correctly. A mismatch is reported as a mismatch, by row identifier. Exit code 0 means "scored", not "every row held".
 
-`check` refuses to score when the comparison was not made from the given recording or the given baseline, when the baseline is not a normal run, when the prediction file no longer has the hash stored in the recording (so a prediction cannot be edited after its run without the check saying so), when the experiment's description no longer has the fingerprint stored in the recording, or, for a counted run, when the repeat comparison is missing or is not about the same baseline.
+`check` refuses to score when the comparison was not made from the given recording or the given baseline, when the baseline is not a recording of the normal run the experiment changes, when the prediction names another baseline recording than the comparison uses, when the prediction file no longer has the hash stored in the recording (so a prediction cannot be edited after its run without the check saying so), when the experiment's description no longer has the fingerprint stored in the recording, or, for a counted run, when the repeat comparison is missing or is not about the same baseline.
 
 ## 7. Event to story stop
 
@@ -363,6 +390,27 @@ Stops 1 and 2 have no events and the recording says so. An event matching no rul
 *Weighed.* A second assembly source built like the loader, with the signed updates pulled in as data. It would read like the loader does. But the program's data is the three signed updates, about 6 KiB that differ per key set, so the build would depend on the key files as well as on the assembler, and its output would have to be pinned and re-verified by one more enrolment boot.
 *Consequences.* The program is a pure function of the key files, the same on every machine, with no build step and no tool version in its way. A test pins its SHA-256 for the committed keys, so a change to the builder that alters one byte fails. **Cost:** this is the one module a Python reader cannot check line by line without an instruction reference; about eighty instructions must be taken on trust or disassembled. It is a preparation step: nothing it prints or does enters a recording except through the variable store, whose hash is pinned.
 
+### D6. The boot order is written by the firmware in a preparation boot, into a store of its own
+
+*Context.* The boot order experiment needs two bootable entries and a way to exchange them. The Secure Boot firmware has no shell. UEFI 2.11 (chapter 3 Boot Manager, opening text, PDF page 152) guarantees that a change to the boot order takes effect only after the next platform reset, and lets the firmware add boot options and remove invalid ones. Earlier versions of this design reversed `BootOrder` by editing the store file while the machine was off.
+*Chosen.* Three things. **Two entries:** `Boot0002` ("Lux entry A", `\EFI\LUX\A.EFI`) and `Boot0003` ("Lux entry B", `\EFI\LUX\B.EFI`), each an active boot option that names its file by path only; `BootOrder` lists them before the firmware's own two options. **Written through the firmware:** the enrolment program calls `SetVariable` for both entries and for `BootOrder`, then for the keys, in one preparation boot of the packaged empty store, and powers the machine off. The recorded boot is the next start of that store, so the change has had its reset. **One store per order:** the store with A before B is a second template, pinned by hash, and the normal runs `normal-two-same` and `normal-two-different` start from it. The store with B before A is made the same way by a preparation boot of its own, and is kept only if it differs from the first in the value of `BootOrder` and in nothing else.
+*Weighed.* Editing `BootOrder` in the store file (less code, no extra boot). It was tested on an order that leaves A before B: a store the firmware wrote with the order A, B, 0001, 0000 is byte for byte the store with A, B, 0000, 0001 after an offline edit of those bytes. So the edit would be equivalent on this firmware. It was still not chosen, because "the firmware accepted this write" is then an argument and not an observation, and the cited sentence speaks of modifications made through the firmware. A full device path instead of a path-only one (it needs the disk's partition signature, which the virtual disk makes up). The existing template plus one more entry (the firmware's own disk option would then be entry A, with a label and a path of another shape than entry B's).
+*Consequences.* A changed run and its normal run differ in two bytes of one variable, proven from the files before any boot, and the changed order is written by the service the specification names. The two-entry template came out the same in two independent preparation boots. Both entries have labels and paths of equal length, so their variables have one size. **Cost:** the boot order experiments are not a change of the plain normal run; they have normal runs of their own, which differ from the plain one in register 1 and in no other register. A path-only boot option relies on the firmware finding the file on its only disk; UEFI 2.11 requires boot managers to support such options (3.1.2 Load Option Processing, PDF pages 154 to 155). The preparation boot of the changed order is one more boot that can fail for technical reasons before the counted run; it never boots the changed order, so a failure there says nothing about the prediction.
+
+### D7. The second loader is a committed, signed artifact
+
+*Context.* In the "different" form of the boot order experiment the two entries must lead to two programs that the firmware accepts and that a recording can tell apart.
+*Chosen.* `recorder/guest/second-loader-signed.efi`: the unsigned loader build with the letter A of its start message changed to B, signed once with the committed db key. It is pinned by hash in `loader`, and `verify_second_loader` proves from the first loader what it is: its Authenticode digest equals that of the first loader with that one letter changed.
+*Weighed.* Signing at preparation time (signatures are not repeatable, and a clone would need the signing tools). Another source file (a second thing to read, for a one-letter difference).
+*Consequences.* The second loader has the same content as the changed loader of the pilots `e1` and `e2`, so its digest (`cef0a974…`) is already known from `e1`; in `e2` that content was refused because nobody had signed it, and here it is signed. **Cost:** a second signed binary in the repository, made with the public test key; and the console line `LUX-LOADER B` now means "the second loader" in these runs and "the changed loader" in the pilots.
+
+### D8. Which byte of the signature area, and with Secure Boot on and off
+
+*Context.* The signature area is not one thing. UEFI 2.11 says the entry is formatted as the Authenticode document describes (32.2.4.1 WIN_CERTIFICATE, PDF page 1618) and does not say which bytes a check reads. A changed byte in the signature value, in the signed digest or in the certificate should break verification; one in the padding might not.
+*Chosen.* Offset 1490 of the 1624-byte area, file offset 40170: byte 128 of the 256 bytes of the **signature value**, the number made with the signer's private key. Its lowest bit is flipped (`0xDA` becomes `0xDB`). The offset is the `signature_area_offset` parameter of both predictions, and the recording stores the area as `signature area, signature value`. Two counted experiments use it: `signature-byte` with Secure Boot on (the primary case), and `signature-byte-off` with Secure Boot switched off, each with its own prediction and its own single run.
+*Weighed.* A byte of the certificate or of the signed digest (also expected to fail, but for a reason one step removed from "the signature is wrong"). A padding byte (the most open case; kept for later, because its outcome says more about one firmware's parser than about the question).
+*Consequences.* With Secure Boot on, the file's digest is unchanged and the image is expected to be refused: the counterpart of the pilot `e2`, where the digest changed. With Secure Boot off, the file is changed and the measured digest is expected not to be. **Cost:** `signature-byte-off` changes two things against the plain normal run, the switch and the byte, as the pilot `e1` does. Its prediction therefore says, row by row, that the run equals the pilot `e4` (the switch alone). A comparison is always made against a normal run, so "equal to `e4`" is not one field.
+
 ## 9. Risks that could mislead a reader
 
 | # | Failure | Why it misleads | Covered by |
@@ -380,6 +428,10 @@ Stops 1 and 2 have no events and the recording says so. An event matching no rul
 | 11 | A recording is overwritten | A counted experiment could be repeated until its result pleases; committed evidence could be lost | `test_session_runner`: an existing name is refused before any boot; `--replace` is needed; a counted recording is never replaced |
 | 12 | The firmware package changes unnoticed | PCR 0 and every later value change with no visible cause | `test_staging`, `test_session_runner`: a missing or different firmware file is refused in staging and in preparation |
 | 13 | A virtual machine is left running | An idling guest runs for ever and may disturb later runs | The process group is killed and then checked; the integration test and `scripts/check-clean.sh` look for leftover processes. Not covered by a unit test, because it needs real processes |
+| 14 | The store with the changed boot order differs from the normal one in more than the order | A difference in the recording would be blamed on the order | `test_counted_set`, `test_session_runner`: a store that differs in one more byte, lists another order or lacks an entry is refused in preparation and again in staging; the staged run and its normal run differ in `vars.fd` alone |
+| 15 | The changed configuration of a counted experiment is tried out before its prediction exists | The prediction would not be blind | `test_counted_set`: `prepare --changed-boot-order` is refused without a committed boot order prediction, and no machine is made; a prediction for another experiment does not open it. Staging and scoring of every predicted experiment are driven with fakes only |
+| 16 | A changed run is compared with the wrong normal run, or scored against a prediction written for another baseline recording | Differences that belong to the two extra boot entries would be counted as the experiment's | `test_counted_set`: a boot order run against the plain normal run, a pilot against a two-entry normal run and a repeat of another normal run are refused; `check` refuses a prediction that names another baseline recording |
+| 17 | A prediction row is worded so that it cannot fail, or cites a page that was never read | The headline numbers would count rows that predict nothing | `test_counted_set`: every row carries a reason; each of registers 0 to 7 has exactly one row; every UEFI citation is one of the section and page pairs of the verified reading; every observation names a committed file; a row about an unread document says so and names no source |
 
 ## 10. Test mix
 
@@ -387,12 +439,13 @@ The standard library `unittest` runs everywhere; no test runner is installed ins
 
 - **Unit tests on pure modules, the large majority.** Parsers and the gate are tested with small byte fixtures built in the test itself, so a failure points at one function. Each has a negative case that must fail.
 - **Fixture tests.** Real data from one accepted and one refused boot is committed in `recorder/tests/fixtures/`: the raw event log, the registers read from the TPM, the raw console file, the TPM command traffic from the swtpm debug log, and the type names tpm2-tools printed. They pin the two undocumented formats the recorder depends on, and they let the whole agreement gate run on real evidence without a virtual machine. They were made with an earlier, throwaway key set, so their register 7 differs from the committed recordings.
-- **Tests with fakes for `session`, `runner`, `preparation` and `staging`.** A fake machine and a fake clock exercise the ending path, the timeout and the cleanup without booting anything. A whole run is recorded from the fixtures through the real pipeline. All eight experiment descriptions are staged, including those that may not yet be run.
+- **Tests with fakes for `session`, `runner`, `preparation` and `staging`.** A fake machine and a fake clock exercise the ending path, the timeout and the cleanup without booting anything. A whole run is recorded from the fixtures through the real pipeline. All twelve experiment descriptions are staged, including those that may not yet be run. Each committed prediction is driven from staging to a score this way; the fake replays a normal boot, so the scores mean nothing and only the path is proven.
 - **One test class against real git.** The prediction gate is run against a temporary repository made with the installed `git`, so the commands the gate sends are proven and not only the answers a fake gives. It is skipped where `git` is not installed.
 - **Refusal tests.** Prediction gate, key regeneration, overwriting, self-comparison and the outcome rule, as listed in section 9.
-- **Committed recordings.** `test_committed_recordings` checks that the six recordings in the repository still follow from their own event logs, still compare as published, may be compared, and satisfy the repeat precondition. It also pins what each pilot was observed to do (`docs/PILOTS.md`): outcome, first differing event and differing registers.
-- **One integration test, skipped unless `LUX_VM_TESTS=1`.** It boots the normal run twice, asserts the agreement gate passed, that the two runs are equal on every compared field, that a fresh run equals the committed `normal-1`, and that no process is left. It never runs a changed boot.
-- **Mutation checks.** Four rules the question depends on were broken on purpose to confirm a test fails; see `docs/MUTATION_CHECKS.md`.
+- **Committed recordings.** `test_committed_recordings` checks that the ten recordings in the repository still follow from their own event logs, still compare as published, may be compared, and satisfy the repeat precondition of their normal run. It also pins what each pilot was observed to do (`docs/PILOTS.md`): outcome, first differing event and differing registers.
+- **Committed predictions.** `test_counted_set` checks each prediction file against the code and the recordings it rests on: the change sentence, the parameters, the baseline hash, the changed byte and its part, the digest predicted for the changed `BootOrder`, and the citations.
+- **One integration test, skipped unless `LUX_VM_TESTS=1`.** It boots the normal run twice and the two-entry normal run once, asserts the agreement gate passed, that the two runs are equal on every compared field, that a fresh run equals the committed `normal-1`, that a fresh two-entry run equals the committed `normal-two-same-1`, and that no process is left. It never runs a changed boot.
+- **Mutation checks.** Seven rules the question depends on were broken on purpose to confirm a test fails; see `docs/MUTATION_CHECKS.md`.
 
 Not tested: behaviour on another QEMU version or machine type, hardware acceleration, a second machine, whether a third boot of one variable store equals the second, and the real process cleanup when QEMU is killed from outside.
 
@@ -405,7 +458,7 @@ Not tested: behaviour on another QEMU version or machine type, hardware accelera
 | 3 | A prediction row's field was `outcome.result` | Fields are paths into the comparison document, so that row reads `outcome.changed`. `expect_excludes` was added, because "this register does not change" is half of every prediction |
 | 4 | The gate block had six checks | `content_digests_match` was added beside the count, so a digest that does not describe its own data fails the gate instead of only lowering a number |
 | 5 | The two real boots are run by hand, not by the test suite | An integration test exists and is skipped by default, so the repeat precondition can be proven again with one command |
-| 6 | Five experiment descriptions | Eight: the normal run, four pilots and three counted ones |
+| 6 | Five experiment descriptions | Twelve: three normal runs, four pilots and five counted ones (eight before the counted experiments were staged, row 26) |
 | 7 | Modules as first listed | `banks`, `enrol`, `varstore`, `preparation` and `runner` were added; nothing was merged |
 | 8 | The template's origin was not decided | D4: rebuilt by an enrolment boot and pinned by hash |
 | 9 | Keys have fixed timestamps | The signed updates do (`2026-01-01 00:00:00`). The certificates' validity dates are the generation day, because the installed OpenSSL cannot fix them. The certificates are committed, so this does not affect reproduction; D2 records what it does mean |
@@ -426,6 +479,15 @@ Not tested: behaviour on another QEMU version or machine type, hardware accelera
 | 24 | QEMU was killed through its pid file | The process group is killed and checked; a QEMU that never started is reported with its own error text |
 | 25 | The firmware file was whatever the package installed | Its hash is pinned in the key manifest and checked before every run |
 
+| 26 | `boot-order` reversed `BootOrder` in the store file while the machine was off | D6: two counted experiments, `boot-order-same` and `boot-order-different`; two entries and the order are written by the firmware in a preparation boot; each form has a normal run of its own |
+| 27 | A changed run was compared with "the" normal run | With any recording of the normal run its experiment names; the repeat precondition is per normal run |
+| 28 | `signature-byte` only, with Secure Boot on | `signature-byte-off` is a second counted experiment with its own prediction (D8) |
+| 29 | A changed signature byte was recorded as `signature area` | The part is named, for example `signature area, signature value` |
+| 30 | A prediction row had three kinds of expectation | Five: "one of these values" and "a text that contains" were added, the first for rows where a specification leaves a choice, the second so that a row can name the boot option tried first without fixing a whole console line |
+| 31 | The comparison gave the number of the first differing console line | It also gives the text of that line in both runs. The five committed comparisons were made again from the unchanged recordings and gained that one field |
+| 32 | A prediction held rows and parameters | It also says what would prove it wrong, what it cannot score, and which baseline recording it was written against |
+| 33 | The reference to a prediction was listed among the differing fields of a counted run | It is one of the fields that say which experiment a run is, and is left out |
+
 The recording format is still called `lux-recording/1`. Its shape changed in review (rows 10, 18, 19, 20, 23), before any site or other reader depended on it, and all three committed recordings were made again with the new shape. Their register values and event logs are the same as before.
 
 ### Staged and since recorded
@@ -435,9 +497,11 @@ The pilots `e1`, `e4` and `e5` were staged by tests only when this section was f
 - The firmware reads a `SecureBootEnable` switch that was set to 0 in the store file while the machine was off (`e1`, `e4`).
 - The firmware reads, measures and enforces a `dbx` record appended to the store file directly (`e5`). The record was not written through a signed update, so the recording says nothing about how the firmware treats such an update.
 
-### Staged but never run
+### Predicted and not yet run
 
-The recorder can stage `boot-order`, `signature-byte` and `rebuilt-firmware`, and tests cover the staging. None of them has been booted with this package. These points are therefore unproven and must be settled when each prediction is written:
+Four counted experiments have a committed prediction: `boot-order-same`, `boot-order-different`, `signature-byte` and `signature-byte-off`. None of them has been booted, staged for a boot or tried in part. `docs/COUNTED.md` says how each is staged, what was booted to get there (normal runs and preparation boots only), and how each is to be run once. The two points that were open here are settled:
 
-- `boot-order` reverses `BootOrder` in the store file while the machine is off. UEFI 2.11 (chapter 3 Boot Manager, opening text, PDF page 152) guarantees that a change to the boot order takes effect only after the next reset. This project's staging additionally needs two bootable entries, which is its own condition and not a quoted requirement. Whether the offline edit meets both is not established.
-- `signature-byte` has no byte chosen. The byte is a parameter of the prediction (section 6), and the recorder refuses the run until a committed prediction names it.
+- The boot order is written by the firmware in a preparation boot, into a store with two boot entries (D6). What is proven about that staging comes from the original order: the two-entry normal runs boot entry A, repeat, and pass the agreement gate. That the same code works for the changed order is proven by tests with fakes and by the check on the two store files, not by a boot.
+- The signature byte is chosen: byte 128 of the signature value (D8).
+
+`rebuilt-firmware` has no prediction and no firmware file, and stays refused.
