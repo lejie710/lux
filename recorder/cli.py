@@ -62,8 +62,18 @@ def _parser() -> argparse.ArgumentParser:
     return parser
 
 
+def _shown(path: Path) -> str:
+    """A path as printed: relative to the current directory when it lies inside it."""
+    try:
+        return path.resolve().relative_to(Path.cwd().resolve()).as_posix()
+    except ValueError:
+        return str(path)
+
+
 def _prepare(arguments: argparse.Namespace) -> int:
     provenance.require_programs()
+    if arguments.generate_keys:
+        provenance.require_programs(provenance.KEY_GENERATION_PROGRAMS)
     env = preparation.PrepareEnvironment(
         testkeys_directory=TESTKEYS,
         work_directory=arguments.work_dir or default_work_directory(),
@@ -101,7 +111,7 @@ def _record(arguments: argparse.Namespace) -> int:
     outcome, gate = result.document["outcome"], result.document["gate"]
     print(f"run {arguments.name}: {outcome['result']}, {len(result.document['events'])} events, "
           f"agreement gate {'passed' if gate['passed'] else 'FAILED'}")
-    print(f"written: {target / 'recording.json'}")
+    print(f"written: {_shown(target / 'recording.json')}")
     return 0
 
 
@@ -114,7 +124,7 @@ def _compare(arguments: argparse.Namespace) -> int:
     recording.write_json(arguments.out, document)
     print(f"identical: {str(document['identical']).lower()}")
     print(f"registers differing (sha256): {document['pcrs_differing']['sha256']}")
-    print(f"written: {arguments.out}")
+    print(f"written: {_shown(arguments.out)}")
     return 0
 
 

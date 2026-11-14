@@ -23,10 +23,11 @@ PACKAGES: dict[str, str] = {
     "efitools": "efitools",
     "binutils": "binutils",
 }
-REQUIRED_PROGRAMS: tuple[str, ...] = (
-    "qemu-system-x86_64", "swtpm", "timeout", "as", "ld", "openssl",
-    "sbsign", "cert-to-efi-sig-list", "sign-efi-sig-list",
-)
+# Needed for every preparation and every run.
+REQUIRED_PROGRAMS: tuple[str, ...] = ("qemu-system-x86_64", "swtpm", "timeout", "as", "ld")
+# Needed only to create a new key set, which a clone of the repository never does.
+KEY_GENERATION_PROGRAMS: tuple[str, ...] = (
+    "openssl", "sbsign", "cert-to-efi-sig-list", "sign-efi-sig-list")
 _NOT_REPORTED = "not reported by the package manager"
 
 
@@ -42,9 +43,10 @@ def run_command(arguments: list[str]) -> str:
     return done.stdout + done.stderr
 
 
-def require_programs(find: Callable[[str], str | None] = shutil.which) -> None:
-    """Raise `ToolMissing` naming every required program that is not installed."""
-    missing = [name for name in REQUIRED_PROGRAMS if find(name) is None]
+def require_programs(programs: tuple[str, ...] = REQUIRED_PROGRAMS,
+                     find: Callable[[str], str | None] = shutil.which) -> None:
+    """Raise `ToolMissing` naming every listed program that is not installed."""
+    missing = [name for name in programs if find(name) is None]
     if missing:
         raise ToolMissing("these programs are not installed: " + ", ".join(missing))
 

@@ -279,9 +279,13 @@ class Provenance(unittest.TestCase):
 
     def test_missing_programs_are_named(self) -> None:
         with self.assertRaises(ToolMissing) as caught:
-            provenance.require_programs(lambda name: None if name == "swtpm" else "/usr/bin/x")
+            provenance.require_programs(find=lambda name: None if name == "swtpm" else "/usr/bin/x")
         self.assertIn("swtpm", str(caught.exception))
-        provenance.require_programs(lambda name: "/usr/bin/x")
+        self.assertNotIn("qemu", str(caught.exception))
+        provenance.require_programs(find=lambda name: "/usr/bin/x")
+        with self.assertRaises(ToolMissing):
+            provenance.require_programs(provenance.KEY_GENERATION_PROGRAMS, find=lambda name: None)
+        self.assertNotIn("openssl", provenance.REQUIRED_PROGRAMS)
 
 
 class Staging(TempDirCase):
