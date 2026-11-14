@@ -35,6 +35,7 @@
       "score": {
         "claimed": true,
         "text": "Four counted experiments are scored. The numbers are read from the score files, not written here.",
+        "limits": "The numbers count rows, and rows are not independent: several required rows state one behaviour, and most open rows predicted a repeat of a pilot or a normal run.",
         "status_source": "recordings/scores; docs/RESULTS.md"
       },
       "detail": {

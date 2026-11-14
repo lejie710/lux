@@ -158,6 +158,25 @@ describe("the experiments page", () => {
     for (const line of intro.measure!) expect(panel).toContain(esc(line));
   });
 
+  it("shows the two numbers the committed score files add up to, and under them what they do not show", () => {
+    const sum = FILES.scores.reduce(
+      (all, score) => ({
+        met: all.met + score.required_met,
+        required: all.required + score.required_total,
+        correct: all.correct + score.open_correct,
+        open: all.open + score.open_total,
+      }),
+      { met: 0, required: 0, correct: 0, open: 0 },
+    );
+    expect(FILES.scores.length).toBeGreaterThan(0);
+    expect(html).toContain(`<dt>Specification-required behaviours met</dt><dd>${sum.met} of ${sum.required}</dd>`);
+    expect(html).toContain(`<dt>Open behaviours predicted correctly</dt><dd>${sum.correct} of ${sum.open}</dd>`);
+    expect(html).toContain(`<dt>Counted experiments scored</dt><dd>${FILES.scores.length}</dd>`);
+    const limits = EXPERIMENT_SCREENS[0].score!.limits!;
+    expect(limits).toContain("not independent");
+    expect(html).toMatch(new RegExp(`</dl><p class="score-note">${esc(limits)}</p>`));
+  });
+
   it("names the run over each evidence line, and says where it is a pilot or a counted run", () => {
     expect(html).toContain('<p class="page-run">Run normal-1</p>');
     expect(html).toContain('<p class="page-run">Run e1, a pilot, shown and not counted</p>');

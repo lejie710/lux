@@ -248,7 +248,8 @@ export interface PageScreen extends BaseScreen {
   title?: string;
   question?: string;
   measure?: string[];
-  score?: { claimed: boolean; text: string };
+  /** `limits`: the one sentence that stands under the two numbers, saying what they do not show. */
+  score?: { claimed: boolean; text: string; limits?: string };
   experiment?: string;
   status?: { label: string; text: string; counted: boolean };
   change?: { text: string; file: string; field: string };

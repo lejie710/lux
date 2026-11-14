@@ -97,6 +97,13 @@
   border-style: dashed;
   border-color: rgba(255, 255, 255, 0.3);
 }
+/* What the two numbers do not show, said directly under them. */
+.score-note {
+  margin: 10px 4px 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--soft);
+}
 .score > div,
 .card-result > div,
 .sheet-pairs > div {

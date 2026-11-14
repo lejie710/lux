@@ -170,6 +170,8 @@ function Measure({ screen, files }: { screen: PageScreen; files: Files }) {
             </p>
           )
         )}
+        {/* The numbers never stand alone: what they do not show is said under them, in the content's words. */}
+        {sum && screen.score?.limits && <p className="score-note">{screen.score.limits}</p>}
       </div>
     </div>
   );

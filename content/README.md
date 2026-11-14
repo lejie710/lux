@@ -68,9 +68,9 @@ Fields that only some kinds have:
 | `stop` | `thread`, `thread_first_appearance`, optional |
 | `pilot` | `pilot_label`: the sentence that says this run was made before any prediction and is not counted |
 | `closing` | `picture_caption`, `handover` (the way on to the earlier site: `to`, `text`, `link_label`, `note`, and `url`, which is null until that site has a public address and then begins `https://`; the label is a link only when `url` is set) |
-| `intro` | `eyebrow`, `question`, `measure` (list of text), `score` (`claimed` is false until a counted experiment has run) |
+| `intro` | `eyebrow`, `question`, `measure` (list of text), `score` (`claimed` is false until a counted experiment has run; `text` stands where the numbers would until a score file exists; `limits` is the one sentence shown directly under the numbers, saying what they do not show) |
 | `side-by-side` | `eyebrow`, `experiment`, `status` (`label`, `text`, `counted`), `change` (`text`, `file`, `field`), `sides`: exactly two, each `{id, run, label, statement, outcome, picture, evidence}` with a statement of at most 14 words and a recorded evidence line |
-| `cards` | `eyebrow`, `status_source`, `cards`: each `{id, label, title, status, counted, result, claims}`, plus `change`, `result_note`, `specification_note` on pilots. `result` is null until the run is recorded, and then names the run and its comparison file (`{run, comparison}`); what the run showed is read from those files, not repeated here |
+| `cards` | `eyebrow`, `status_source`, `cards`: each `{id, label, title, status, counted, result, claims}`, plus `change`, `result_note`, `specification_note` on pilots. `result` is null until the run is recorded, and then names the run and its comparison file (`{run, comparison}`); what the run showed is read from those files, not repeated here. A counted card whose experiment was run in more than one form has a list there, one entry per form, each with `experiment`, `run`, `recording`, `comparison`, `score` and `prediction`. The site does not read `result`: it finds the files by the experiment's name |
 | `list` | `eyebrow`, `items`: each `{id, title, text, claims}` |
 | `sources-page`, `about` | `title`; `about` also has `paragraphs` |
 
