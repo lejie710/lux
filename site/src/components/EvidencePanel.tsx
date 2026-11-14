@@ -1,7 +1,7 @@
 // What "Open the evidence" shows for one screen: the evidence line or the label that says there is none, the
 // records and fields behind it, the explanation, every claim with its basis and source, the terms, and what
 // the recording does not show. A dialog: focus moves in, Tab stays in, Escape closes.
-import { useEffect, useRef, type KeyboardEvent } from "react";
+import { useEffect, useRef } from "react";
 import {
   READING_NOTES,
   STOPS,
@@ -41,26 +41,27 @@ export function EvidencePanel({ screen, atClaims, onClose }: EvidencePanelProps)
     } else closeButton.current?.focus();
   }, [atClaims]);
 
-  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    const controls = [...(sheet.current?.querySelectorAll<HTMLElement>("button, a[href]") ?? [])];
-    const result = panelKey(e, controls.indexOf(document.activeElement as HTMLElement), controls.length);
-    if (!result) return;
-    e.preventDefault();
-    if (result.action === "close") onClose();
-    else controls[result.index]?.focus();
-  };
+  // Keys are heard on the whole document while the panel is open, so Escape and the Tab loop still work
+  // after a click on plain text has taken focus off every control.
+  const close = useRef(onClose);
+  close.current = onClose;
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      const controls = [...(sheet.current?.querySelectorAll<HTMLElement>("button, a[href]") ?? [])];
+      const result = panelKey(e, controls.indexOf(document.activeElement as HTMLElement), controls.length);
+      if (!result) return;
+      e.preventDefault();
+      if (result.action === "close") close.current();
+      else controls[result.index]?.focus();
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   return (
     <>
       <div className="sheet-backdrop" onClick={onClose} />
-      <div
-        className="sheet"
-        ref={sheet}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="sheet-title"
-        onKeyDown={onKeyDown}
-      >
+      <div className="sheet" ref={sheet} role="dialog" aria-modal="true" aria-labelledby="sheet-title" tabIndex={-1}>
         <header className="sheet-head">
           <p className="sheet-eyebrow">
             The evidence

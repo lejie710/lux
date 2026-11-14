@@ -18,22 +18,29 @@ export function App({ mode }: { mode: Mode }) {
   const screen = allScreens().find((s) => s.id === panel.screenId);
 
   const open: OpenEvidence = (screenId, opener, atClaims) => setPanel(openPanel(screenId, opener, atClaims));
+  // The control that focus goes back to once the panel has closed.
+  const returnTo = useRef<string | null>(null);
   const close = () => {
     const { state, focusId } = closePanel(panel);
+    returnTo.current = focusId;
     setPanel(state);
-    // Focus goes back to the control that opened the panel, without moving the page.
-    if (focusId) document.getElementById(focusId)?.focus({ preventScroll: true });
   };
 
-  // The page behind an open panel does not scroll, so the step under it cannot change.
+  // The page behind an open panel does not scroll, so the step under it cannot change. When the panel has
+  // closed and the page is in reach again, focus goes back to the control that opened it, without moving
+  // the page. It cannot go back sooner: an inert page refuses focus.
   useEffect(() => {
     document.documentElement.classList.toggle("panel-open", Boolean(screen));
+    if (screen || !returnTo.current) return;
+    document.getElementById(returnTo.current)?.focus({ preventScroll: true });
+    returnTo.current = null;
   }, [screen]);
 
   return (
     <>
-      <Nav />
-      <main id="top">
+      {/* Behind an open panel the page is out of reach: no focus, no clicks, not read out. */}
+      <Nav inert={Boolean(screen)} />
+      <main id="top" inert={Boolean(screen)}>
         {mode.kind === "scroll" && <ScrollScene onOpen={open} />}
         {mode.kind === "still" &&
           STEPS.map((step, n) => (
@@ -48,7 +55,7 @@ export function App({ mode }: { mode: Mode }) {
         )}
       </main>
       {mode.kind !== "frozen" && (
-        <footer className="closing">
+        <footer className="closing" inert={Boolean(screen)}>
           <p>{OPENING.scope_note}</p>
           <p>{DISCLAIMER}</p>
         </footer>

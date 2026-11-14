@@ -2,9 +2,9 @@
 // yet and say so; they are text, not links, so nothing leads nowhere.
 import { Mark } from "./Mark";
 
-export function Nav() {
+export function Nav({ inert = false }: { inert?: boolean }) {
   return (
-    <nav className="lnav" aria-label="Site">
+    <nav className="lnav" aria-label="Site" inert={inert}>
       <a className="name" href="#top">
         <Mark />
         Lux
