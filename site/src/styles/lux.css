@@ -1,0 +1,753 @@
+/* Lux. The page is black from start to end; the light is in the picture. One statement per screen, one line
+   of evidence, and everything else behind "Open the evidence". Motion is transform and opacity only. */
+
+:root {
+  --black: #000;
+  --text: #f4f2ec;
+  --soft: #c9c7c1;
+  --grey: #8e8e93;
+  --faint: #6a6a70;
+  --warm: #ffc56b;
+  --line: rgba(255, 255, 255, 0.14);
+  --surface: #0c0c0e;
+  --nav: 60px;
+  --gutter: clamp(20px, 7vw, 104px);
+  --ease: cubic-bezier(0.22, 0.61, 0.21, 1);
+  --sans: "Inter Variable", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html {
+  background: var(--black);
+  color: var(--text);
+  font-family: var(--sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  /* The scrollbar keeps its place when a panel stops the page from scrolling. */
+  scrollbar-gutter: stable;
+  scrollbar-color: #2a2a2e var(--black);
+}
+html.panel-open {
+  overflow: hidden;
+}
+body {
+  margin: 0;
+  background: var(--black);
+}
+a {
+  color: inherit;
+}
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+}
+:focus-visible {
+  outline: 2px solid var(--warm);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Navigation: the mark and name, three places. Black, so nothing shows through it. */
+.lnav {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: var(--nav);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--gutter);
+  background: linear-gradient(var(--black) 55%, transparent);
+  z-index: 10;
+}
+.lnav .name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+}
+.lnav .links {
+  display: flex;
+  align-items: baseline;
+  gap: 34px;
+  font-size: 14px;
+  font-weight: 550;
+}
+.lnav .links a {
+  text-decoration: none;
+}
+.lnav .soon {
+  color: var(--grey);
+  cursor: default;
+}
+.lnav .soon small {
+  margin-left: 5px;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+/* The scene: a tall section, a pinned stage, and a track of invisible markers that the scroll hook watches. */
+.scene {
+  position: relative;
+  /* One window for the stage, then the run of the steps: a longer first one, so the opening rests. */
+  height: calc(100svh + 110svh + (var(--steps) - 1) * 90svh);
+}
+.pin {
+  position: sticky;
+  top: 0;
+  height: 100svh;
+}
+.track {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  pointer-events: none;
+}
+.marker {
+  flex: 0 0 90svh;
+}
+.marker:first-child {
+  flex-basis: 110svh;
+}
+.marker:last-child {
+  flex: 1 0 90svh;
+}
+
+.stage {
+  position: relative;
+  height: 100svh;
+  min-height: 600px;
+  overflow: hidden;
+  background: var(--black);
+  /* Sizes inside a stage follow the stage, not the window: a still section lays out like a pinned one. */
+  container-type: size;
+}
+.pin .stage {
+  min-height: 0;
+}
+
+/* The picture. Both plates are always here; a step sets which is seen. The move between them reads as a
+   camera going in: the laptop grows past the window as the board arrives from far away. */
+.picture {
+  position: absolute;
+  inset: 0;
+}
+.laptop {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--nav) + 1cqh);
+  margin-inline: auto;
+  width: auto;
+  height: min(60cqh, 66cqw);
+  transform-origin: 50% 74%;
+  transition:
+    transform 1.3s var(--ease),
+    opacity 0.9s ease 0.25s;
+}
+.laptop[data-on="false"] {
+  opacity: 0;
+  transform: scale(3.4);
+  transition:
+    transform 1.3s var(--ease),
+    opacity 0.7s ease;
+}
+.board {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  margin-inline: auto;
+  width: min(100%, 160cqh);
+  aspect-ratio: 16 / 10;
+  transform-origin: 50% 74%;
+  /* The plate runs off its own left and right edges; where the window is wider than the plate, they melt. */
+  -webkit-mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+  mask-image: linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent);
+  transition:
+    transform 1.3s var(--ease),
+    opacity 1s ease 0.2s;
+}
+.board[data-on="false"] {
+  opacity: 0;
+  transform: scale(0.6);
+  transition:
+    transform 1.3s var(--ease),
+    opacity 0.6s ease;
+}
+.board img,
+.lit {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+/* One copy of the awake plate per part, cut out by that part's soft mask. Light spreads: each part that
+   lights at a step waits its turn. It goes out quickly and together. */
+.lit {
+  background: url("../assets/board-awake.webp") center / 100% 100% no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+.lit[data-on="true"] {
+  opacity: 1;
+  transition: opacity 1.9s ease calc(0.5s + var(--order) * 0.9s);
+}
+
+/* The words of a step, over the picture. */
+.words {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transform: translateY(14px);
+  pointer-events: none;
+  transition:
+    opacity 0.35s ease,
+    transform 0.5s var(--ease);
+}
+.words[data-on="true"] {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+  transition:
+    opacity 0.7s ease 0.45s,
+    transform 0.9s var(--ease) 0.45s;
+}
+
+/* Opening: the title low on the left, clear of the laptop; the invitation low on the right. */
+.words-opening {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 32px;
+  padding: 0 var(--gutter) clamp(52px, 8cqh, 76px);
+}
+.title-eyebrow {
+  margin: 0 0 2px;
+  font-size: 26px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+.title {
+  margin: 0;
+  font-size: clamp(64px, 7.4vw, 108px);
+  font-weight: 750;
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+.title em,
+.statement em {
+  font-style: normal;
+  color: var(--warm);
+}
+.subtitle {
+  margin: 14px 0 0;
+  font-size: clamp(20px, 1.9vw, 27px);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+.invite {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 0 0 4px;
+  padding: 16px 28px 16px 20px;
+  border-radius: 999px;
+  background: #131315;
+  flex: none;
+}
+.invite > span {
+  display: grid;
+  gap: 3px;
+}
+.invite strong {
+  font-size: 16px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.invite span span {
+  font-size: 13px;
+  color: var(--soft);
+}
+
+/* A stop: the count and name, the statement, and at the foot the evidence line, the control and the rail. */
+.head {
+  position: absolute;
+  top: calc(var(--nav) + clamp(28px, 6.4cqh, 64px));
+  left: var(--gutter);
+  right: var(--gutter);
+  text-align: center;
+}
+.eyebrow {
+  margin: 0 0 14px;
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--grey);
+}
+.statement {
+  margin: 0 auto;
+  max-width: 15.5em;
+  font-size: clamp(34px, min(4.7cqw, 7.6cqh), 68px);
+  font-weight: 750;
+  line-height: 1.05;
+  letter-spacing: -0.04em;
+  text-wrap: balance;
+  text-shadow: 0 0 28px var(--black);
+}
+.statement-long {
+  max-width: 21em;
+  font-size: clamp(28px, min(3.5cqw, 5.8cqh), 52px);
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+}
+/* The citation marker: a small number after the statement, a button with a 28 px reach. */
+.cite {
+  position: relative;
+  top: -1.5em;
+  min-width: 28px;
+  height: 28px;
+  margin: 0 -8px 0 2px;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  line-height: 28px;
+  color: var(--soft);
+  vertical-align: baseline;
+}
+.statement .cite {
+  font-size: max(12px, 0.18em);
+}
+.cite:hover {
+  color: var(--warm);
+}
+.foot {
+  position: absolute;
+  left: var(--gutter);
+  right: var(--gutter);
+  bottom: clamp(44px, 6cqh, 60px);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 20px;
+}
+.pill {
+  margin: 0;
+  max-width: 100%;
+  padding: 11px 20px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: rgba(10, 10, 11, 0.86);
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--soft);
+  overflow-wrap: anywhere;
+}
+.pill-register {
+  margin-right: 8px;
+  color: var(--text);
+}
+.pill-type {
+  margin-right: 8px;
+  color: var(--warm);
+}
+/* Evidence that does not exist looks unlike evidence: a dashed edge and no warm colour. */
+.pill-missing {
+  border-style: dashed;
+  border-color: rgba(255, 255, 255, 0.26);
+}
+.open-evidence {
+  min-height: 44px;
+  padding: 0 2px;
+  font-size: 15px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 6px;
+  text-shadow: 0 0 12px var(--black);
+}
+.open-evidence:hover {
+  color: var(--warm);
+}
+.rail {
+  display: flex;
+  gap: 9px;
+  margin: 0 0 0 auto;
+}
+.rail span {
+  width: 26px;
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.2);
+}
+.rail span[data-on="true"] {
+  background: var(--warm);
+}
+.picture-note {
+  position: absolute;
+  right: var(--gutter);
+  bottom: 16px;
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--faint);
+}
+
+/* The evidence panel: a sheet from the right, over a dimmed page. */
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: rgba(0, 0, 0, 0.62);
+  animation: sheet-dim 0.3s ease both;
+}
+.sheet {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 21;
+  width: min(620px, 100vw);
+  padding: 0 clamp(20px, 3vw, 40px) 64px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--surface);
+  border-left: 1px solid var(--line);
+  scrollbar-color: #2a2a2e var(--surface);
+  animation: sheet-in 0.4s var(--ease) both;
+}
+@keyframes sheet-dim {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+}
+.sheet-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 calc(-1 * clamp(20px, 3vw, 40px));
+  padding: 14px clamp(20px, 3vw, 40px);
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+.sheet-eyebrow {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--grey);
+}
+.sheet-close {
+  min-height: 36px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.sheet-close:hover {
+  border-color: var(--warm);
+  color: var(--warm);
+}
+.sheet-title {
+  margin: 30px 0 4px;
+  font-size: 27px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+.sheet section {
+  margin-top: 34px;
+}
+.sheet h3 {
+  margin: 0 0 12px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--grey);
+  scroll-margin-top: 84px;
+}
+.sheet h3:focus-visible {
+  outline: none;
+  color: var(--warm);
+}
+.sheet-prose,
+.sheet-caption {
+  margin: 0 0 10px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--soft);
+}
+.sheet-caption {
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--grey);
+}
+.sheet-path,
+.row-file {
+  margin: 4px 0 0;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--faint);
+  overflow-wrap: anywhere;
+}
+.sheet-rows,
+.sheet-claims {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sheet-rows li,
+.sheet-claims li,
+.sheet-terms > div {
+  padding: 14px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+.row-line,
+.row-value {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--soft);
+  overflow-wrap: anywhere;
+}
+.row-line span {
+  margin-right: 8px;
+}
+.row-key {
+  color: var(--text);
+}
+.row-type {
+  color: var(--warm);
+}
+.row-why {
+  margin: 6px 0 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--soft);
+}
+.sheet-claims li {
+  position: relative;
+  padding-left: 38px;
+}
+.sheet-claims li::before {
+  content: attr(value);
+  position: absolute;
+  left: 0;
+  top: 15px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--grey);
+}
+.claim-basis {
+  display: inline-block;
+  margin: 0 0 8px;
+  padding: 3px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--soft);
+}
+/* What a specification says carries the warm edge; everything else stays quiet. */
+.claim-basis[data-basis^="uefi"] {
+  border-color: rgba(255, 197, 107, 0.5);
+  color: var(--warm);
+}
+.claim-text {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+}
+.claim-source {
+  margin: 8px 0 0;
+  font-family: var(--mono);
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--grey);
+  overflow-wrap: anywhere;
+}
+.claim-source a:hover {
+  color: var(--warm);
+}
+.claim-note {
+  margin: 6px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--grey);
+}
+.sheet-terms {
+  margin: 0;
+}
+.sheet-terms dt {
+  font-size: 15px;
+  font-weight: 650;
+}
+.sheet-terms dd {
+  margin: 4px 0 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--soft);
+}
+
+/* After the scene: the scope of what was shown, in two quiet lines. */
+.closing {
+  padding: 16svh var(--gutter) 14svh;
+  text-align: center;
+}
+.closing p {
+  max-width: 44em;
+  margin: 0 auto 10px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--grey);
+}
+
+/* The still page (?static, or reduced motion) and the frozen step (?step=N): nothing is pinned, nothing
+   moves, and every step shows its end state. */
+html[data-mode="still"] *,
+html[data-mode="frozen"] * {
+  transition: none !important;
+  animation: none !important;
+}
+html[data-mode="frozen"] {
+  scrollbar-gutter: auto;
+}
+/* A still section is one window tall, but no taller than a large screen: three of them read as one page. */
+html[data-mode="still"] .stage {
+  height: clamp(600px, 100svh, 900px);
+}
+.still-step + .still-step {
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* Narrow windows: the board is drawn larger than the window and held by its left edge, where the first
+   stops happen; the foot stacks; the invitation sits under the title. */
+@media (max-width: 760px) {
+  .lnav .links {
+    gap: 16px;
+    font-size: 13px;
+  }
+  .lnav .soon small {
+    display: none;
+  }
+  .laptop {
+    top: calc(var(--nav) + 5cqh);
+    height: min(42cqh, 72cqw);
+  }
+  .board {
+    width: 200cqw;
+    margin-inline: 0;
+    bottom: 118px;
+  }
+  .words-opening {
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-end;
+    gap: 22px;
+    padding-bottom: 44px;
+  }
+  .title-eyebrow {
+    font-size: 21px;
+  }
+  .invite {
+    align-self: flex-start;
+    padding: 12px 22px 12px 14px;
+    gap: 12px;
+  }
+  .invite strong {
+    font-size: 15px;
+  }
+  .invite span span {
+    font-size: 12px;
+  }
+  .head {
+    top: calc(var(--nav) + 20px);
+  }
+  .eyebrow {
+    font-size: 15px;
+    margin-bottom: 10px;
+  }
+  .foot {
+    bottom: 42px;
+    gap: 2px 16px;
+  }
+  .pill {
+    font-size: 12px;
+    padding: 9px 14px;
+    border-radius: 16px;
+  }
+  .rail {
+    gap: 6px;
+  }
+  .rail span {
+    width: 18px;
+  }
+  .picture-note {
+    left: var(--gutter);
+    bottom: 12px;
+    right: var(--gutter);
+    font-size: 10px;
+    line-height: 1.3;
+  }
+  .title {
+    font-size: clamp(56px, 17vw, 72px);
+  }
+  .statement {
+    font-size: clamp(30px, 8.6vw, 40px);
+  }
+  .statement-long {
+    font-size: clamp(24px, 6.6vw, 30px);
+  }
+}
