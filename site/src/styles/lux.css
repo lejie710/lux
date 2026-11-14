@@ -271,8 +271,8 @@ button {
     opacity 1s ease 0.25s;
 }
 /* Under a statement with a supporting line the laptop is a little smaller and lower, clear of the words. */
-.ending[data-low="true"] {
-  transform: translateY(1.5cqh) scale(0.9);
+.ending[data-low="true"][data-on="true"] {
+  transform: translateY(1.6cqh) scale(0.81);
 }
 .ending[data-on="false"] {
   opacity: 0;
@@ -292,6 +292,9 @@ button {
   .ending {
     top: 41cqh;
     height: min(46cqh, 72cqw);
+  }
+  .ending[data-low="true"][data-on="true"] {
+    transform: scale(0.76);
   }
 }
 .ending .dawn {

@@ -43,9 +43,14 @@ describe("keys inside the panel", () => {
   });
   it("lets Tab go on from a heading inside the panel, to the control that follows it", () => {
     // A citation marker opens the panel at its list of claims and puts focus on that list's heading.
-    expect(panelKey({ key: "Tab" }, -1, 4, true)).toBeNull();
-    expect(panelKey({ key: "Tab", shiftKey: true }, -1, 4, true)).toBeNull();
-    expect(panelKey({ key: "Escape" }, -1, 4, true)).toEqual({ action: "close" });
+    // With two controls before the heading and two after it, Tab goes to the third and Shift and Tab to the second.
+    expect(panelKey({ key: "Tab" }, -1, 4, 2)).toEqual({ action: "focus", index: 2 });
+    expect(panelKey({ key: "Tab", shiftKey: true }, -1, 4, 2)).toEqual({ action: "focus", index: 1 });
+    // With no control after the heading, Tab goes round to the first: focus never leaves the panel.
+    expect(panelKey({ key: "Tab" }, -1, 4, 4)).toEqual({ action: "focus", index: 0 });
+    expect(panelKey({ key: "Tab", shiftKey: true }, -1, 4, 4)).toEqual({ action: "focus", index: 3 });
+    expect(panelKey({ key: "Tab", shiftKey: true }, -1, 4, 0)).toEqual({ action: "focus", index: 3 });
+    expect(panelKey({ key: "Escape" }, -1, 4, 2)).toEqual({ action: "close" });
   });
   it("leaves Tab to the browser between controls", () => {
     expect(panelKey({ key: "Tab" }, 1, 4)).toBeNull();

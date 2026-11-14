@@ -87,9 +87,13 @@ export function EvidencePanel({ screen, card = null, atClaims, onClose }: Eviden
       const controls = [...(sheet.current?.querySelectorAll<HTMLElement>(CONTROLS) ?? [])];
       const active = document.activeElement as HTMLElement | null;
       // Focus on something in the panel that is not a control (the heading a citation marker lands on):
-      // Tab then goes on from there in the page's own order.
-      const loose = Boolean(active && active !== sheet.current && sheet.current?.contains(active));
-      const result = panelKey(e, controls.indexOf(active as HTMLElement), controls.length, loose);
+      // Tab then goes on from there, to the first control that follows it.
+      const loose = active && active !== sheet.current && sheet.current?.contains(active) ? active : null;
+      const following = (control: HTMLElement) =>
+        Boolean(loose!.compareDocumentPosition(control) & Node.DOCUMENT_POSITION_FOLLOWING);
+      const next = loose ? controls.findIndex(following) : -1;
+      const after = loose ? (next < 0 ? controls.length : next) : null;
+      const result = panelKey(e, controls.indexOf(active as HTMLElement), controls.length, after);
       if (!result) return;
       e.preventDefault();
       if (result.action === "close") close.current();
