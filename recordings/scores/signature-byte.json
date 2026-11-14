@@ -1,0 +1,114 @@
+{
+  "baseline_recording_sha256": "5f06748352fdf3d684fbdc917606e547aeccf95d6e91dd5225d7d40af512728c",
+  "changed_recording_sha256": "d348f1bf959d4a7912709efa31d6349768ccd0e6893ae17ed1db50ddff55965b",
+  "comparison_sha256": "b7a7ef15ffd6256887627f5e697d328c175881095fcec148f116bb350c0e863e",
+  "experiment": "signature-byte",
+  "format": "lux-score/1",
+  "mismatches": [],
+  "open_correct": 17,
+  "open_total": 17,
+  "prediction": {
+    "commit": "76ce5812b27172e793baa6aa90b3a16948538229",
+    "parameters": {
+      "signature_area_offset": 1490
+    },
+    "path": "predictions/signature-byte.json",
+    "sha256": "37eda582ea91f69fde363d22fbc1bba3f208dca99dcc905280aecb7742abbc8a"
+  },
+  "repeat_comparison_sha256": "1c6235ff11984dd52705354366abb80772d9146d5cd5cbc4fa2517ccccf123da",
+  "required_met": 1,
+  "required_total": 1,
+  "rows": [
+    {
+      "basis": "uefi-required",
+      "held": true,
+      "id": "refused"
+    },
+    {
+      "basis": "uefi-platform",
+      "held": true,
+      "id": "refusal-text"
+    },
+    {
+      "basis": "this-firmware",
+      "held": true,
+      "id": "first-event"
+    },
+    {
+      "basis": "this-firmware",
+      "held": true,
+      "id": "first-event-stop"
+    },
+    {
+      "basis": "this-firmware",
+      "held": true,
+      "id": "first-event-in-changed-run"
+    },
+    {
+      "basis": "this-firmware",
+      "held": true,
+      "id": "pcr0-same"
+    },
+    {
+      "basis": "this-firmware",
+      "held": true,
+      "id": "pcr1-same"
+    },
+    {
+      "basis": "this-firmware",
+      "held": true,
+      "id": "pcr2-same"
+    },
+    {
+      "basis": "this-firmware",
+      "held": true,
+      "id": "pcr3-same"
+    },
+    {
+      "basis": "this-firmware",
+      "held": true,
+      "id": "pcr4-differs"
+    },
+    {
+      "basis": "this-firmware",
+      "held": true,
+      "id": "pcr5-differs"
+    },
+    {
+      "basis": "this-firmware",
+      "held": true,
+      "id": "pcr6-same"
+    },
+    {
+      "basis": "this-firmware",
+      "held": true,
+      "id": "pcr7-differs"
+    },
+    {
+      "basis": "this-firmware",
+      "held": true,
+      "id": "events-only-in-normal-run"
+    },
+    {
+      "basis": "this-firmware",
+      "held": true,
+      "id": "events-only-in-changed-run"
+    },
+    {
+      "basis": "this-firmware",
+      "held": true,
+      "id": "image-digest-absent"
+    },
+    {
+      "basis": "this-firmware",
+      "held": true,
+      "id": "console-first-difference"
+    },
+    {
+      "basis": "this-firmware",
+      "held": true,
+      "id": "loader-report-empty"
+    }
+  ],
+  "run": "signature-byte-1"
+}
