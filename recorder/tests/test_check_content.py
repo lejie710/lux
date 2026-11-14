@@ -501,6 +501,24 @@ class SmallContent(unittest.TestCase):
         content["story-b.json"]["stops"][1]["headline"] = "s4"
         self.assertEqual(["format"], _rules(content))
 
+    def test_the_way_on_is_an_https_address_or_null_and_never_a_dead_link(self) -> None:
+        for url in ("https://example.org/earlier/", None):
+            content = _content()
+            _first(content, 7)["handover"] = {"to": "earlier", "text": "Words.", "link_label": "Go on",
+                                              "note": "A note.", "url": url}
+            self.assertEqual([], _rules(content), url)
+        for url in ("#", "", "http://example.org/", "example.org", 7):
+            content = _content()
+            _first(content, 7)["handover"] = {"to": "earlier", "text": "Words.", "link_label": "Go on",
+                                              "note": "A note.", "url": url}
+            self.assertEqual(["format"], _rules(content), url)
+
+    def test_the_committed_way_on_names_a_public_address(self) -> None:
+        content = check_content.load_repository(helpers.REPOSITORY)[0]
+        ways = [screen["handover"]["url"] for stop in content["story-c.json"]["stops"]
+                for screen in stop["screens"] if screen.get("handover")]
+        self.assertEqual(["https://lejie710.github.io/nox/"], ways)
+
 
 if __name__ == "__main__":
     unittest.main()
