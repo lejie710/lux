@@ -6,6 +6,7 @@ import struct
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from recorder import enrol, experiments, keys, loader, pe, provenance, staging, varstore
 from recorder.errors import FormatError, KeysRefused, StagingRefused, ToolMissing
@@ -72,6 +73,13 @@ class PeImage(unittest.TestCase):
         self.assertEqual(program, enrol.build_enrol_program(writes))        # repeatable
         self.assertIn("LUX-SETVAR db status=??".encode("utf-16le"), program)
         self.assertIn(b"payload", program)
+
+    def test_enrol_program_for_the_committed_keys_is_byte_for_byte_pinned(self) -> None:
+        """The variable store template is made by this program, so its bytes must not drift."""
+        program = enrol.build_enrol_program(keys.enrolment_writes(helpers.TESTKEYS))
+        self.assertEqual(len(program), 8704)
+        self.assertEqual(hashlib.sha256(program).hexdigest(),
+                         "3a6693a52aa132740ff115bbb49e59078ce69df2304422c08fdc671006340806")
 
 
 class LoaderCopies(unittest.TestCase):
@@ -167,7 +175,7 @@ class VariableStore(unittest.TestCase):
 
     def test_appended_revocation_entry(self) -> None:
         digest = hashlib.sha256(b"image").digest()
-        entry = varstore.sha256_signature_list(staging.OWNER_GUID, digest)
+        entry = varstore.sha256_signature_list(keys.OWNER_GUID, digest)
         self.assertEqual(len(entry), 76)
         self.assertEqual(struct.unpack_from("<III", entry, 16), (76, 0, 48))
         self.assertEqual(entry[-32:], digest)
@@ -188,6 +196,22 @@ class Keys(TempDirCase):
         manifest = keys.verify(helpers.TESTKEYS)
         self.assertEqual(manifest["loader_authenticode_sha256"], helpers.LOADER_AUTHENTICODE)
         self.assertEqual(len(manifest["vars_template_sha256"]), 64)
+        pins = keys.pins_of(manifest)
+        self.assertEqual(pins.firmware_file, "OVMF_CODE_4M.secboot.fd")
+        self.assertEqual(len(pins.firmware_sha256), 64)
+        self.assertEqual(set(pins.created_with), {"openssl", "sbsigntool", "efitools"})
+
+    def test_a_manifest_that_does_not_pin_the_firmware_fails_verification(self) -> None:
+        copy = helpers.copy_testkeys(self.temp / "keys", helpers.template_store())
+        manifest = json.loads((copy / keys.MANIFEST_NAME).read_text(encoding="utf-8"))
+        del manifest["firmware"]
+        (copy / keys.MANIFEST_NAME).write_text(json.dumps(manifest), encoding="utf-8")
+        with self.assertRaises(KeysRefused):
+            keys.verify(copy)
+
+    def test_readme_states_that_the_certificates_are_not_yet_valid_at_the_guest_clock(self) -> None:
+        text = (helpers.TESTKEYS / "README.md").read_text(encoding="utf-8")
+        self.assertIn("not yet valid", text)
         self.assertEqual(set(keys.fingerprints(helpers.TESTKEYS)), {"PK", "KEK", "db"})
 
     def test_readme_says_the_keys_are_public_test_keys(self) -> None:
@@ -272,6 +296,24 @@ class Provenance(unittest.TestCase):
         self.assertEqual(versions["qemu"], "qemu-system-x86-1.0")
         self.assertEqual(set(versions), set(provenance.PACKAGES) | {"python"})
 
+    def test_only_what_a_run_uses_is_a_compared_tool_version(self) -> None:
+        self.assertEqual(set(provenance.PACKAGES), {"qemu", "ovmf", "swtpm", "binutils"})
+        self.assertEqual(set(provenance.PACKAGES) & set(provenance.KEY_TOOL_PACKAGES), set())
+        created = provenance.package_versions(provenance.KEY_TOOL_PACKAGES, lambda command: "9\n")
+        self.assertEqual(created, {"openssl": "9", "sbsigntool": "9", "efitools": "9"})
+
+    def test_host_name_leaves_the_point_release_out(self) -> None:
+        directory = Path(tempfile.mkdtemp(prefix="lux-test-"))
+        self.addCleanup(shutil.rmtree, directory, ignore_errors=True)
+        release = directory / "os-release"
+        release.write_text('PRETTY_NAME="Ubuntu 24.04.5 LTS"\nNAME="Ubuntu"\nVERSION_ID="24.04"\n')
+        self.assertEqual(provenance.host_os(release), "Ubuntu 24.04")
+        release.write_text('PRETTY_NAME="Ubuntu 24.04.6 LTS"\nNAME="Ubuntu"\nVERSION_ID="24.04"\n')
+        self.assertEqual(provenance.host_os(release), "Ubuntu 24.04")
+        release.write_text('NAME="Other"\n')
+        self.assertEqual(provenance.host_os(release), "Other")
+        self.assertTrue(provenance.host_os(directory / "missing"))
+
     def test_missing_package_manager_is_reported_not_hidden(self) -> None:
         def failing(command: list[str]) -> str:
             raise ToolMissing("no dpkg-query")
@@ -293,19 +335,23 @@ class Staging(TempDirCase):
         super().setUp()
         self.template = self.temp / "vars-template.fd"
         self.template.write_bytes(helpers.template_store())
-        self.assets = staging.Assets(SIGNED_LOADER, self.template)
+        self.packaged = self.temp / "packaged.fd"
+        self.packaged.write_bytes(helpers.FIRMWARE_BYTES)
+        patcher = mock.patch.object(staging, "PACKAGED_FIRMWARE", self.packaged)
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.assets = staging.Assets(SIGNED_LOADER, self.template,
+                                     hashlib.sha256(helpers.FIRMWARE_BYTES).hexdigest())
         self.signed = SIGNED_LOADER.read_bytes()
+        self.rebuilt = self.temp / "rebuilt.fd"
+        self.rebuilt.write_bytes(b"rebuilt firmware")
+        self.rebuilt_sha256 = hashlib.sha256(b"rebuilt firmware").hexdigest()
 
-    def _stage(self, identifier: str, **changes: object) -> tuple[staging.StagedRun, Path]:
+    def _stage(self, identifier: str, **parameters: object) -> tuple[staging.StagedRun, Path]:
         experiment = experiments.get(identifier)
-        if changes:
-            experiment = experiments.Experiment(**{**experiment.__dict__, **changes})
         run = self.temp / "runs" / identifier
-        firmware = None
-        if experiment.firmware == experiments.FIRMWARE_REBUILT:
-            firmware = self.temp / "rebuilt.fd"
-            firmware.write_bytes(b"firmware")
-        return staging.stage_run(experiment, run, self.assets, firmware), run
+        firmware = self.rebuilt if experiment.firmware == experiments.FIRMWARE_REBUILT else None
+        return staging.stage_run(experiment, run, self.assets, parameters, firmware), run
 
     def test_every_experiment_has_one_sentence_and_a_known_kind(self) -> None:
         self.assertEqual(set(experiments.EXPERIMENTS),
@@ -325,13 +371,29 @@ class Staging(TempDirCase):
         self.assertTrue((run / "tpm").is_dir())
         self.assertEqual(staged.loader_authenticode_sha256, helpers.LOADER_AUTHENTICODE)
         self.assertEqual(staged.firmware, staging.PACKAGED_FIRMWARE)
+        self.assertEqual(staged.firmware_sha256, self.assets.firmware_sha256)
         self.assertIsNone(staged.loader_change)
+        self.assertIsNone(staged.change_detail())
+
+    def test_a_missing_or_different_packaged_firmware_is_refused_before_anything_is_written(self) -> None:
+        self.packaged.write_bytes(b"a package update")
+        with self.assertRaises(StagingRefused) as caught:
+            self._stage("normal")
+        self.assertIn("is pinned", str(caught.exception))
+        self.packaged.unlink()
+        with self.assertRaises(StagingRefused):
+            self._stage("normal")
+        self.assertFalse((self.temp / "runs").exists())
 
     def test_e2_changes_one_loader_byte_and_nothing_else(self) -> None:
         staged, run = self._stage("e2")
         self.assertEqual(staged.loader_authenticode_sha256, helpers.CHANGED_LOADER_AUTHENTICODE)
         self.assertEqual(staged.loader_change.area, "section .data")
         self.assertEqual((run / "vars.fd").read_bytes(), self.template.read_bytes())
+        self.assertEqual(staged.change_detail(), {
+            "loader_byte": {"file_offset": 0x85E, "old_value": 0x41, "new_value": 0x42,
+                            "area": "section .data"},
+            "store_edits": [], "firmware_replaced": False})
 
     def test_e1_and_e4_switch_secure_boot_off(self) -> None:
         for identifier, loader_digest in (("e1", helpers.CHANGED_LOADER_AUTHENTICODE),
@@ -339,6 +401,8 @@ class Staging(TempDirCase):
             staged, run = self._stage(identifier)
             self.assertEqual(varstore.read_data((run / "vars.fd").read_bytes(), "SecureBootEnable"), b"\x00")
             self.assertEqual(staged.loader_authenticode_sha256, loader_digest)
+            self.assertEqual(staged.change_detail()["store_edits"], ["secure-boot-off"])
+        self.assertIsNone(self._stage("e4")[0].change_detail()["loader_byte"])
 
     def test_e5_adds_the_loader_hash_to_the_revocation_list(self) -> None:
         _, run = self._stage("e5")
@@ -350,22 +414,37 @@ class Staging(TempDirCase):
         _, run = self._stage("boot-order")
         self.assertEqual(varstore.read_data((run / "vars.fd").read_bytes(), "BootOrder"), b"\x01\x00\x00\x00")
 
-    def test_signature_byte_needs_a_declared_offset(self) -> None:
-        with self.assertRaises(StagingRefused):
-            self._stage("signature-byte")
+    def test_signature_byte_takes_its_offset_from_the_prediction_parameters_only(self) -> None:
+        self.assertFalse(hasattr(experiments.get("signature-byte"), "signature_area_offset"))
+        for parameters in ({}, {"signature_area_offset": "64"}, {"signature_area_offset": True}):
+            with self.assertRaises(StagingRefused):
+                self._stage("signature-byte", **parameters)
         self.assertFalse((self.temp / "runs" / "signature-byte").exists())
         staged, _ = self._stage("signature-byte", signature_area_offset=64)
         self.assertEqual(staged.loader_change.area, "signature area")
         self.assertEqual(staged.loader_authenticode_sha256, helpers.LOADER_AUTHENTICODE)
         self.assertNotEqual(staged.loader_sha256, hashlib.sha256(self.signed).hexdigest())
+        detail = staged.change_detail()["loader_byte"]
+        self.assertEqual(detail["file_offset"], pe.parse_pe(self.signed).signature_offset + 64)
+        self.assertEqual(detail["old_value"] ^ detail["new_value"], 1)
 
-    def test_rebuilt_firmware_needs_its_file(self) -> None:
-        staged, _ = self._stage("rebuilt-firmware")
+    def test_rebuilt_firmware_must_have_the_hash_the_prediction_pins(self) -> None:
+        staged, _ = self._stage("rebuilt-firmware", firmware_sha256=self.rebuilt_sha256)
         self.assertEqual(staged.firmware.name, "rebuilt.fd")
-        with self.assertRaises(StagingRefused):
-            staging.stage_run(experiments.get("rebuilt-firmware"), self.temp / "r", self.assets, None)
-        with self.assertRaises(StagingRefused):
-            staging.stage_run(experiments.get("normal"), self.temp / "r", self.assets, self.template)
+        self.assertEqual(staged.firmware_sha256, self.rebuilt_sha256)
+        self.assertTrue(staged.change_detail()["firmware_replaced"])
+        with self.assertRaises(StagingRefused):                       # no pin in the prediction
+            self._stage("rebuilt-firmware")
+        with self.assertRaises(StagingRefused):                       # another file than pinned
+            self._stage("rebuilt-firmware", firmware_sha256="00" * 32)
+        experiment = experiments.get("rebuilt-firmware")
+        pinned = {"firmware_sha256": self.rebuilt_sha256}
+        with self.assertRaises(StagingRefused):                       # no file given
+            staging.stage_run(experiment, self.temp / "r", self.assets, pinned, None)
+        with self.assertRaises(StagingRefused):                       # file does not exist
+            staging.stage_run(experiment, self.temp / "r", self.assets, pinned, self.temp / "none.fd")
+        with self.assertRaises(StagingRefused):                       # the normal run takes no file
+            staging.stage_run(experiments.get("normal"), self.temp / "r", self.assets, {}, self.rebuilt)
 
     def test_leftovers_of_an_earlier_run_are_removed(self) -> None:
         _, run = self._stage("normal")
@@ -376,10 +455,10 @@ class Staging(TempDirCase):
     def test_manifest_is_deterministic_json(self) -> None:
         copy = helpers.copy_testkeys(self.temp / "keys", helpers.template_store())
         first = (copy / keys.MANIFEST_NAME).read_bytes()
-        keys.write_manifest(copy, helpers.LOADER_AUTHENTICODE,
-                            hashlib.sha256(helpers.template_store()).hexdigest())
+        keys.write_manifest(copy, helpers.test_pins(helpers.template_store()))
         self.assertEqual((copy / keys.MANIFEST_NAME).read_bytes(), first)
-        self.assertEqual(json.loads(first)["owner_guid"], staging.OWNER_GUID)
+        self.assertEqual(json.loads(first)["owner_guid"], keys.OWNER_GUID)
+        self.assertEqual(keys.pins_of(keys.verify(copy)), helpers.test_pins(helpers.template_store()))
         self.assertNotIn(b"\r", first)
 
 

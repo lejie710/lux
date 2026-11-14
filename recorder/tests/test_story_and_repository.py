@@ -13,15 +13,26 @@ class StoryStops(unittest.TestCase):
                          [3] * 3 + [4] * 6 + [5] * 15 + [6] * 2 + [7] * 2)
         self.assertEqual(stops[8], (4, "pcr7-policy"))            # the register 7 separator
         self.assertEqual(stops[16], (5, "boot-attempt"))
-        self.assertEqual(stops[24], (6, "authorise"))
+        self.assertEqual(stops[24], (6, "load-verify"))
+        self.assertEqual(stops[25], (6, "load-verify"))
         self.assertEqual(stops[27], (7, "exit-boot-services"))
+        self.assertNotIn("boot-return", [rule for _, rule in stops])
 
-    def test_real_refused_boot_ends_at_stop_6_and_tries_again(self) -> None:
+    def test_real_refused_boot_returns_at_stop_6_and_then_tries_the_next_option(self) -> None:
+        """Stops are labels: in a refused boot they end 5, 6, 5 and must be shown by index."""
         events = eventlog.parse_event_log(helpers.fixture_bytes("e2-eventlog.bin")).events
         stops = [storymap.assign_stop(event) for event in events]
-        self.assertEqual(stops[24], (6, "authorise"))             # "Returning from EFI Application"
+        self.assertEqual(stops[24], (6, "boot-return"))           # "Returning from EFI Application"
         self.assertEqual(stops[25], (5, "boot-attempt"))          # the next boot option is called
+        self.assertEqual([stop for stop, _ in stops][-3:], [5, 6, 5])
         self.assertNotIn(7, [stop for stop, _ in stops])
+        self.assertNotIn("load-verify", [rule for _, rule in stops])
+
+    def test_rule_names_say_what_the_event_is(self) -> None:
+        names = [rule.name for rule in storymap.RULES]
+        self.assertEqual(len(names), len(set(names)))
+        self.assertNotIn("authorise", names)
+        self.assertIn("stop is a label", storymap.__doc__)
 
     def test_every_real_event_matches_exactly_one_rule(self) -> None:
         for tag in ("normal", "e2"):

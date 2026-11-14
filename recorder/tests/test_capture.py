@@ -27,6 +27,35 @@ class Console(unittest.TestCase):
         self.assertEqual(capture.classify_outcome(refused), "refused")
         self.assertEqual(capture.classify_outcome(["BdsDxe: loading Boot0001"]), "timeout")
         self.assertEqual(len(refused), 4)
+        self.assertEqual(capture.classify_outcome(['BdsDxe: failed to start Boot0001 "x": Aborted']),
+                         "start-failed")
+
+    def test_a_refusal_followed_by_an_accepted_loader_keeps_both_facts(self) -> None:
+        """One boot option refused, the next one accepted: the marker wins, the refusal stays."""
+        lines = ['BdsDxe: failed to load Boot0002 "a": Access Denied',
+                 'BdsDxe: starting Boot0001 "b"', "LUX-FINAL-MARKER loader idle"]
+        self.assertEqual(capture.classify_outcome(lines), "accepted")
+        self.assertEqual(capture.refusal_lines(lines), [lines[0]])
+        normal = capture.clean_console(helpers.fixture_bytes("normal-serial.log"))
+        self.assertEqual(capture.refusal_lines(normal), [])
+        refused = capture.clean_console(helpers.fixture_bytes("e2-serial.log"))
+        self.assertEqual(capture.refusal_lines(refused), [refused[1]])
+
+    def test_the_end_of_a_refused_boot_is_a_firmware_line(self) -> None:
+        refused = capture.clean_console(helpers.fixture_bytes("e2-serial.log"))
+        self.assertIsNone(capture.REFUSAL_END_PATTERN.search("\n".join(refused[:2])))
+        self.assertIsNotNone(capture.REFUSAL_END_PATTERN.search(refused[2]))
+        self.assertIsNotNone(capture.REFUSAL_END_PATTERN.search(refused[3]))
+
+    def test_the_loader_dump_is_split_from_the_story_lines_without_loss(self) -> None:
+        lines = capture.clean_console(helpers.fixture_bytes("normal-serial.log"))
+        console, report = capture.split_console(lines)
+        self.assertEqual((len(console), len(report)), (10, 148))
+        self.assertEqual(sorted(console + report), sorted(lines))
+        self.assertEqual(console[0], lines[0])
+        self.assertEqual(console[-1], lines[-1])
+        self.assertTrue(all(line.startswith(("LUX MM ", "LUX CFG ")) for line in report))
+        self.assertEqual(capture.split_console(["a", "LUX MM 1", "b"]), (["a", "b"], ["LUX MM 1"]))
 
 
 class TpmLog(unittest.TestCase):
@@ -67,6 +96,23 @@ class TpmLog(unittest.TestCase):
         self.assertEqual([m.direction for m in messages], ["command", "response"])
         self.assertEqual(capture.extends_from_messages(messages), [])
 
+    def _extend_command(self, body: bytes) -> list[capture.TpmMessage]:
+        command = struct.pack(">HII", 0x8002, 10 + len(body), capture.TPM_CC_PCR_EXTEND) + body
+        return [capture.TpmMessage("command", command, len(command))]
+
+    def test_a_cut_off_extend_command_is_a_format_error_not_a_crash(self) -> None:
+        whole = struct.pack(">II", 7, 0) + struct.pack(">I", 1) + struct.pack(">H", 0x000B) + bytes(32)
+        self.assertEqual(capture.extends_from_messages(self._extend_command(whole))[0].pcr, 7)
+        for length in (0, 4, 8, 10, 13):
+            with self.assertRaises(FormatError):
+                capture.extends_from_messages(self._extend_command(whole[:length]))
+
+    def test_a_short_digest_in_an_extend_command_is_refused(self) -> None:
+        short = struct.pack(">II", 7, 0) + struct.pack(">I", 1) + struct.pack(">H", 0x000B) + bytes(5)
+        with self.assertRaises(FormatError) as caught:
+            capture.extends_from_messages(self._extend_command(short))
+        self.assertIn("5-byte sha256 digest", str(caught.exception))
+
 
 class RegisterRead(unittest.TestCase):
     def test_command_bytes(self) -> None:
@@ -95,6 +141,20 @@ class RegisterRead(unittest.TestCase):
             capture.parse_pcr_read_response(self._response(0x101, {0: bytes(32)}))
         with self.assertRaises(FormatError):
             capture.parse_pcr_read_response(b"\x80\x01")
+
+    def test_a_cut_off_response_is_a_format_error_at_every_length(self) -> None:
+        whole = self._response(0, {8: b"\x08" * 32, 9: b"\x09" * 32})
+        for length in range(len(whole)):
+            with self.assertRaises(FormatError, msg=length):
+                capture.parse_pcr_read_response(whole[:length])
+
+    def test_response_size_comes_from_the_header(self) -> None:
+        whole = self._response(0, {8: b"\x08" * 32})
+        self.assertEqual(capture.response_size(whole[:10]), len(whole))
+        with self.assertRaises(FormatError):
+            capture.response_size(whole[:5])
+        with self.assertRaises(FormatError):
+            capture.response_size(struct.pack(">HII", 0x8001, 3, 0))
 
 
 class LogInMemory(unittest.TestCase):

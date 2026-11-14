@@ -20,7 +20,7 @@ import hashlib
 import struct
 from dataclasses import dataclass
 
-from recorder.banks import ALGORITHMS
+from recorder.banks import ALGORITHMS, BANK_NAMES
 from recorder.errors import FormatError
 
 HEADER_SIGNATURE = b"Spec ID Event03\x00"
@@ -246,7 +246,9 @@ def content_digests_match(event: Event) -> bool | None:
     * boot variables: digest = hash of the variable's value only.
 
     Returns None for types whose digest covers something outside the log
-    (for example a firmware blob or a loaded image).
+    (for example a firmware blob or a loaded image). Returns False when the
+    event carries no digest in a known hash bank, because then nothing was
+    checked and "all digests match" would be an empty truth.
     """
     if event.type_code in _DIGEST_OF_WHOLE_DATA:
         measured = event.data
@@ -257,8 +259,7 @@ def content_digests_match(event: Event) -> bool | None:
         measured = variable[1]
     else:
         return None
-    return all(
-        hashlib.new(bank, measured).digest() == digest
-        for bank, digest in event.digests.items()
-        if not bank.startswith("alg-")
-    )
+    known = {bank: digest for bank, digest in event.digests.items() if bank in BANK_NAMES}
+    if not known:
+        return False
+    return all(hashlib.new(bank, measured).digest() == digest for bank, digest in known.items())

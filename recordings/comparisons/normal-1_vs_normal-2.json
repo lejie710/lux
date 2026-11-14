@@ -1,10 +1,14 @@
 {
   "baseline": {
-    "recording_sha256": "9fad736004ede561e1eb347dd9300eb8e1908acb24bcfb92ed6aa3e8939d056b",
+    "experiment": "normal",
+    "kind": "normal",
+    "recording_sha256": "5f06748352fdf3d684fbdc917606e547aeccf95d6e91dd5225d7d40af512728c",
     "run": "normal-1"
   },
   "changed": {
-    "recording_sha256": "188720d351a289e476762710c6fbaebbe846e18b0de0b513c4b107bd53473445",
+    "experiment": "normal",
+    "kind": "normal",
+    "recording_sha256": "6973fda64d15122e2c1b1a7549c8413f2fa58a161a3ceb9596e19e3bfb0cea2b",
     "run": "normal-2"
   },
   "console_first_differing_line": null,
@@ -13,6 +17,7 @@
   "first_differing_event": null,
   "format": "lux-comparison/1",
   "identical": true,
+  "loader_report_first_differing_line": null,
   "other_fields_differing": [],
   "outcome": {
     "baseline": "accepted",
@@ -129,5 +134,9 @@
       22,
       23
     ]
+  },
+  "refusal_lines": {
+    "baseline": [],
+    "changed": []
   }
 }

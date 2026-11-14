@@ -20,9 +20,10 @@ from recorder.eventlog import Event, content_digests_match
 
 @dataclass(frozen=True)
 class GateReport:
-    """Result of the gate: each named check, and the reasons for any failure."""
+    """Result of the gate: each named check, two counts, and the reasons for any failure."""
 
-    checks: dict[str, bool | int]
+    checks: dict[str, bool]      # every value must be True for the gate to pass
+    counts: dict[str, int]       # numbers a reader may want; never a verdict
     failures: tuple[str, ...]
 
     @property
@@ -78,35 +79,52 @@ def _same_sequence(events: list[Event], extends: list[Extend]) -> bool:
     return logged == sent
 
 
+def _all_banks_everywhere(events: list[Event], log_banks: tuple[str, ...],
+                          live: PcrBanks) -> bool:
+    """True when the log header, every extended event and the live read name the same four banks.
+
+    Without this, an event that lacks one bank would only be noticed through
+    the replay, and a log that declares a fifth bank would not be noticed at
+    all.
+    """
+    expected = set(BANK_NAMES)
+    if set(log_banks) != expected or set(live) != expected:
+        return False
+    return all(set(event.digests) == expected for event in events)
+
+
 def evaluate(events: tuple[Event, ...], extends: list[Extend], live: PcrBanks,
-             log_candidates: int) -> GateReport:
+             log_candidates: int, log_banks: tuple[str, ...] = BANK_NAMES) -> GateReport:
     """Run every check and collect the results.
 
     `log_candidates` is how many places in guest memory parsed as an event
     log. Exactly one is required, so that the log was chosen by structure.
+    `log_banks` are the hash banks the log's own header declares.
     """
     extended_events = [event for event in events if event.is_extended]
     recomputed = [content_digests_match(event) for event in events]
     log_vs_live = differing_registers(replay_events(events), live)
     extends_vs_live = differing_registers(replay_extends(extends), live)
 
-    checks: dict[str, bool | int] = {
+    checks: dict[str, bool] = {
         "event_log_replay_equals_live": not log_vs_live,
         "extend_list_replay_equals_live": not extends_vs_live,
         "event_sequence_equals_extend_sequence": _same_sequence(extended_events, extends),
         "all_extends_answered_ok": all(item.response_code == 0 for item in extends),
         "content_digests_match": False not in recomputed,
+        "every_event_carries_all_banks": _all_banks_everywhere(extended_events, log_banks, live),
+        "exactly_one_log_candidate": log_candidates == 1,
+    }
+    counts = {
         "content_digests_recomputed": recomputed.count(True),
         "log_candidates_parsed": log_candidates,
     }
-    failures = [name for name, value in checks.items() if value is False]
-    if log_candidates != 1:
-        failures.append(f"log_candidates_parsed is {log_candidates}, exactly 1 is required")
+    failures = [name for name, value in checks.items() if not value]
     if log_vs_live:
         failures.append(f"event log replay differs from the live read at {log_vs_live}")
     if extends_vs_live:
         failures.append(f"extend list replay differs from the live read at {extends_vs_live}")
-    return GateReport(checks, tuple(failures))
+    return GateReport(checks, counts, tuple(failures))
 
 
 def require(report: GateReport) -> None:
@@ -122,4 +140,5 @@ def gate_block(report: GateReport) -> dict[str, object]:
         "banks": len(BANK_NAMES),
         "pcrs_per_bank": PCR_COUNT,
         "checks": dict(report.checks),
+        "counts": dict(report.counts),
     }

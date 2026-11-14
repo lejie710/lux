@@ -256,7 +256,7 @@
       "index": 25,
       "pcr": 4,
       "stop": 6,
-      "stop_rule": "authorise",
+      "stop_rule": "boot-return",
       "summary": "action: Returning from EFI Application from Boot Option",
       "type": "EV_EFI_ACTION",
       "type_code": "0x80000007"
@@ -278,15 +278,20 @@
     "checks": {
       "all_extends_answered_ok": true,
       "content_digests_match": true,
-      "content_digests_recomputed": 20,
       "event_log_replay_equals_live": true,
       "event_sequence_equals_extend_sequence": true,
-      "extend_list_replay_equals_live": true,
+      "every_event_carries_all_banks": true,
+      "exactly_one_log_candidate": true,
+      "extend_list_replay_equals_live": true
+    },
+    "counts": {
+      "content_digests_recomputed": 20,
       "log_candidates_parsed": 1
     },
     "passed": true,
     "pcrs_per_bank": 24
   },
+  "loader_report": [],
   "may_vary": [
     "provenance.recorded_at",
     "run.name",
@@ -295,8 +300,12 @@
   ],
   "outcome": {
     "ending": "paused-then-killed",
+    "refusal_lines": [
+      "BdsDxe: failed to load Boot0001 \"UEFI QEMU HARDDISK QM00001 \" from PciRoot(0x0)/Pci(0x1F,0x2)/Sata(0x0,0xFFFF,0x0): Access Denied"
+    ],
     "result": "refused",
-    "settle_rule": "no growth of the console file or the TPM log for 3.0 s (at most 30 s)",
+    "settle_rule": "after a refusal, the firmware's line that no boot option is left; then no growth of the console file or the TPM log for 3.0 s (at most 30 s in all, else the run is not recorded)",
+    "settled": true,
     "trigger": "refusal-line"
   },
   "pcrs": {
@@ -410,7 +419,7 @@
       "file": "OVMF_CODE_4M.secboot.fd",
       "sha256": "1286f2a3217d09b374d05951355d7a561c8bacecd74845c8a1fbb71a48c0de8d"
     },
-    "host_os": "Ubuntu 24.04.5 LTS",
+    "host_os": "Ubuntu 24.04",
     "keys": {
       "KEK": "575b0a09527e0a96ce5b3722be29bdd8ccc5450f34a40510f87e4fd846f8c464",
       "PK": "5f72bbe6f9f5bf7b0f88b0e7bfdc4bfeee120880a2f2800968a451b369d3f048",
@@ -421,30 +430,38 @@
       "file_sha256": "65a0b626a6ed160de50d2f61359a306095eb92396b7fd4df0c64e8bc668e5320"
     },
     "prediction": null,
-    "qemu_command_line": "timeout -s KILL 300 qemu-system-x86_64 -machine pc-q35-8.2,smm=on,accel=tcg -cpu qemu64 -smp 1 -m 512 -rtc base=2026-01-01T00:00:00,clock=vm -display none -vga std -net none -no-reboot -monitor none -global driver=cfi.pflash01,property=secure,value=on -drive if=pflash,format=raw,unit=0,readonly=on,file=/usr/share/OVMF/OVMF_CODE_4M.secboot.fd -drive if=pflash,format=raw,unit=1,file=<run-dir>/vars.fd -chardev socket,id=chrtpm,path=<run-dir>/swtpm.sock -tpmdev emulator,id=tpm0,chardev=chrtpm -device tpm-tis,tpmdev=tpm0 -drive format=raw,file=fat:rw:<run-dir>/esp -qmp unix:<run-dir>/qmp.sock,server=on,wait=off -pidfile <run-dir>/qemu.pid -serial file:<run-dir>/serial.log",
-    "recorded_at": "2026-11-14T10:43:16Z",
+    "qemu_command_line": "timeout -s KILL 300 qemu-system-x86_64 -machine pc-q35-8.2,smm=on,accel=tcg -cpu qemu64 -smp 1 -m 512 -rtc base=2026-01-01T00:00:00,clock=vm -display none -vga std -net none -no-reboot -monitor none -global driver=cfi.pflash01,property=secure,value=on -drive if=pflash,format=raw,unit=0,readonly=on,file=/usr/share/OVMF/OVMF_CODE_4M.secboot.fd -drive if=pflash,format=raw,unit=1,file=<run-dir>/vars.fd -chardev socket,id=chrtpm,path=<run-dir>/swtpm.sock -tpmdev emulator,id=tpm0,chardev=chrtpm -device tpm-tis,tpmdev=tpm0 -drive format=raw,file=fat:rw:<run-dir>/esp -qmp unix:<run-dir>/qmp.sock,server=on,wait=off -serial file:<run-dir>/serial.log",
+    "recorded_at": "2026-11-14T11:49:38Z",
     "swtpm_command_line": "swtpm socket --tpm2 --tpmstate dir=<run-dir>/tpm --ctrl type=unixio,path=<run-dir>/swtpm.sock --log file=<run-dir>/swtpm.log,level=20",
     "tools": {
       "binutils": "2.42-4ubuntu2.10",
-      "efitools": "1.9.2-3ubuntu3",
       "ovmf": "2024.02-2ubuntu0.10",
       "python": "3.12.3",
       "qemu": "1:8.2.2+ds-0ubuntu1.18",
-      "sbsigntool": "0.9.4-3.1ubuntu7",
-      "swtpm": "0.7.3-0ubuntu5.24.04.1",
-      "tpm2-tools": "5.6-1build4"
+      "swtpm": "0.7.3-0ubuntu5.24.04.1"
     },
     "vars_template_sha256": "57ec06981b573029dd48cd399a5546ad8e57dece61dac9cdeeb894e79e88cebf"
   },
   "run": {
     "change": "one byte of the loader's content changed, Secure Boot on",
+    "change_detail": {
+      "firmware_replaced": false,
+      "loader_byte": {
+        "area": "section .data",
+        "file_offset": 2142,
+        "new_value": 66,
+        "old_value": 65
+      },
+      "store_edits": []
+    },
     "experiment": "e2",
+    "experiment_sha256": "5e7d32330ea00a144859f28d5a08d04c2e91e8e571e9537eaeac72d9fc2bd243",
     "kind": "pilot",
     "name": "e2"
   },
   "timing": {
-    "seconds_to_pause": 9.3,
-    "seconds_to_trigger": 5.6
+    "seconds_to_pause": 9.6,
+    "seconds_to_trigger": 6.1
   },
   "vars_after_sha256": "74c3b350ff3db0191a3250724412096508659a3dbe3298afb3baf454c50bac74"
 }

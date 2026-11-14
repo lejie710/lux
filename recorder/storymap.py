@@ -9,6 +9,12 @@ basis it rests on. Stops 1 and 2 have no events.
 Exactly one rule must match an event. An event that matches none (or more
 than one) gets no stop, and a test fails if that happens in a committed
 recording.
+
+**A stop is a label, not a position.** Events must always be shown in the
+order of their `index`. In a refused boot the stops do not rise steadily:
+the firmware gives up on one boot option (stop 6, rule `boot-return`) and
+then calls the next one (stop 5, rule `boot-attempt`), so the sequence ends
+5, 6, 5. Grouping events by stop would put those two in the wrong order.
 """
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -56,11 +62,15 @@ def _is_boot_attempt(event: Event) -> bool:
     return _action_starts(event, "Calling EFI Application")
 
 
-def _is_authorisation(event: Event) -> bool:
+def _is_load_and_verify(event: Event) -> bool:
+    """The record of which key authorised the image, and the image's own digest."""
     if event.type_code == eventlog.EV_EFI_VARIABLE_AUTHORITY:
         return event.pcr == 7
-    if event.type_code == eventlog.EV_EFI_BOOT_SERVICES_APPLICATION:
-        return event.pcr == 4
+    return event.type_code == eventlog.EV_EFI_BOOT_SERVICES_APPLICATION and event.pcr == 4
+
+
+def _is_boot_return(event: Event) -> bool:
+    """Control came back from a boot option; in these recordings, after a refused load."""
     return _action_starts(event, "Returning from EFI Application")
 
 
@@ -73,9 +83,13 @@ RULES: tuple[StopRule, ...] = (
     StopRule("pcr7-policy", 4, _OBSERVED_ORDER, _is_policy_measurement),
     StopRule("pcr1-config", 5, _OBSERVED_ORDER, _is_configuration_measurement),
     StopRule("boot-attempt", 5, "observed position, directly before the load", _is_boot_attempt),
-    StopRule("authorise", 6,
-             "observed: present when the loader is accepted, absent or replaced when refused",
-             _is_authorisation),
+    StopRule("load-verify", 6,
+             "observed: present when the loader is accepted, absent when it is refused",
+             _is_load_and_verify),
+    StopRule("boot-return", 6,
+             "observed: logged only when a boot option hands control back, here after a "
+             "refused load; the firmware then calls the next option, so a stop 5 event follows",
+             _is_boot_return),
     StopRule("exit-boot-services", 7, "observed: only after the loader's exit call",
              _is_exit_boot_services),
 )

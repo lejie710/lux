@@ -1,4 +1,9 @@
 {
+  "created_with": {
+    "efitools": "1.9.2-3ubuntu3",
+    "openssl": "3.0.13-0ubuntu3.15",
+    "sbsigntool": "0.9.4-3.1ubuntu7"
+  },
   "files": {
     "KEK.auth": "e7aceb53b68b41d8c727d00a542f594bbd45eed41655a36b4542c49c732cb6ef",
     "KEK.crt": "06efaa9859d29a4267f4b53a4319b1b4240d96cd82d20556e9a27d2fddd601e8",
@@ -13,6 +18,10 @@
     "db.esl": "23d2c83c36738764317f3f5afb663f40d91e0d1dd7c8d0645477ffa6d4542e93",
     "db.key": "84bffe11bddd0d82b70d575bf588b2d5caef957f301850a768f45eac69f9449e",
     "loader-signed.efi": "0cb3ced82bf84f1a235c3b81f8029d055bd846a261cdfd71ad6f9f0437e18a78"
+  },
+  "firmware": {
+    "file": "OVMF_CODE_4M.secboot.fd",
+    "sha256": "1286f2a3217d09b374d05951355d7a561c8bacecd74845c8a1fbb71a48c0de8d"
   },
   "format": "lux-testkeys/1",
   "loader_authenticode_sha256": "00c5018d3157edb92f96a08ba685a1c5913c5dd5fa2228b021dd9d4970eee50f",

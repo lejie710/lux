@@ -33,12 +33,15 @@ class RunFacts:
 
     name: str
     experiment: str
+    experiment_sha256: str                    # fingerprint of the experiment's description
     kind: str
     change: str
+    change_detail: dict[str, object] | None   # proof of what was changed; None for no change
     provenance: dict[str, object]
-    outcome: dict[str, str]
+    outcome: dict[str, object]
     timing: dict[str, float]
-    console: list[str]
+    console: list[str]                        # firmware lines and the loader's status lines
+    loader_report: list[str]                  # the loader's memory map and table dump
     events: tuple[Event, ...]
     pcrs: PcrBanks
     event_log_bytes: bytes
@@ -66,11 +69,14 @@ def build_recording(facts: RunFacts) -> dict[str, object]:
     return {
         "format": RECORDING_FORMAT,
         "run": {"name": facts.name, "experiment": facts.experiment,
-                "kind": facts.kind, "change": facts.change},
+                "experiment_sha256": facts.experiment_sha256,
+                "kind": facts.kind, "change": facts.change,
+                "change_detail": facts.change_detail},
         "provenance": facts.provenance,
         "outcome": facts.outcome,
         "timing": facts.timing,
         "console": facts.console,
+        "loader_report": facts.loader_report,
         "events": [event_row(event) for event in facts.events],
         "pcrs": banks_to_hex(facts.pcrs),
         "event_log": {

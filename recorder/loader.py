@@ -9,20 +9,17 @@ Changed copies differ from the signed loader in exactly one byte, and each
 function proves from the file's own headers where that byte lies before it
 returns anything.
 """
-from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 
 from recorder import pe
 from recorder.errors import StagingRefused
+from recorder.provenance import RunCommand
 
 # The loader's first console line, stored as UTF-16. Its last letter is the
 # byte the content-change experiments alter.
 START_MESSAGE = "LUX-LOADER A"
 CHANGED_LETTER = "B"
-
-# Runs a command and returns its output; raises `ToolMissing` if it fails.
-RunCommand = Callable[[list[str]], str]
 
 
 @dataclass(frozen=True)
@@ -33,6 +30,11 @@ class ByteChange:
     old_value: int
     new_value: int
     area: str            # for example "section .data" or "signature area"
+
+    def as_document(self) -> dict[str, object]:
+        """The change in the shape the recording stores."""
+        return {"file_offset": self.file_offset, "old_value": self.old_value,
+                "new_value": self.new_value, "area": self.area}
 
 
 def build_commands(source: Path, build_directory: Path) -> list[list[str]]:

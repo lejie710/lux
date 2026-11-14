@@ -110,11 +110,55 @@ def template_store() -> bytes:
     ])
 
 
+FIRMWARE_BYTES = b"firmware image"
+
+
+def test_pins(template: bytes, firmware: bytes = FIRMWARE_BYTES) -> keys.Pins:
+    """Manifest pins for a test key directory: the given template and firmware bytes."""
+    return keys.Pins(LOADER_AUTHENTICODE, hashlib.sha256(template).hexdigest(), "firmware.fd",
+                     hashlib.sha256(firmware).hexdigest(), {"openssl": "test"})
+
+
 def copy_testkeys(target: Path, template: bytes) -> Path:
     """A copy of the committed test keys whose manifest pins the given template."""
     shutil.copytree(TESTKEYS, target)
-    keys.write_manifest(target, LOADER_AUTHENTICODE, hashlib.sha256(template).hexdigest())
+    keys.write_manifest(target, test_pins(template))
     return target
+
+
+class FakeGit:
+    """Answers the recorder's git questions from a small table.
+
+    By default it describes a file that is committed and unchanged: the
+    committed content it hands out is whatever the file on disk holds.
+    `blob` overrides that content, which is how a file edited behind git's
+    back is played.
+    """
+
+    def __init__(self, tracked: bool = True, status: str = "", commit: str = "abc123\n",
+                 code: int = 0, ancestor: bool = True, blob: bytes | None = None) -> None:
+        self.tracked, self.status, self.commit, self.code = tracked, status, commit, code
+        self.ancestor, self.blob = ancestor, blob
+        self.asked: list[str] = []
+
+    def __call__(self, arguments: list[str], directory: Path) -> tuple[int, bytes]:
+        self.asked.append(arguments[0])
+        if self.code:
+            return self.code, b""
+        if arguments[0] == "ls-files":
+            return (0 if self.tracked else 1), b""
+        if arguments[0] == "status":
+            return 0, self.status.encode()
+        if arguments[0] == "log":
+            return 0, self.commit.encode()
+        if arguments[0] == "merge-base":
+            return (0 if self.ancestor else 1), b""
+        if arguments[0] == "rev-parse":
+            return 0, b"predictions/\n"
+        if arguments[0] == "cat-file":
+            name = arguments[-1].rsplit("/", 1)[-1]
+            return 0, self.blob if self.blob is not None else (directory / name).read_bytes()
+        return 1, b""
 
 
 class FakeClock:
@@ -144,10 +188,11 @@ class FakeMachine:
     def __init__(self, clock: FakeClock, run_directory: Path, console_at: dict[float, bytes],
                  tpm_log: str = "", memory: bytes = b"", live: PcrBanks | None = None,
                  activity_until: float = 0.0, exits_at: float | None = None,
-                 fail_on: str | None = None) -> None:
+                 fail_on: str | None = None, error_text: str = "") -> None:
         self.clock, self.run_directory = clock, run_directory
         self.console_at, self.tpm_log, self.memory, self.live = console_at, tpm_log, memory, live
         self.activity_until, self.exits_at, self.fail_on = activity_until, exits_at, fail_on
+        self.error_text = error_text
         self.calls: list[str] = []
         self.killed = False
         self.paused_at: float | None = None
@@ -175,12 +220,18 @@ class FakeMachine:
         return len(self.console_bytes()), int(min(self.clock.now(), self.activity_until) * 100)
 
     def pause_and_save_memory(self) -> Path:
-        self._call("pause_and_save_memory")
         self.paused_at = self.clock.now()
         self.run_directory.mkdir(parents=True, exist_ok=True)
         path = self.run_directory / "mem.bin"
-        path.write_bytes(self.memory or b"\x00")
+        path.write_bytes(self.memory or b"\x00")     # written even when the step then fails
+        self._call("pause_and_save_memory")
         return path
+
+    def discard_memory(self) -> None:
+        (self.run_directory / "mem.bin").unlink(missing_ok=True)
+
+    def failure_text(self) -> str:
+        return self.error_text
 
     def kill_vm(self) -> None:
         self._call("kill_vm")

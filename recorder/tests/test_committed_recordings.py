@@ -49,7 +49,44 @@ class CommittedRecordings(unittest.TestCase):
             self.assertEqual(gate.replay_events(log.events), banks_from_hex(document["pcrs"]))
             self.assertEqual(document["events"], [recording.event_row(event) for event in log.events])
             self.assertTrue(document["gate"]["passed"])
+            self.assertEqual(set(document["gate"]["checks"].values()), {True})
+            self.assertIs(document["outcome"]["settled"], True)
             self.assertEqual(document["may_vary"], list(recording.MAY_VARY))
+
+    def test_the_committed_pairs_may_be_compared_and_the_normal_run_repeats(self) -> None:
+        for baseline, changed in (("normal-1", "normal-2"), ("normal-1", "e2")):
+            compare.require_comparable(
+                self._load(baseline), self._load(changed),
+                recording.sha256_of_file(RECORDINGS / baseline / "recording.json"),
+                recording.sha256_of_file(RECORDINGS / changed / "recording.json"))
+        repeat = recording.load_json(
+            RECORDINGS / "comparisons" / "normal-1_vs_normal-2.json", compare.COMPARISON_FORMAT)
+        compare.require_repeat(repeat, recording.sha256_of_file(RECORDINGS / "normal-1" / "recording.json"))
+
+    def test_the_pilot_recording_proves_which_byte_was_changed(self) -> None:
+        self.assertIsNone(self._load("normal-1")["run"]["change_detail"])
+        detail = self._load("e2")["run"]["change_detail"]
+        self.assertEqual(detail["loader_byte"], {"file_offset": 0x85E, "old_value": 0x41,
+                                                 "new_value": 0x42, "area": "section .data"})
+        self.assertEqual((detail["store_edits"], detail["firmware_replaced"]), ([], False))
+
+    def test_outcomes_and_story_lines(self) -> None:
+        normal, refused = self._load("normal-1"), self._load("e2")
+        self.assertEqual((normal["outcome"]["result"], normal["outcome"]["refusal_lines"]), ("accepted", []))
+        self.assertEqual(refused["outcome"]["result"], "refused")
+        self.assertEqual(len(refused["outcome"]["refusal_lines"]), 1)
+        self.assertEqual((len(normal["console"]), len(normal["loader_report"])), (10, 148))
+        self.assertEqual((len(refused["console"]), refused["loader_report"]), (4, []))
+        self.assertEqual([row["stop"] for row in refused["events"]][-3:], [5, 6, 5])
+
+    def test_recordings_name_only_the_tools_a_run_uses_and_the_pinned_firmware(self) -> None:
+        pins = keys.pins_of(keys.verify(helpers.TESTKEYS))
+        for run in ("normal-1", "normal-2", "e2"):
+            provenance = self._load(run)["provenance"]
+            self.assertEqual(set(provenance["tools"]), {"qemu", "ovmf", "swtpm", "binutils", "python"})
+            self.assertEqual(provenance["host_os"], "Ubuntu 24.04")
+            self.assertEqual(provenance["firmware"], {"file": pins.firmware_file,
+                                                      "sha256": pins.firmware_sha256})
 
     def test_every_event_has_a_stop(self) -> None:
         for run in ("normal-1", "normal-2", "e2"):

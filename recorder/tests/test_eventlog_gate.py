@@ -147,8 +147,18 @@ class Gate(unittest.TestCase):
             events, extends, live = self._real(tag)
             report = gate.evaluate(events, extends, live, 1)
             self.assertTrue(report.passed, report.failures)
-            self.assertEqual(report.checks["content_digests_recomputed"], recomputed)
+            self.assertEqual(report.counts["content_digests_recomputed"], recomputed)
+            self.assertEqual(report.counts["log_candidates_parsed"], 1)
+            self.assertEqual(set(report.checks.values()), {True})
+            self.assertEqual(len(report.checks), 7)
             gate.require(report)
+
+    def test_checks_are_truth_values_and_counts_are_numbers(self) -> None:
+        events, extends, live = self._real("normal")
+        block = gate.gate_block(gate.evaluate(events, extends, live, 1))
+        self.assertTrue(all(type(value) is bool for value in block["checks"].values()))
+        self.assertTrue(all(type(value) is int for value in block["counts"].values()))
+        self.assertEqual(set(block), {"passed", "banks", "pcrs_per_bank", "checks", "counts"})
 
     def test_one_flipped_bit_in_one_digest_fails(self) -> None:
         events, extends, live = self._real("normal")
@@ -190,6 +200,8 @@ class Gate(unittest.TestCase):
         for count in (0, 2):
             report = gate.evaluate(events, extends, live, count)
             self.assertFalse(report.passed)
+            self.assertFalse(report.checks["exactly_one_log_candidate"])
+            self.assertEqual(report.counts["log_candidates_parsed"], count)
             with self.assertRaises(GateFailure):
                 gate.require(report)
 
@@ -201,6 +213,31 @@ class Gate(unittest.TestCase):
         self.assertTrue(report.checks["event_log_replay_equals_live"])
         self.assertFalse(report.checks["content_digests_match"])
         self.assertFalse(report.passed)
+
+    def test_an_event_with_only_unknown_bank_digests_does_not_count_as_matching(self) -> None:
+        """Nothing was compared, so "all digests match" must not come out true."""
+        unknown = helpers.make_event(7, eventlog.EV_SEPARATOR, bytes(4),
+                                     digests={"alg-0x0012": bytes(32)})
+        self.assertIs(eventlog.content_digests_match(unknown), False)
+        known = helpers.make_event(7, eventlog.EV_SEPARATOR, bytes(4))
+        self.assertIs(eventlog.content_digests_match(known), True)
+
+    def test_an_event_that_lacks_a_bank_fails_its_own_check(self) -> None:
+        events, extends, live = self._real("normal")
+        digests = {bank: digest for bank, digest in events[5].digests.items() if bank != "sha384"}
+        short = eventlog.Event(6, events[5].pcr, events[5].type_code, digests, events[5].data)
+        report = gate.evaluate(events[:5] + (short,) + events[6:], extends, live, 1)
+        self.assertFalse(report.checks["every_event_carries_all_banks"])
+        self.assertFalse(report.passed)
+
+    def test_a_log_header_that_declares_other_banks_fails(self) -> None:
+        events, extends, live = self._real("normal")
+        for banks in (("sha1", "sha256", "sha384"), ("sha1", "sha256", "sha384", "sha512", "alg-0x0012")):
+            report = gate.evaluate(events, extends, live, 1, banks)
+            self.assertFalse(report.checks["every_event_carries_all_banks"], banks)
+            self.assertFalse(report.passed)
+        self.assertTrue(gate.evaluate(events, extends, live, 1,
+                                      ("sha512", "sha1", "sha384", "sha256")).passed)
 
 
 if __name__ == "__main__":

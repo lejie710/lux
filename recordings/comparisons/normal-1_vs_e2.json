@@ -1,10 +1,14 @@
 {
   "baseline": {
-    "recording_sha256": "9fad736004ede561e1eb347dd9300eb8e1908acb24bcfb92ed6aa3e8939d056b",
+    "experiment": "normal",
+    "kind": "normal",
+    "recording_sha256": "5f06748352fdf3d684fbdc917606e547aeccf95d6e91dd5225d7d40af512728c",
     "run": "normal-1"
   },
   "changed": {
-    "recording_sha256": "fe25d405faf08a1538d916fe655c0591a118a2db9c8d7dfc5f73752e88ed5e66",
+    "experiment": "e2",
+    "kind": "pilot",
+    "recording_sha256": "e661efad6e09382dce8d2083a7ec1eec7df654f1d9861f4cf3cdcd18ad8cf200",
     "run": "e2"
   },
   "console_first_differing_line": 2,
@@ -64,17 +68,15 @@
   },
   "format": "lux-comparison/1",
   "identical": false,
+  "loader_report_first_differing_line": 1,
   "other_fields_differing": [
     "event_log.bytes",
     "event_log.events",
     "event_log.sha256",
-    "gate.checks.content_digests_recomputed",
+    "gate.counts.content_digests_recomputed",
     "outcome.trigger",
     "provenance.loader.authenticode_sha256",
-    "provenance.loader.file_sha256",
-    "run.change",
-    "run.experiment",
-    "run.kind"
+    "provenance.loader.file_sha256"
   ],
   "outcome": {
     "baseline": "accepted",
@@ -194,6 +196,12 @@
       21,
       22,
       23
+    ]
+  },
+  "refusal_lines": {
+    "baseline": [],
+    "changed": [
+      "BdsDxe: failed to load Boot0001 \"UEFI QEMU HARDDISK QM00001 \" from PciRoot(0x0)/Pci(0x1F,0x2)/Sata(0x0,0xFFFF,0x0): Access Denied"
     ]
   }
 }

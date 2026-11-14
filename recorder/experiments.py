@@ -12,8 +12,16 @@ Kinds:
   It is shown as a pilot and never counted.
 * `counted`: a changed boot that must not run until its prediction is
   committed. The recorder enforces that (see `prediction.require_committed`).
+
+Some experiments need a value that decides what they test: which byte of the
+signature area is changed, or which rebuilt firmware file is booted. Such a
+value is never written here. It is a **parameter** of the committed
+prediction, so it is fixed by the same commit as the prediction itself and
+cannot be chosen after the result is known.
 """
-from dataclasses import dataclass
+import hashlib
+import json
+from dataclasses import asdict, dataclass
 
 from recorder.errors import StagingRefused
 
@@ -32,6 +40,10 @@ EDIT_REVOKE_LOADER_HASH = "revoke-loader-hash"
 FIRMWARE_PACKAGED = "packaged-secure-boot"
 FIRMWARE_REBUILT = "rebuilt"
 
+# Names of the values a prediction file must carry in its `parameters`.
+PARAMETER_SIGNATURE_OFFSET = "signature_area_offset"   # a whole number
+PARAMETER_FIRMWARE_SHA256 = "firmware_sha256"          # 64 lowercase hex digits
+
 
 @dataclass(frozen=True)
 class Experiment:
@@ -43,9 +55,8 @@ class Experiment:
     loader: str = LOADER_SIGNED           # which loader variant goes on the disk
     store_edits: tuple[str, ...] = ()     # edits to the variable store
     firmware: str = FIRMWARE_PACKAGED
-    # Offset inside the signature area of the byte to change. It is part of
-    # the prediction, so it stays unset until that prediction is written.
-    signature_area_offset: int | None = None
+    # Parameter names the committed prediction must carry, no more and no fewer.
+    parameters: tuple[str, ...] = ()
 
 
 EXPERIMENTS: dict[str, Experiment] = {e.identifier: e for e in (
@@ -65,9 +76,10 @@ EXPERIMENTS: dict[str, Experiment] = {e.identifier: e for e in (
                store_edits=(EDIT_REVERSE_BOOT_ORDER,)),
     Experiment("signature-byte", KIND_COUNTED,
                "one byte changed inside the loader's signature area, Secure Boot on",
-               loader=LOADER_SIGNATURE_BYTE),
+               loader=LOADER_SIGNATURE_BYTE, parameters=(PARAMETER_SIGNATURE_OFFSET,)),
     Experiment("rebuilt-firmware", KIND_COUNTED,
-               "firmware rebuilt with one driver changed", firmware=FIRMWARE_REBUILT),
+               "firmware rebuilt with one driver changed", firmware=FIRMWARE_REBUILT,
+               parameters=(PARAMETER_FIRMWARE_SHA256,)),
 )}
 
 
@@ -77,3 +89,13 @@ def get(identifier: str) -> Experiment:
         raise StagingRefused(
             f"unknown experiment '{identifier}'; known: {', '.join(sorted(EXPERIMENTS))}")
     return EXPERIMENTS[identifier]
+
+
+def fingerprint(experiment: Experiment) -> str:
+    """SHA-256 of an experiment's description, stored in every recording.
+
+    If a description is edited after a run, the stored value no longer
+    equals the one computed from the code, and `check` says so.
+    """
+    text = json.dumps(asdict(experiment), sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()

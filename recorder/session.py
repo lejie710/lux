@@ -21,19 +21,26 @@ import socket
 import struct
 import subprocess
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
 
 from recorder import capture
 from recorder.banks import ALGORITHMS, PCR_COUNT, PcrBanks
-from recorder.errors import ToolMissing
+from recorder.errors import MachineFailure, ToolMissing
 
 MEMORY_MIB = 512
+# The outer limit: `timeout` kills QEMU after this long whatever the recorder
+# does. It must stay larger than the recorder's own waits added together
+# (`Limits.trigger_timeout` + `Limits.settle_max` = 270 s), so that the
+# recorder always reaches its pause before the outer kill can land.
 QEMU_TIMEOUT_SECONDS = 300
 TRIGGER_MARKER = "final-marker"
 TRIGGER_REFUSAL = "refusal-line"
 TRIGGER_NONE = "none"
+_ERROR_TAIL_CHARACTERS = 400
+_GROUP_EXIT_SECONDS = 5.0
 ENDING_PAUSED = "paused-then-killed"
 ENDING_GUEST = "guest-ended"
 
@@ -44,16 +51,17 @@ _SWTPM_CMD_SET_DATAFD = 16
 class Limits:
     """How long the recorder waits. All values are seconds."""
 
-    trigger: float = 270.0        # give up waiting for a marker or a refusal
-    quiet: float = 3.0            # both logs must stand still this long
-    settle_max: float = 30.0      # stop waiting for quiet after this long
+    trigger_timeout: float = 240.0   # give up waiting for a marker or a refusal
+    quiet: float = 3.0               # both logs must stand still this long
+    settle_max: float = 30.0         # give up waiting for the end of the boot after this long
     poll: float = 0.25
 
     @property
     def settle_rule(self) -> str:
         """The end condition in words, stored in every recording."""
-        return (f"no growth of the console file or the TPM log for {self.quiet:.1f} s "
-                f"(at most {self.settle_max:.0f} s)")
+        return ("after a refusal, the firmware's line that no boot option is left; then "
+                f"no growth of the console file or the TPM log for {self.quiet:.1f} s "
+                f"(at most {self.settle_max:.0f} s in all, else the run is not recorded)")
 
 
 class Clock(Protocol):
@@ -84,9 +92,11 @@ class Machine(Protocol):
     def console_bytes(self) -> bytes: ...
     def activity(self) -> tuple[int, int]: ...
     def pause_and_save_memory(self) -> Path: ...
+    def discard_memory(self) -> None: ...
     def kill_vm(self) -> None: ...
     def read_pcrs(self) -> PcrBanks: ...
     def tpm_log_text(self) -> str: ...
+    def failure_text(self) -> str: ...
     def stop(self) -> None: ...
 
 
@@ -96,6 +106,7 @@ class Observation:
 
     trigger: str
     ending: str
+    settled: bool                   # False when the end of the boot was not seen in time
     seconds_to_trigger: float
     seconds_to_pause: float
     console_raw: bytes
@@ -116,7 +127,7 @@ def find_trigger(console_raw: bytes) -> str:
 
 def _wait_for_trigger(machine: Machine, clock: Clock, limits: Limits, started: float) -> str:
     """Poll the console until a trigger line appears, the guest ends, or time is up."""
-    while clock.now() - started < limits.trigger and machine.vm_running():
+    while clock.now() - started < limits.trigger_timeout and machine.vm_running():
         trigger = find_trigger(machine.console_bytes())
         if trigger != TRIGGER_NONE:
             return trigger
@@ -124,27 +135,56 @@ def _wait_for_trigger(machine: Machine, clock: Clock, limits: Limits, started: f
     return find_trigger(machine.console_bytes())
 
 
-def _wait_until_quiet(machine: Machine, clock: Clock, limits: Limits) -> None:
+def _wait_for_refusal_end(machine: Machine, clock: Clock, limits: Limits, deadline: float) -> bool:
+    """After a refusal, wait for the firmware to say that no boot option is left.
+
+    A refused boot is not over at its first refusal line: the firmware goes
+    on to the next boot option and extends registers while it does. Its own
+    last line is a signal from the guest, which does not depend on how fast
+    the host is. Returns False when that line did not appear in time.
+    """
+    while machine.vm_running() and clock.now() < deadline:
+        text = machine.console_bytes().decode("utf-8", errors="replace")
+        if capture.REFUSAL_END_PATTERN.search(text):
+            return True
+        clock.sleep(limits.poll)
+    return False
+
+
+def _wait_until_quiet(machine: Machine, clock: Clock, limits: Limits, deadline: float) -> bool:
     """Wait until the console file and the TPM log have both stopped growing.
 
-    The firmware keeps extending registers for a moment after the trigger
-    line (a refused boot tries the next boot option, for example). Pausing
-    too early would cut those extends off and make the run look shorter.
+    The firmware keeps extending registers for a moment after its last
+    console line. Pausing too early would cut those extends off and make
+    the run look shorter. Returns False when the quiet period was not
+    reached before the deadline.
     """
-    settle_started = clock.now()
     last_activity = machine.activity()
     quiet_since = clock.now()
-    while machine.vm_running() and clock.now() - settle_started < limits.settle_max:
+    while machine.vm_running() and clock.now() < deadline:
         clock.sleep(limits.poll)
         activity = machine.activity()
         if activity != last_activity:
             last_activity, quiet_since = activity, clock.now()
         elif clock.now() - quiet_since >= limits.quiet:
-            return
+            return True
+    return False
+
+
+def _settle(machine: Machine, clock: Clock, limits: Limits, trigger: str) -> bool:
+    """Wait for the boot to be over. True when it was seen to be over in time."""
+    deadline = clock.now() + limits.settle_max
+    if trigger == TRIGGER_REFUSAL and not _wait_for_refusal_end(machine, clock, limits, deadline):
+        return False
+    return _wait_until_quiet(machine, clock, limits, deadline)
 
 
 def run_boot(machine: Machine, clock: Clock, limits: Limits) -> Observation:
-    """Boot once, wait for the end of the boot, capture, and always clean up."""
+    """Boot once, wait for the end of the boot, capture, and always clean up.
+
+    When any step fails, the saved guest memory is deleted before the error
+    travels on: guest memory is never kept.
+    """
     started = clock.now()
     memory_file: Path | None = None
     live_pcrs: PcrBanks | None = None
@@ -153,17 +193,44 @@ def run_boot(machine: Machine, clock: Clock, limits: Limits) -> Observation:
         machine.start()
         trigger = _wait_for_trigger(machine, clock, limits, started)
         seconds_to_trigger = clock.now() - started
-        _wait_until_quiet(machine, clock, limits)
+        settled = _settle(machine, clock, limits, trigger)
         seconds_to_pause = clock.now() - started
         if machine.vm_running():
             memory_file = machine.pause_and_save_memory()
             machine.kill_vm()
             live_pcrs = machine.read_pcrs()
             ending = ENDING_PAUSED
+        elif not machine.console_bytes():
+            raise MachineFailure("the virtual machine ended before the guest printed anything: "
+                                 + (machine.failure_text() or "it left no error message"))
+    except BaseException:
+        machine.discard_memory()
+        raise
     finally:
         machine.stop()
-    return Observation(trigger, ending, seconds_to_trigger, seconds_to_pause,
+    return Observation(trigger, ending, settled, seconds_to_trigger, seconds_to_pause,
                        machine.console_bytes(), machine.tpm_log_text(), memory_file, live_pcrs)
+
+
+def receive_response(receive: Callable[[int], bytes]) -> bytes:
+    """Read one whole TPM response from a stream, however it is cut into pieces.
+
+    A stream socket may deliver a response in several parts. The 10-byte
+    header states the total size, so read the header first and then keep
+    reading until that many bytes have arrived. `receive` is the socket's
+    `recv`. Raises `MachineFailure` when the stream ends early.
+    """
+    def exactly(count: int) -> bytes:
+        data = b""
+        while len(data) < count:
+            part = receive(count - len(data))
+            if not part:
+                raise MachineFailure("the software TPM closed its data channel inside a response")
+            data += part
+        return data
+
+    header = exactly(capture.TPM_HEADER_SIZE)
+    return header + exactly(capture.response_size(header) - len(header))
 
 
 # ---------------------------------------------------------------- the real machine
@@ -193,7 +260,6 @@ def qemu_arguments(run_directory: Path, firmware: Path) -> list[str]:
         "-device", "tpm-tis,tpmdev=tpm0",
         "-drive", f"format=raw,file=fat:rw:{run}/esp",
         "-qmp", f"unix:{run}/qmp.sock,server=on,wait=off",
-        "-pidfile", f"{run}/qemu.pid",
         "-serial", f"file:{run}/serial.log",
     ]
 
@@ -224,13 +290,19 @@ class QemuMachine:
     # -- start and status
 
     def start(self) -> None:
-        """Start swtpm, wait for its socket, then start QEMU."""
+        """Start swtpm, wait for its socket, then start QEMU.
+
+        QEMU runs as a child of `timeout`. The two are started in a process
+        group of their own, so that both can be killed together later (see
+        `kill_vm`).
+        """
         try:
             self._swtpm = subprocess.Popen(self._swtpm_argv, stdin=subprocess.DEVNULL)
             self._wait_for_file(self._run / "swtpm.sock", "the software TPM's socket")
             with open(self._run / "qemu.err", "wb") as errors:
                 self._qemu = subprocess.Popen(self._qemu_argv, stdin=subprocess.DEVNULL,
-                                              stdout=subprocess.DEVNULL, stderr=errors)
+                                              stdout=subprocess.DEVNULL, stderr=errors,
+                                              start_new_session=True)
         except OSError as error:
             raise ToolMissing(f"cannot start the virtual machine: {error}") from error
 
@@ -239,7 +311,15 @@ class QemuMachine:
             if path.exists():
                 return
             time.sleep(0.1)
-        raise ToolMissing(f"{what} did not appear")
+        raise MachineFailure(f"{what} did not appear")
+
+    def failure_text(self) -> str:
+        """The end of what QEMU wrote to its error stream, on one line."""
+        try:
+            text = (self._run / "qemu.err").read_text(errors="replace")
+        except OSError:
+            return ""
+        return " ".join(text.split())[-_ERROR_TAIL_CHARACTERS:]
 
     def vm_running(self) -> bool:
         return self._qemu is not None and self._qemu.poll() is None
@@ -270,12 +350,16 @@ class QemuMachine:
             self._qmp(channel, "stop")
             status = self._qmp(channel, "query-status")
             if status.get("return", {}).get("status") != "paused":
-                raise ToolMissing(f"the guest did not pause: {status}")
+                raise MachineFailure(f"the guest did not pause: {status}")
             saved = self._qmp(channel, "pmemsave", val=0, size=MEMORY_MIB * 1024 * 1024,
                               filename=str(memory_file))
             if "error" in saved or not memory_file.exists():
-                raise ToolMissing(f"guest memory was not saved: {saved}")
+                raise MachineFailure(f"guest memory was not saved: {saved}")
         return memory_file
+
+    def discard_memory(self) -> None:
+        """Delete the saved guest memory, whole or partly written. Safe to repeat."""
+        (self._run / "mem.bin").unlink(missing_ok=True)
 
     def _open_qmp(self) -> socket.SocketIO:
         """Connect to QEMU's control socket and finish its greeting."""
@@ -287,7 +371,7 @@ class QemuMachine:
                 break
             except OSError:
                 if attempt == 99:
-                    raise ToolMissing("QEMU's control socket never accepted a connection") from None
+                    raise MachineFailure("QEMU's control socket never accepted a connection") from None
                 time.sleep(0.1)
         channel = connection.makefile("rwb", buffering=0)
         connection.close()
@@ -305,22 +389,41 @@ class QemuMachine:
         while True:
             line = channel.readline()
             if not line:
-                raise ToolMissing(f"QEMU closed its control socket during '{command}'")
+                raise MachineFailure(f"QEMU closed its control socket during '{command}'")
             answer = json.loads(line)
             if "return" in answer or "error" in answer:
                 return answer
 
     def kill_vm(self) -> None:
-        """Kill QEMU at once, so it cannot tell swtpm to shut down."""
-        pid_file = self._run / "qemu.pid"
+        """Kill QEMU at once, so it cannot tell swtpm to shut down.
+
+        The process this object holds is `timeout`, and QEMU is its child.
+        Killing only `timeout` would leave QEMU running without its timer,
+        because a kill signal cannot be passed on. So the signal goes to the
+        whole process group, which holds exactly these two. Safe to repeat.
+        """
+        if self._qemu is None:
+            return
         try:
-            os.kill(int(pid_file.read_text()), signal.SIGKILL)
-            pid_file.unlink()          # never signal a recycled process number later
-        except (OSError, ValueError):
-            pass
-        if self._qemu is not None:
-            self._qemu.kill()
-            self._qemu.wait()
+            os.killpg(self._qemu.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass                       # the group is already gone
+        self._qemu.wait()
+
+    def _vm_group_is_gone(self) -> bool:
+        """True once no process of QEMU's group exists any more."""
+        if self._qemu is None:
+            return True
+        deadline = time.monotonic() + _GROUP_EXIT_SECONDS
+        while time.monotonic() < deadline:
+            try:
+                os.killpg(self._qemu.pid, 0)       # signal 0 only asks "does it exist"
+            except ProcessLookupError:
+                return True
+            except PermissionError:
+                return False
+            time.sleep(0.05)
+        return False
 
     def read_pcrs(self) -> PcrBanks:
         """Read all 24 registers of all four banks from the still-running swtpm.
@@ -330,7 +433,7 @@ class QemuMachine:
         are sent over it.
         """
         if self._swtpm is None or self._swtpm.poll() is not None:
-            raise ToolMissing("the software TPM is not running; its registers cannot be read")
+            raise MachineFailure("the software TPM is not running; its registers cannot be read")
         banks: PcrBanks = {}
         with socket.socket(socket.AF_UNIX) as control:
             control.settimeout(5)
@@ -339,7 +442,7 @@ class QemuMachine:
             with ours, theirs:
                 socket.send_fds(control, [struct.pack(">I", _SWTPM_CMD_SET_DATAFD)], [theirs.fileno()])
                 if control.recv(16)[:4] != bytes(4):
-                    raise ToolMissing("the software TPM refused a new data channel")
+                    raise MachineFailure("the software TPM refused a new data channel")
                 ours.settimeout(5)
                 for algorithm_id, (bank, _) in ALGORITHMS.items():
                     banks[bank] = self._read_bank(ours, algorithm_id)
@@ -350,15 +453,19 @@ class QemuMachine:
         values: dict[int, bytes] = {}
         for first in (0, 8, 16):
             channel.sendall(capture.build_pcr_read_command(algorithm_id, first))
-            values.update(capture.parse_pcr_read_response(channel.recv(4096)))
+            values.update(capture.parse_pcr_read_response(receive_response(channel.recv)))
         if sorted(values) != list(range(PCR_COUNT)):
-            raise ToolMissing("the software TPM did not return all 24 registers")
+            raise MachineFailure("the software TPM did not return all 24 registers")
         return [values[index] for index in range(PCR_COUNT)]
 
     # -- cleanup
 
     def stop(self) -> None:
-        """Make sure neither process survives, and remove the sockets. Safe to repeat."""
+        """Make sure neither process survives, and remove the sockets. Safe to repeat.
+
+        Raises `MachineFailure` when a process of the virtual machine is
+        still there afterwards: a leftover guest would run for ever.
+        """
         self.kill_vm()
         if self._swtpm is not None:
             if self._swtpm.poll() is None:
@@ -368,8 +475,10 @@ class QemuMachine:
                 except subprocess.TimeoutExpired:
                     self._swtpm.kill()
                     self._swtpm.wait()
-        for name in ("qmp.sock", "swtpm.sock", "qemu.pid"):
+        for name in ("qmp.sock", "swtpm.sock"):
             try:
                 (self._run / name).unlink()
             except OSError:
                 pass
+        if not self._vm_group_is_gone():
+            raise MachineFailure("a process of the virtual machine survived the cleanup")

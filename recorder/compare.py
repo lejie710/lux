@@ -9,17 +9,31 @@ The comparison is the evidence for both parts of the measure:
 The list of ignored fields is `recording.MAY_VARY` and nothing else. A
 recording cannot hide a field by listing it in its own `may_vary`: that list
 is itself compared against the fixed one.
+
+Some pairs must not be compared at all, because the result would look like
+evidence and be none: a recording with itself or with a copy of itself, a
+recording whose agreement gate did not pass, a baseline that is not a normal
+run. `require_comparable` refuses those, and `require_repeat` checks that a
+comparison really is the repeat precondition.
 """
 from collections import Counter
 
 from recorder.banks import BANK_NAMES, PCR_COUNT
+from recorder.errors import ComparisonRefused
 from recorder.recording import MAY_VARY
 
 COMPARISON_FORMAT = "lux-comparison/1"
+NORMAL_EXPERIMENT = "normal"
 
 # Top-level parts that get their own block in the comparison document.
-_OWN_BLOCKS = ("events", "pcrs", "console")
-_OUTCOME_RESULT = "outcome.result"
+_OWN_BLOCKS = ("events", "pcrs", "console", "loader_report")
+# Fields reported in the comparison's own `outcome` and `refusal_lines` blocks.
+_OUTCOME_FIELDS = ("outcome.result", "outcome.refusal_lines")
+# What the experiment is. These differ between a normal and a changed run by
+# definition, and the comparison names both experiments in its header, so
+# listing them again among the differences would only be noise.
+_EXPERIMENT_IDENTITY = ("run.experiment", "run.experiment_sha256", "run.kind",
+                        "run.change", "run.change_detail")
 
 EventKey = tuple[int, str, str]
 
@@ -106,20 +120,73 @@ def _leaves(value: object, prefix: str = "") -> dict[str, object]:
 def other_fields_differing(baseline: dict, changed: dict) -> list[str]:
     """Every remaining field that differs, as sorted dotted paths.
 
-    Skipped: the fixed `MAY_VARY` list, and the parts reported in their own
-    blocks (events, registers, console, the outcome result).
+    Skipped: the fixed `MAY_VARY` list, the parts reported in their own
+    blocks (events, registers, console, loader report, outcome), and the
+    fields that say which experiment a run is.
     """
     left = _leaves({k: v for k, v in baseline.items() if k not in _OWN_BLOCKS})
     right = _leaves({k: v for k, v in changed.items() if k not in _OWN_BLOCKS})
-    skipped = set(MAY_VARY) | {_OUTCOME_RESULT}
+    skipped = (*MAY_VARY, *_OUTCOME_FIELDS, *_EXPERIMENT_IDENTITY)
+
+    def is_skipped(path: str) -> bool:
+        """True for a skipped field and for everything nested inside one."""
+        return any(path == field or path.startswith(field + ".") for field in skipped)
+
     missing = object()
     differing = {
         path for path in set(left) | set(right)
-        if path not in skipped and left.get(path, missing) != right.get(path, missing)
+        if not is_skipped(path) and left.get(path, missing) != right.get(path, missing)
     }
     if any(document.get("may_vary") != list(MAY_VARY) for document in (baseline, changed)):
         differing.add("may_vary")
     return sorted(differing)
+
+
+def _header(document: dict, recording_sha256: str) -> dict[str, object]:
+    """Which recording one side of the comparison is."""
+    run = document["run"]
+    return {"run": run["name"], "experiment": run["experiment"], "kind": run["kind"],
+            "recording_sha256": recording_sha256}
+
+
+def require_comparable(baseline: dict, changed: dict,
+                       baseline_sha256: str, changed_sha256: str) -> None:
+    """Raise `ComparisonRefused` for a pair whose comparison would prove nothing.
+
+    Two files with the same hash are one recording. Two recordings with the
+    same recording time are a recording and its copy (the name and the time
+    are the fields a comparison ignores, so a renamed copy would otherwise
+    compare as identical). A recording whose agreement gate did not pass is
+    not evidence. The baseline is always a normal run.
+    """
+    if baseline_sha256 == changed_sha256:
+        raise ComparisonRefused("both files are the same recording")
+    if baseline["provenance"]["recorded_at"] == changed["provenance"]["recorded_at"]:
+        raise ComparisonRefused("both recordings carry the same recording time, so one is "
+                                "a copy of the other and not a second boot")
+    for side, document in (("baseline", baseline), ("changed", changed)):
+        if document["gate"].get("passed") is not True:
+            raise ComparisonRefused(f"the {side} recording did not pass the agreement gate")
+    if baseline["run"]["experiment"] != NORMAL_EXPERIMENT:
+        raise ComparisonRefused("the baseline must be a recording of the normal run")
+
+
+def require_repeat(repeat: dict, baseline_sha256: str) -> None:
+    """Raise `ComparisonRefused` unless `repeat` proves the normal run repeats.
+
+    The repeat precondition: two different recordings of the normal run are
+    identical on every compared field. `baseline_sha256` is the recording a
+    changed run is measured against; the proof must be about that one.
+    """
+    sides = (repeat["baseline"], repeat["changed"])
+    if any(side.get("experiment") != NORMAL_EXPERIMENT for side in sides):
+        raise ComparisonRefused("the repeat comparison is not between two normal runs")
+    if repeat["baseline"]["recording_sha256"] == repeat["changed"]["recording_sha256"]:
+        raise ComparisonRefused("the repeat comparison compares a recording with itself")
+    if repeat["identical"] is not True:
+        raise ComparisonRefused("the two normal runs are not identical, so no experiment counts")
+    if repeat["baseline"]["recording_sha256"] != baseline_sha256:
+        raise ComparisonRefused("the repeat comparison was made for another baseline recording")
 
 
 def compare_recordings(baseline: dict, changed: dict,
@@ -128,24 +195,30 @@ def compare_recordings(baseline: dict, changed: dict,
     pcrs_differing, pcrs_same = compare_pcrs(baseline["pcrs"], changed["pcrs"])
     first_event = first_differing_event(baseline["events"], changed["events"])
     console_line = first_differing_line(baseline["console"], changed["console"])
+    report_line = first_differing_line(baseline["loader_report"], changed["loader_report"])
     other = other_fields_differing(baseline, changed)
     outcome = {"baseline": baseline["outcome"]["result"], "changed": changed["outcome"]["result"]}
+    refusals = {"baseline": baseline["outcome"]["refusal_lines"],
+                "changed": changed["outcome"]["refusal_lines"]}
     identical = (
-        first_event is None and console_line is None and not other
+        first_event is None and console_line is None and report_line is None and not other
         and outcome["baseline"] == outcome["changed"]
+        and refusals["baseline"] == refusals["changed"]
         and not any(pcrs_differing.values())
     )
     return {
         "format": COMPARISON_FORMAT,
-        "baseline": {"run": baseline["run"]["name"], "recording_sha256": baseline_sha256},
-        "changed": {"run": changed["run"]["name"], "recording_sha256": changed_sha256},
+        "baseline": _header(baseline, baseline_sha256),
+        "changed": _header(changed, changed_sha256),
         "identical": identical,
         "outcome": outcome,
+        "refusal_lines": refusals,
         "first_differing_event": first_event,
         "pcrs_differing": pcrs_differing,
         "pcrs_same": pcrs_same,
         "events_only_in_baseline": events_only_in(baseline["events"], changed["events"]),
         "events_only_in_changed": events_only_in(changed["events"], baseline["events"]),
         "console_first_differing_line": console_line,
+        "loader_report_first_differing_line": report_line,
         "other_fields_differing": other,
     }

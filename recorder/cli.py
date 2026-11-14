@@ -1,27 +1,45 @@
 """The command line: prepare, record, compare, check.
 
     python3 -m recorder prepare
-    python3 -m recorder record normal-1 --experiment normal
+    python3 -m recorder record my-normal --experiment normal
     python3 -m recorder compare recordings/normal-1/recording.json \\
         recordings/e2/recording.json --out recordings/comparisons/normal-1_vs_e2.json
-    python3 -m recorder check COMPARISON --prediction PREDICTION --recording RECORDING
+    python3 -m recorder check COMPARISON --prediction PREDICTION --recording RECORDING \\
+        --baseline BASELINE --repeat REPEAT --out SCORE
 
-Every failure the recorder understands ends with one plain sentence on the
-error stream and exit code 1. Exit code 2 is a wrong command line.
+Exit codes:
+
+* 0: done. For `check` this means "scored", not "every row held".
+* 1: refused. One plain sentence on the error stream says why.
+* 2: a wrong command line.
+* 3: `record` wrote a recording of a changed run that reached neither the
+  loader's final line nor a refusal (`timeout`). The file is kept, because
+  that can be the true result of a change, and the exit code makes sure a
+  script does not take it for an ordinary run.
 """
 import argparse
 import datetime
 import os
 import sys
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 
-from recorder import compare, prediction, preparation, provenance, recording, runner
-from recorder.errors import FormatError, LuxError
+from recorder import (capture, compare, experiments, prediction, preparation, provenance,
+                      recording, runner)
+from recorder.errors import ComparisonRefused, FormatError, LuxError, RecordingExists
+from recorder.experiments import Experiment
 from recorder.session import Limits, QemuMachine, SystemClock
 
 REPOSITORY = Path(__file__).resolve().parent.parent
 TESTKEYS = REPOSITORY / "recorder" / "testkeys"
 WORK_DIRECTORY_VARIABLE = "LUX_WORK_DIR"
+# The comparison of the two committed normal runs, inside the recordings directory.
+REPEAT_COMPARISON = Path("comparisons") / "normal-1_vs_normal-2.json"
+
+EXIT_DONE = 0
+EXIT_REFUSED = 1
+EXIT_TIMEOUT_RECORDED = 3
 
 
 def default_work_directory() -> Path:
@@ -43,14 +61,22 @@ def _parser() -> argparse.ArgumentParser:
     prepare.add_argument("--work-dir", type=Path, default=None)
 
     record = commands.add_parser("record", help="boot once and write a recording")
-    record.add_argument("name", help="run name, for example normal-1")
+    record.add_argument("name", help="run name, for example my-normal")
     record.add_argument("--experiment", required=True)
-    record.add_argument("--out", type=Path, default=REPOSITORY / "recordings")
-    record.add_argument("--firmware-file", type=Path, default=None)
+    record.add_argument("--out", type=Path, default=REPOSITORY / "recordings",
+                        help="directory that holds one folder per recording")
+    record.add_argument("--replace", action="store_true",
+                        help="overwrite an existing recording of this name; never allowed "
+                             "for a counted experiment")
+    record.add_argument("--repeat", type=Path, default=None,
+                        help="comparison of two normal runs, needed before a counted "
+                             f"experiment (default: <out>/{REPEAT_COMPARISON.as_posix()})")
+    record.add_argument("--firmware-file", type=Path, default=None,
+                        help="rebuilt firmware; its hash must be pinned in the prediction")
     record.add_argument("--work-dir", type=Path, default=None)
 
     comparison = commands.add_parser("compare", help="compare two recordings")
-    comparison.add_argument("baseline", type=Path)
+    comparison.add_argument("baseline", type=Path, help="a recording of the normal run")
     comparison.add_argument("changed", type=Path)
     comparison.add_argument("--out", type=Path, required=True)
 
@@ -59,6 +85,11 @@ def _parser() -> argparse.ArgumentParser:
     check.add_argument("--prediction", type=Path, required=True)
     check.add_argument("--recording", type=Path, required=True,
                        help="the changed run's recording, which names its prediction")
+    check.add_argument("--baseline", type=Path, required=True,
+                       help="the normal run's recording the comparison was made against")
+    check.add_argument("--repeat", type=Path, default=None,
+                       help="comparison of two normal runs; required for a counted run")
+    check.add_argument("--out", type=Path, default=None, help="write the score document here")
     return parser
 
 
@@ -69,6 +100,21 @@ def _shown(path: Path) -> str:
     except ValueError:
         return str(path)
 
+
+@contextmanager
+def _complete_documents() -> Iterator[None]:
+    """Turn a missing or misshapen field of a loaded document into a `FormatError`.
+
+    A file can have the right `format` line and still lack a field. That is
+    a refusal with a sentence, not a Python traceback.
+    """
+    try:
+        yield
+    except (KeyError, TypeError, AttributeError) as error:
+        raise FormatError(f"a document lacks a field this command needs: {error!r}") from error
+
+
+# ---------------------------------------------------------------- prepare
 
 def _prepare(arguments: argparse.Namespace) -> int:
     provenance.require_programs()
@@ -86,11 +132,55 @@ def _prepare(arguments: argparse.Namespace) -> int:
     for key, value in sorted(summary.items()):
         print(f"{key}: {value}")
     print("prepared")
-    return 0
+    return EXIT_DONE
+
+
+# ---------------------------------------------------------------- record
+
+def _require_free_target(target: Path, experiment: Experiment, replace: bool) -> None:
+    """Refuse to overwrite a recording. Raises `RecordingExists`.
+
+    A recording is evidence. Writing over it by accident would lose it, and
+    writing over a counted run would allow an experiment to be repeated
+    until its result pleases. So an existing name needs `--replace`, and a
+    counted experiment's recording is never replaced.
+    """
+    if not target.exists():
+        return
+    if experiment.kind == experiments.KIND_COUNTED:
+        raise RecordingExists(f"a recording named '{target.name}' exists, and a counted "
+                              "experiment is recorded once; choose another run name")
+    if not replace:
+        raise RecordingExists(f"a recording named '{target.name}' exists; choose another "
+                              "run name, or pass --replace to overwrite it on purpose")
+
+
+def _require_repeat_on_file(repeat_file: Path, recordings: Path) -> None:
+    """The repeat precondition, checked against the files on disk.
+
+    The comparison must say that two normal runs are identical, and both
+    recordings it names must still be there with the hashes it stored.
+    """
+    if not repeat_file.is_file():
+        raise ComparisonRefused(
+            f"no comparison of two normal runs at {_shown(repeat_file)}; record the normal "
+            "run twice and compare the two before any counted experiment")
+    repeat = recording.load_json(repeat_file, compare.COMPARISON_FORMAT)
+    with _complete_documents():
+        for side in (repeat["baseline"], repeat["changed"]):
+            file = recordings / side["run"] / "recording.json"
+            if not file.is_file() or recording.sha256_of_file(file) != side["recording_sha256"]:
+                raise ComparisonRefused(f"the recording '{side['run']}' named by the repeat "
+                                        "comparison is missing or has changed")
+        compare.require_repeat(repeat, repeat["baseline"]["recording_sha256"])
 
 
 def _record(arguments: argparse.Namespace) -> int:
     provenance.require_programs()
+    experiment = experiments.get(arguments.experiment)
+    target = arguments.out / arguments.name
+    _require_free_target(target, experiment, arguments.replace)
+    repeat_file = arguments.repeat or arguments.out / REPEAT_COMPARISON
     env = runner.Environment(
         testkeys_directory=TESTKEYS,
         predictions_directory=REPOSITORY / "predictions",
@@ -101,46 +191,94 @@ def _record(arguments: argparse.Namespace) -> int:
         tool_versions=provenance.tool_versions,
         host_os=provenance.host_os(),
         git=prediction.run_git,
+        require_repeat=lambda: _require_repeat_on_file(repeat_file, arguments.out),
     )
     now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     request = runner.RunRequest(arguments.name, arguments.experiment, now, arguments.firmware_file)
     result = runner.record_run(request, env)
-    target = arguments.out / arguments.name
     recording.write_json(target / "recording.json", result.document)
     (target / "eventlog.bin").write_bytes(result.event_log)
-    outcome, gate = result.document["outcome"], result.document["gate"]
+    outcome = result.document["outcome"]
     print(f"run {arguments.name}: {outcome['result']}, {len(result.document['events'])} events, "
-          f"agreement gate {'passed' if gate['passed'] else 'FAILED'}")
+          "agreement gate passed")
     print(f"written: {_shown(target / 'recording.json')}")
-    return 0
+    if outcome["result"] == capture.OUTCOME_TIMEOUT:
+        print("attention: this boot reached neither the loader's final line nor a refusal; "
+              "it was recorded as 'timeout'", file=sys.stderr)
+        return EXIT_TIMEOUT_RECORDED
+    return EXIT_DONE
 
+
+# ---------------------------------------------------------------- compare
 
 def _compare(arguments: argparse.Namespace) -> int:
     baseline = recording.load_json(arguments.baseline, recording.RECORDING_FORMAT)
     changed = recording.load_json(arguments.changed, recording.RECORDING_FORMAT)
-    document = compare.compare_recordings(
-        baseline, changed,
-        recording.sha256_of_file(arguments.baseline), recording.sha256_of_file(arguments.changed))
+    baseline_sha256 = recording.sha256_of_file(arguments.baseline)
+    changed_sha256 = recording.sha256_of_file(arguments.changed)
+    with _complete_documents():
+        compare.require_comparable(baseline, changed, baseline_sha256, changed_sha256)
+        document = compare.compare_recordings(baseline, changed, baseline_sha256, changed_sha256)
     recording.write_json(arguments.out, document)
     print(f"identical: {str(document['identical']).lower()}")
     print(f"registers differing (sha256): {document['pcrs_differing']['sha256']}")
     print(f"written: {_shown(arguments.out)}")
-    return 0
+    return EXIT_DONE
+
+
+# ---------------------------------------------------------------- check
+
+def _require_scorable(arguments: argparse.Namespace, comparison: dict, changed: dict,
+                      baseline: dict) -> str | None:
+    """Everything that must hold before a score means anything.
+
+    Returns the SHA-256 of the repeat comparison for a counted run, None for
+    any other. Raises `ComparisonRefused` or `FormatError`.
+    """
+    if comparison["changed"]["recording_sha256"] != recording.sha256_of_file(arguments.recording):
+        raise ComparisonRefused("the comparison was not made from this recording")
+    if comparison["baseline"]["recording_sha256"] != recording.sha256_of_file(arguments.baseline):
+        raise ComparisonRefused("the comparison was not made against this baseline recording")
+    if baseline["run"]["experiment"] != compare.NORMAL_EXPERIMENT:
+        raise ComparisonRefused("the baseline must be a recording of the normal run")
+    if not prediction.unchanged_since_run(changed, arguments.prediction):
+        raise FormatError("the prediction file is not the one this run was recorded under "
+                          "(a pilot has none; an edited prediction no longer matches)")
+    experiment = experiments.get(changed["run"]["experiment"])
+    if experiments.fingerprint(experiment) != changed["run"]["experiment_sha256"]:
+        raise ComparisonRefused("the experiment's description was changed after this run")
+    if experiment.kind != experiments.KIND_COUNTED:
+        return None
+    if arguments.repeat is None:
+        raise ComparisonRefused("a counted run is scored only together with --repeat, the "
+                                "comparison that shows two normal runs are identical")
+    repeat = recording.load_json(arguments.repeat, compare.COMPARISON_FORMAT)
+    compare.require_repeat(repeat, comparison["baseline"]["recording_sha256"])
+    return recording.sha256_of_file(arguments.repeat)
 
 
 def _check(arguments: argparse.Namespace) -> int:
     comparison = recording.load_json(arguments.comparison, compare.COMPARISON_FORMAT)
     changed = recording.load_json(arguments.recording, recording.RECORDING_FORMAT)
-    if comparison["changed"]["recording_sha256"] != recording.sha256_of_file(arguments.recording):
-        raise FormatError("the comparison was not made from this recording")
-    if not prediction.unchanged_since_run(changed, arguments.prediction):
-        raise FormatError("the prediction file is not the one this run was recorded under "
-                          "(a pilot has none; an edited prediction no longer matches)")
-    result = prediction.score(prediction.load(arguments.prediction), comparison)
+    baseline = recording.load_json(arguments.baseline, recording.RECORDING_FORMAT)
+    with _complete_documents():
+        repeat_sha256 = _require_scorable(arguments, comparison, changed, baseline)
+        result = prediction.score(prediction.load(arguments.prediction), comparison)
+        document = prediction.score_document(result, {
+            "run": changed["run"]["name"],
+            "prediction": changed["provenance"]["prediction"],
+            "comparison_sha256": recording.sha256_of_file(arguments.comparison),
+            "baseline_recording_sha256": comparison["baseline"]["recording_sha256"],
+            "changed_recording_sha256": comparison["changed"]["recording_sha256"],
+            "repeat_comparison_sha256": repeat_sha256,
+        })
     print(f"specification-required rows met: {result['required_met']} of {result['required_total']}")
     print(f"open rows predicted correctly: {result['open_correct']} of {result['open_total']}")
     print("mismatches: " + (", ".join(result["mismatches"]) or "none"))
-    return 0
+    if arguments.out is not None:
+        recording.write_json(arguments.out, document)
+        print(f"written: {_shown(arguments.out)}")
+    return EXIT_DONE
 
 
 def main(argv: list[str]) -> int:
@@ -151,4 +289,4 @@ def main(argv: list[str]) -> int:
         return handlers[arguments.command](arguments)
     except LuxError as error:
         print(f"refused: {error}", file=sys.stderr)
-        return 1
+        return EXIT_REFUSED

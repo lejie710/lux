@@ -16,18 +16,19 @@ every file; `verify` raises if anything differs.
 
 These are public test keys for this virtual machine only. Never trust them.
 """
-import hashlib
 import json
 import shutil
+from dataclasses import dataclass
 from pathlib import Path
 
 from recorder import varstore
 from recorder.enrol import VariableWrite
 from recorder.errors import KeysRefused
-from recorder.loader import RunCommand
-from recorder.provenance import certificate_fingerprint
-from recorder.staging import OWNER_GUID
+from recorder.provenance import RunCommand, certificate_fingerprint
+from recorder.recording import sha256_of_file
 
+# Owner identifier used for every signature list this project writes.
+OWNER_GUID = "11111111-2222-3333-4444-555555555555"
 KEY_NAMES: tuple[str, ...] = ("PK", "KEK", "db")
 MANIFEST_NAME = "MANIFEST.json"
 SIGNED_LOADER_NAME = "loader-signed.efi"
@@ -36,6 +37,30 @@ MANIFEST_FORMAT = "lux-testkeys/1"
 UPDATE_TIMESTAMP = "2026-01-01 00:00:00"
 _SUFFIXES = (".key", ".crt", ".esl", ".auth")
 _NOT_KEY_MATERIAL = ("README.md",)
+
+
+@dataclass(frozen=True)
+class Pins:
+    """The values the manifest pins besides the key files themselves.
+
+    `created_with` names the versions of the tools that made the key set and
+    signed the loader. They are a fact about the past: no later run uses
+    those tools, so they are recorded here once and not in every recording.
+    """
+
+    loader_authenticode_sha256: str
+    vars_template_sha256: str          # empty until the first enrolment boot
+    firmware_file: str                 # file name of the packaged firmware
+    firmware_sha256: str
+    created_with: dict[str, str]
+
+
+def pins_of(manifest: dict[str, object]) -> Pins:
+    """The pinned values of a verified manifest."""
+    firmware = manifest["firmware"]
+    return Pins(str(manifest["loader_authenticode_sha256"]), str(manifest["vars_template_sha256"]),
+                str(firmware["file"]), str(firmware["sha256"]),
+                dict(manifest.get("created_with", {})))
 
 
 def key_material_present(directory: Path) -> list[str]:
@@ -98,21 +123,18 @@ def sign_loader_command(directory: Path, unsigned_loader: Path, output: Path) ->
             "--output", str(output), str(unsigned_loader)]
 
 
-def _hash(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-def write_manifest(directory: Path, loader_authenticode_sha256: str,
-                   vars_template_sha256: str) -> dict[str, object]:
-    """Pin every file of the key set, the signed loader and the template by hash."""
+def write_manifest(directory: Path, pins: Pins) -> dict[str, object]:
+    """Pin every file of the key set, the signed loader, the template and the firmware by hash."""
     names = [f"{name}{suffix}" for name in KEY_NAMES for suffix in _SUFFIXES] + [SIGNED_LOADER_NAME]
     manifest: dict[str, object] = {
         "format": MANIFEST_FORMAT,
         "owner_guid": OWNER_GUID,
         "update_timestamp": UPDATE_TIMESTAMP,
-        "files": {name: _hash(directory / name) for name in sorted(names)},
-        "loader_authenticode_sha256": loader_authenticode_sha256,
-        "vars_template_sha256": vars_template_sha256,
+        "files": {name: sha256_of_file(directory / name) for name in sorted(names)},
+        "loader_authenticode_sha256": pins.loader_authenticode_sha256,
+        "vars_template_sha256": pins.vars_template_sha256,
+        "firmware": {"file": pins.firmware_file, "sha256": pins.firmware_sha256},
+        "created_with": dict(pins.created_with),
     }
     text = json.dumps(manifest, indent=2, sort_keys=True) + "\n"
     (directory / MANIFEST_NAME).write_bytes(text.encode("utf-8"))
@@ -132,9 +154,12 @@ def verify(directory: Path) -> dict[str, object]:
         raise KeysRefused(f"the test keys have no readable manifest: {error}") from error
     if manifest.get("format") != MANIFEST_FORMAT or not isinstance(manifest.get("files"), dict):
         raise KeysRefused("the test key manifest has an unknown format")
+    firmware = manifest.get("firmware")
+    if not isinstance(firmware, dict) or not firmware.get("sha256"):
+        raise KeysRefused("the test key manifest does not pin the firmware file")
     for name, expected in manifest["files"].items():
         path = directory / name
-        if not path.is_file() or _hash(path) != expected:
+        if not path.is_file() or sha256_of_file(path) != expected:
             raise KeysRefused(f"test key file {name} is missing or differs from the manifest")
     unpinned = set(key_material_present(directory)) - set(manifest["files"]) - {MANIFEST_NAME}
     if unpinned:

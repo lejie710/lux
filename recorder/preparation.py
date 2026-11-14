@@ -8,7 +8,10 @@ Steps, in order:
 2. Loader. The unsigned loader is built with the installed assembler and
    linker, and its Authenticode digest must equal the committed signed
    loader's. That proves this machine builds the same loader.
-3. Template. The firmware's empty variable store is booted once with the
+3. Firmware. The packaged firmware file must have the hash the manifest
+   pins. A package update would change the earliest measurements, and every
+   recording with them, without any other visible cause.
+4. Template. The firmware's empty variable store is booted once with the
    enrolment program, which writes the keys. The store after that boot is
    the template every recorded run starts from, so every recorded run is the
    second boot of the same store. Its hash must equal the manifest's.
@@ -19,13 +22,13 @@ the machine off itself.
 """
 import shutil
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
-from recorder import capture, enrol, keys, loader, pe, recording, staging, varstore
+from recorder import capture, enrol, keys, loader, pe, provenance, recording, staging, varstore
 from recorder.errors import KeysRefused, StagingRefused
-from recorder.runner import TEMPLATE_PATH
 from recorder.session import Clock, Limits, Machine, run_boot
+from recorder.staging import TEMPLATE_PATH
 
 EMPTY_STORE = Path("/usr/share/OVMF/OVMF_VARS_4M.fd")
 LOADER_SOURCE = Path(__file__).parent / "guest" / "loader.s"
@@ -38,7 +41,7 @@ class PrepareEnvironment:
 
     testkeys_directory: Path
     work_directory: Path
-    run: loader.RunCommand
+    run: provenance.RunCommand
     machine_factory: Callable[[Path, Path], Machine]
     clock: Clock
     limits: Limits
@@ -113,19 +116,23 @@ def prepare(env: PrepareEnvironment, generate_keys: bool = False) -> dict[str, s
     if new_keys:
         env.run(keys.sign_loader_command(env.testkeys_directory, unsigned, signed))
         # Pin the keys at once; the template hash is added after the enrolment boot.
-        keys.write_manifest(env.testkeys_directory, unsigned_digest, "")
+        keys.write_manifest(env.testkeys_directory, keys.Pins(
+            unsigned_digest, "", env.firmware.name, recording.sha256_of_file(env.firmware),
+            provenance.package_versions(provenance.KEY_TOOL_PACKAGES, env.run)))
         stale = env.work_directory / TEMPLATE_PATH
         stale.unlink(missing_ok=True)          # a template made with other keys is useless
     manifest = keys.verify(env.testkeys_directory)
-    if manifest["loader_authenticode_sha256"] != unsigned_digest:
+    pins = keys.pins_of(manifest)
+    if pins.loader_authenticode_sha256 != unsigned_digest:
         raise StagingRefused("this assembler and linker build a different loader than "
                              "the committed signed one; recordings would not be comparable")
+    staging.require_firmware(env.firmware, pins.firmware_sha256)
 
     template = _ensure_template(env)
     template_hash = recording.sha256_of_file(template)
-    if manifest["vars_template_sha256"] == "":
-        keys.write_manifest(env.testkeys_directory, unsigned_digest, template_hash)
-    elif manifest["vars_template_sha256"] != template_hash:
+    if pins.vars_template_sha256 == "":
+        keys.write_manifest(env.testkeys_directory, replace(pins, vars_template_sha256=template_hash))
+    elif pins.vars_template_sha256 != template_hash:
         template.unlink()
         raise StagingRefused("the enrolment boot produced a different variable store than the "
                              "committed manifest records; the template was discarded")
@@ -133,5 +140,6 @@ def prepare(env: PrepareEnvironment, generate_keys: bool = False) -> dict[str, s
         "loader_authenticode_sha256": unsigned_digest,
         "signed_loader_sha256": recording.sha256_of_file(signed),
         "vars_template_sha256": template_hash,
+        "firmware_sha256": pins.firmware_sha256,
         "keys": "generated" if new_keys else "verified",
     }

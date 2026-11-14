@@ -1,7 +1,14 @@
-"""Collect what a reader needs to reproduce a run: tool versions and hashes.
+"""Facts about the host a run depends on: tool versions and the system's name.
 
-The date of a recording is never read here. It is passed in by the caller,
-so that no function that builds compared fields also looks at the clock.
+Only what a run actually uses is reported, because every value here is a
+compared field: two normal runs must agree on it. Tools that were used once
+to create the committed key set are listed separately (`KEY_TOOL_PACKAGES`)
+and recorded in the key manifest, where they are a fixed fact.
+
+Versions are read with `dpkg-query`, so this module works on Debian and
+Ubuntu only. The date of a recording is never read here. It is passed in by
+the caller, so that no function that builds compared fields also looks at
+the clock.
 """
 import base64
 import hashlib
@@ -13,15 +20,22 @@ from pathlib import Path
 
 from recorder.errors import ToolMissing
 
+# Runs a command and returns its output; raises `ToolMissing` if it fails.
+RunCommand = Callable[[list[str]], str]
+
 # Name shown in the recording -> the distribution package that provides it.
+# These are the packages every run uses.
 PACKAGES: dict[str, str] = {
     "qemu": "qemu-system-x86",
     "ovmf": "ovmf",
     "swtpm": "swtpm",
-    "tpm2-tools": "tpm2-tools",
+    "binutils": "binutils",
+}
+# Used once, to create the committed key set and sign the loader.
+KEY_TOOL_PACKAGES: dict[str, str] = {
+    "openssl": "openssl",
     "sbsigntool": "sbsigntool",
     "efitools": "efitools",
-    "binutils": "binutils",
 }
 # Needed for every preparation and every run.
 REQUIRED_PROGRAMS: tuple[str, ...] = ("qemu-system-x86_64", "swtpm", "timeout", "as", "ld")
@@ -51,32 +65,42 @@ def require_programs(programs: tuple[str, ...] = REQUIRED_PROGRAMS,
         raise ToolMissing("these programs are not installed: " + ", ".join(missing))
 
 
-def tool_versions(run: Callable[[list[str]], str] = run_command) -> dict[str, str]:
-    """Package versions as the package manager reports them, plus the Python version."""
+def package_versions(packages: dict[str, str], run: RunCommand = run_command) -> dict[str, str]:
+    """Versions of the given packages as the package manager reports them."""
     versions: dict[str, str] = {}
-    for name, package in PACKAGES.items():
+    for name, package in packages.items():
         try:
             versions[name] = run(["dpkg-query", "-W", "-f=${Version}", package]).strip()
         except ToolMissing:
             versions[name] = _NOT_REPORTED
+    return versions
+
+
+def tool_versions(run: RunCommand = run_command) -> dict[str, str]:
+    """Versions of the packages every run uses, plus the Python version."""
+    versions = package_versions(PACKAGES, run)
     versions["python"] = platform.python_version()
     return versions
 
 
 def host_os(release_file: Path = Path("/etc/os-release")) -> str:
-    """The operating system's own name for itself, for example 'Ubuntu 24.04.1 LTS'."""
+    """The operating system's name and release number, for example 'Ubuntu 24.04'.
+
+    The point release ('24.04.5') is left out on purpose: it changes with
+    ordinary updates that do not touch anything a run uses, and this value
+    is a compared field.
+    """
+    fields: dict[str, str] = {}
     try:
         for line in release_file.read_text(encoding="utf-8").splitlines():
-            if line.startswith("PRETTY_NAME="):
-                return line.split("=", 1)[1].strip().strip('"')
+            key, separator, value = line.partition("=")
+            if separator:
+                fields[key] = value.strip().strip('"')
     except OSError:
-        pass
-    return platform.system()
-
-
-def sha256_file(path: Path) -> str:
-    """SHA-256 of a file's bytes, as lowercase hex."""
-    return hashlib.sha256(path.read_bytes()).hexdigest()
+        return platform.system()
+    if "NAME" in fields and "VERSION_ID" in fields:
+        return f"{fields['NAME']} {fields['VERSION_ID']}"
+    return fields.get("NAME") or platform.system()
 
 
 def certificate_fingerprint(pem_text: str) -> str:
