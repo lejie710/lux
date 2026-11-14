@@ -11,6 +11,7 @@ repository. This script turns them into what the site ships:
   src/assets/masks/<part>.webp   one soft mask per part of the board
   src/assets/masks/whole.webp    one soft mask of the whole board, for the stop where every part is lit
   src/assets/parts.json          where each part lies on the board, as fractions of the plate
+  public/og.jpg                  the picture a link to the site is previewed with, 1200 x 630
 
 The two pictures of the machine before power are lifted on the way: their
 midtones and lit edges are raised so the machine reads as an object on an
@@ -22,15 +23,19 @@ A stop's picture is not a file. The page stacks board-awake over board-dark
 once per part, each copy cut out by that part's mask, and fades the copies in.
 Because every stop is made from the same two plates, parts never move.
 
-Usage: python tools/make_assets.py <folder with the source plates>
-Needs Pillow. Run from the site folder.
+The preview picture is composed from the same plates: the laptop before power
+on the left, the same laptop with its screen lit on the right, and the name of
+the site. It carries no other words.
+
+Usage: python tools/make_assets.py <folder with the source plates> [--preview-only]
+Needs Pillow. Run from the site folder. With --preview-only, only public/og.jpg is written.
 """
 
 import json
 import sys
 from pathlib import Path
 
-from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageStat
+from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageFont, ImageStat
 
 PLATE = (2400, 1500)
 BOARD_OUT = (1920, 1200)
@@ -120,10 +125,54 @@ def part_mask(polygon: list[tuple[int, int]], feather: int = FEATHER) -> Image.I
     return mask
 
 
+PREVIEW = (1200, 630)
+# Fonts tried in turn for the name on the preview picture; the last resort is the one Pillow carries.
+NAME_FONTS = ("segoeuib.ttf", "arialbd.ttf", "DejaVuSans-Bold.ttf")
+
+
+def name_font(size: int) -> ImageFont.ImageFont:
+    for name in NAME_FONTS:
+        try:
+            return ImageFont.truetype(name, size)
+        except OSError:
+            continue
+    return ImageFont.load_default(size)
+
+
+def preview(plates: Path, dark: Image.Image) -> Image.Image:
+    """The link preview: the laptop before power, the same laptop awake, and the name. No other words."""
+    picture = Image.new("RGB", PREVIEW, (0, 0, 0))
+    height = 470
+    size = (round(height * LAPTOP_OUT[0] / LAPTOP_OUT[1]), height)
+    fade = edge_fade(LAPTOP_OUT, 56).convert("RGB")
+    awake = on_black(plates / "lux-laptop-awake.png")
+    for laptop, left in ((dark, -8), (awake, PREVIEW[0] - size[0] + 8)):
+        cut = ImageChops.multiply(laptop.crop(LAPTOP_BOX).resize(LAPTOP_OUT, Image.LANCZOS), fade)
+        # Lighter of the two where they overlap, so neither laptop's black margin covers the other.
+        layer = Image.new("RGB", PREVIEW, (0, 0, 0))
+        layer.paste(cut.resize(size, Image.LANCZOS), (left, PREVIEW[1] - height - 20))
+        picture = ImageChops.lighter(picture, layer)
+    draw = ImageDraw.Draw(picture)
+    # The mark: a lens of light in a dark disc, as in the navigation bar. Then the name.
+    cx, cy, r = 86, 84, 26
+    draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=(21, 21, 23), outline=(58, 58, 62))
+    lens = Image.new("L", PREVIEW, 0)
+    lens_draw = ImageDraw.Draw(lens)
+    lens_draw.ellipse((cx - 19, cy - 9, cx + 19, cy + 9), fill=255)
+    picture.paste((255, 227, 173), mask=lens.filter(ImageFilter.GaussianBlur(0.8)))
+    draw.text((cx + r + 18, cy), "Lux", font=name_font(58), fill=(244, 242, 236), anchor="lm")
+    return picture
+
+
 def main() -> None:
-    if len(sys.argv) != 2:
+    arguments = [a for a in sys.argv[1:] if a != "--preview-only"]
+    if len(arguments) != 1:
         raise SystemExit(__doc__)
-    plates = Path(sys.argv[1])
+    plates = Path(arguments[0])
+    if "--preview-only" in sys.argv:
+        preview(plates, lifted(plates, "laptop-dark")).save("public/og.jpg", quality=88, optimize=True)
+        print(f"public/og.jpg  {PREVIEW}  {Path('public/og.jpg').stat().st_size} bytes")
+        return
     out = Path("src/assets")
     (out / "masks").mkdir(parents=True, exist_ok=True)
 
@@ -159,7 +208,9 @@ def main() -> None:
         }
     (out / "parts.json").write_text(json.dumps(boxes, indent=2) + chr(10), encoding="utf-8", newline=chr(10))
 
-    for path in sorted(out.rglob("*.webp")):
+    preview(plates, laptops["laptop-dark"]).save("public/og.jpg", quality=88, optimize=True)
+
+    for path in sorted([*out.rglob("*.webp"), Path("public/og.jpg")]):
         print(f"{path.as_posix()}  {Image.open(path).size}  {path.stat().st_size} bytes")
 
 

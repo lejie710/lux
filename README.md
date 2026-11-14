@@ -18,7 +18,7 @@ This repository holds three parts: **the recorder**, **the content**, and **the 
 | `recordings/comparisons/` | The seven comparison files those statements come from: each normal run against its repeat, and each pilot against `normal-1` |
 | `content/` | The site's words as five JSON files in one shape: seven stops, the experiments section, the sources and the glossary. `content/README.md` describes the shape |
 | `scripts/check_content.py` | Checks the content against the committed recordings and the rules in `content/README.md`. Standard library only |
-| `site/` | The site: React, TypeScript and Vite, no other runtime package. Built so far: the navigation, the opening, the move inside the machine, all seven stops with one step per screen of the content, the ending, and the evidence panel of every screen. It reads its words from `content/` and writes none of its own. `site/ASSETS.md` says how each picture was made |
+| `site/` | The site: React, TypeScript and Vite, no other runtime package. Three pages: the story (the opening, the move inside the machine, all seven stops with one step per screen of the content, the ending, and a strip of the seven stops after it), the experiments, and the sources, each screen with its evidence panel. It reads its words from `content/` and writes none of its own; what has been run, compared and scored it reads from `recordings/`, `predictions/` and the score files. `site/ASSETS.md` says how each picture was made |
 | `predictions/` | Four predictions, committed before any of their experiments was run: the boot order in two forms, and one byte of the loader's signature with Secure Boot on and off. **None of the four has been run** |
 | `docs/DESIGN.md` | Module boundaries, the four file formats (recording, comparison, prediction, score), the decisions and their costs |
 | `docs/COUNTED.md` | How each counted experiment is staged, what was booted to prepare them (normal runs and preparation boots only), and how each is to be run, once |
@@ -42,8 +42,23 @@ The page opens at `http://127.0.0.1:5183/`. `npm test`, `npm run build` and `npm
 | `/?static` | Every step as a still section, one under the other. A reader who prefers reduced motion gets this without asking |
 | `/?step=N` | The story frozen at step N, counted from 0 (the opening) to the last screen of stop 7, with nothing to scroll. Add `&evidence` to open that step's evidence |
 | `/#step-N` | The scrolled story, landed on step N. The seven marks at the foot of a stop lead to the first step of each stop this way |
+| `/#overview` | The strip after the story: the seven stops as seven small boards, each leading to its stop |
+| `/#/experiments` | The experiments: the question and the measure, the two runs side by side, a card per other experiment, and what the specification leaves open |
+| `/#/sources` | The sources: what was read or run, what was not read and what that costs, the limits, the glossary with a filter, one recording's provenance block, and what the project is |
+| `/#/experiments/<section>` | A page landed on one of its sections, named by the screen's `id` in the content (on the sources page also `read`, `not-read`, `limits`, `glossary`, `provenance`). Add `/evidence` to open that section's evidence, or `/<card>/evidence` for one card's |
 
-The site's tests render pages to HTML without a browser. They check the step-to-picture mapping for every step, that every screen of the content has what a scene needs and that its evidence panel shows every claim, line, record and register the content names, the two address switches and the evidence panel's key and focus rules. They do not prove motion, layout or focus in a real window; those were checked by eye in one Chromium browser.
+The experiments page shows what is on disk when the site is built, and nothing it is told elsewhere. A card belongs to the recording whose `run.experiment` is the card's `id`, or that `id` with a suffix (`boot-order-same` for `boot-order`). With no recording it says "Not yet run"; with a recording of a pilot, "Pilot", with the outcome, the registers that differ and the first differing record from the comparison file; with a prediction file, the number of rows and, behind the control, every row with its basis label; with a score file (format `lux-score/1`, looked for in `results/`, `recordings/scores/` and `recordings/<run>/score.json`), "Scored" and the two numbers. The headline score on the first screen is the sum over the score files, and the content's own sentence until there is one.
+
+### Hosting
+
+Every page lives after the hash sign of one address, so a static host needs no rule for any address. `npm run build` writes `dist/` with relative paths, which works under any folder, and a `404.html` that leads back to the start. Two optional settings, read from the environment or from a `.env` file:
+
+| Setting | Use |
+|---|---|
+| `LUX_BASE` | The folder the site is served from, for example `/lux/`. Asset paths and the link in `404.html` then start there |
+| `LUX_SITE_URL` | The full public address. Link previews need an absolute address for their picture (`og.jpg`); without this setting the tag holds a relative one |
+
+The site's tests render pages to HTML without a browser. They check the experiments page with nothing on file, with a pilot and with a score, the comparison laid out from the committed files, the sources page against the content, the addresses of the pages, the step-to-picture mapping for every step, that every screen of the content has what a scene needs and that its evidence panel shows every claim, line, record and register the content names, the two address switches and the evidence panel's key and focus rules. They do not prove motion, layout or focus in a real window; those were checked by eye in one Chromium browser.
 
 ## How a run is trusted
 
@@ -248,7 +263,7 @@ python3 scripts/check_content.py
 Expected last lines:
 
 ```
-content check: 5 files, 28 screens, 322 claims, 81 claims uefi-required, 26 claims uefi-platform, 19 claims tcg-unread, 38 claims this-firmware, 143 claims recording, 15 claims general, 10 recordings, 59 glossary entries
+content check: 5 files, 28 screens, 327 claims, 81 claims uefi-required, 26 claims uefi-platform, 19 claims tcg-unread, 38 claims this-firmware, 148 claims recording, 15 claims general, 10 recordings, 59 glossary entries
 content check: passed, no problems
 ```
 
