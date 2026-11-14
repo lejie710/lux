@@ -187,3 +187,21 @@ The picture `dist/og.jpg` is in the build and is 1200 x 630.
 **An absolute address for the preview picture can only be set once a public address exists.** A build made with `LUX_SITE_URL` set to a placeholder address and `LUX_BASE=/lux/` was checked: `og:image` then holds the absolute address of `og.jpg`, `og:url` and the canonical link appear, the asset paths start with `/lux/`, and the link in `404.html` leads to `/lux/`. That shows the mechanism, not a working preview: no preview service has fetched the page, because there is no page to fetch. After publication, the address should be opened in a fresh browser profile and checked with a link-preview inspector.
 
 The tags are also pinned by a test: `Pages.test.tsx`, "previews a link with a picture, a title and a description".
+
+## 8. A run from a fresh clone
+
+The repository was cloned into a new, empty folder at commit `dc52dbe`, and the README's test commands were followed there, on Windows 11 with Python 3.12.10 and Node.js 24.22.0.
+
+| Step | Result |
+|---|---|
+| `git clone`, then `git status` | A clean tree |
+| `python -m unittest discover -s recorder/tests -t .` | `Ran 368 tests in 32.282s`, `OK (skipped=6)` |
+| `python scripts/check_content.py` | `content check: passed, no problems` |
+| `npm test` in `site/` | `Test Files  9 passed (9)`, `Tests  329 passed (329)` |
+| `npm run build` in `site/` | type check passed, `built in` under one second |
+| `npm run format:check` in `site/` | `All matched files use Prettier code style!` |
+| `git status` afterwards | Still a clean tree: the checks change no tracked file |
+
+**One step of the README was not followed as written.** `npm ci` was not run in the clone, because nothing was to be downloaded or installed while this document was written. The installed packages were copied from the working tree, where they had been installed from the same `package-lock.json`. So the clone proves that the committed files are enough to test and build the project; it does not prove that `npm ci` succeeds from the lock file on a clean machine. That step is the first thing the hosted workflow will show.
+
+Also not done in the clone: `npm run dev` was not started there, because its fixed port was in use by the working tree's own server, on which the pages in section 4 were checked; and the recorder's `prepare` and `record` were not run there, because the clone was on the Windows side. In the working tree, under WSL, the suite with the virtual machine passed on the same commit (section 3).
