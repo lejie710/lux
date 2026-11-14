@@ -1,5 +1,7 @@
 # The counted experiments, before they are run
 
+> **Since this note was written, each of the four has been booted once.** `docs/RESULTS.md` holds the result. Below this box the note stands as it was before the runs, so every "has not been booted" and "does not exist yet" describes that moment. One command differs from what was done: the scores were written to `recordings/scores/<experiment>.json`, not to `results/`.
+
 Four counted experiments have a committed prediction: `boot-order-same`, `boot-order-different`, `signature-byte` and `signature-byte-off`. **None of them has been booted.** This note says how each is staged, what was booted to get that far, and how each is to be run, once. It was written together with the predictions and before any counted run. The decisions behind it are D6, D7 and D8 in `docs/DESIGN.md`.
 
 ## What was booted for this, and what was not

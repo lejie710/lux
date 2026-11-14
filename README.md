@@ -15,16 +15,30 @@ This repository holds three parts: **the recorder**, **the content**, and **the 
 | `recordings/e2` | A **pilot**: one content byte of the loader changed, Secure Boot on. The firmware refused it. It differs from the normal run in TPM registers 4, 5 and 7 and in no other register |
 | `recordings/e1`, `e4`, `e5` | The three other **pilots**, described under "Pilots and counted experiments" and in `docs/PILOTS.md` |
 | `recordings/normal-two-same-1`, `-2`, `recordings/normal-two-different-1`, `-2` | The normal runs of the boot order experiments: two boot entries added, in the original order, each form recorded twice. Each pair is identical on every compared field. They differ from `normal-1` in register 1 and in no other register |
-| `recordings/comparisons/` | The seven comparison files those statements come from: each normal run against its repeat, and each pilot against `normal-1` |
+| `recordings/boot-order-same-1`, `boot-order-different-1`, `signature-byte-1`, `signature-byte-off-1` | The four **counted** runs, each booted once after its prediction was committed |
+| `recordings/comparisons/` | The eleven comparison files those statements come from: each normal run against its repeat, and each pilot and each counted run against its normal run |
+| `recordings/scores/` | One score file per counted run, format `lux-score/1`: every row of the prediction, held or not, and the two numbers |
 | `content/` | The site's words as five JSON files in one shape: seven stops, the experiments section, the sources and the glossary. `content/README.md` describes the shape |
 | `scripts/check_content.py` | Checks the content against the committed recordings and the rules in `content/README.md`. Standard library only |
 | `site/` | The site: React, TypeScript and Vite, no other runtime package. Three pages: the story (the opening, the move inside the machine, all seven stops with one step per screen of the content, the ending, and a strip of the seven stops after it), the experiments, and the sources, each screen with its evidence panel. It reads its words from `content/` and writes none of its own; what has been run, compared and scored it reads from `recordings/`, `predictions/` and the score files. `site/ASSETS.md` says how each picture was made |
-| `predictions/` | Four predictions, committed before any of their experiments was run: the boot order in two forms, and one byte of the loader's signature with Secure Boot on and off. **None of the four has been run** |
+| `predictions/` | Four predictions, committed before any of their experiments was run: the boot order in two forms, and one byte of the loader's signature with Secure Boot on and off. Each has since been run once; the files are unchanged since their runs |
 | `docs/DESIGN.md` | Module boundaries, the four file formats (recording, comparison, prediction, score), the decisions and their costs |
-| `docs/COUNTED.md` | How each counted experiment is staged, what was booted to prepare them (normal runs and preparation boots only), and how each is to be run, once |
+| `docs/COUNTED.md` | How each counted experiment is staged, what was booted to prepare them (normal runs and preparation boots only), and how each is run, once. Written before the runs |
+| `docs/RESULTS.md` | The result: every row of every counted run with what was expected and what was observed, the two numbers, the pilots apart, and the limits |
 | `docs/MUTATION_CHECKS.md` | Seven rules broken on purpose, and the tests that failed |
 
-There is no result yet for the question above. The numbers it asks for (specification-required behaviours met, open behaviours predicted correctly) come from counted experiments. Four of them now have a committed prediction, and none has been run.
+## The result so far
+
+Four counted experiments were each booted once, after their prediction was committed. **This firmware met 6 of 6 specification-required behaviours, and 72 of 72 open behaviours were predicted correctly. There was no mismatch.**
+
+| Counted experiment | Specification-required rows met | Open rows predicted correctly |
+|---|---|---|
+| `signature-byte` | 1 of 1 | 17 of 17 |
+| `signature-byte-off` | 1 of 1 | 18 of 18 |
+| `boot-order-same` | 2 of 2 | 18 of 18 |
+| `boot-order-different` | 2 of 2 | 19 of 19 |
+
+The numbers count rows, and rows are not independent: the six required rows cover four behaviours, and most open rows predicted that this firmware would repeat what a normal run or a pilot had already shown. `signature-byte-off` changes two things against its normal run and is secondary; without it the numbers are 5 of 5 and 54 of 54. An early research test had already changed a boot order on another configuration, which bears on three boot order rows. `docs/RESULTS.md` gives every row and these limits in full.
 
 ## The site
 
@@ -85,14 +99,14 @@ The measure of this project is a prediction committed **before** an experiment i
 
 All four were tried in the early research, with other tooling and a throwaway key set, and all four have since been recorded with this recorder, from the same variable store template as the normal run. They stay pilots: no prediction, no score. `docs/PILOTS.md` gives the first differing event of each, why each register differs, and what the recordings do not show.
 
-A **counted** experiment is one that has never been run. There are five:
+A **counted** experiment is one that had never been run when its prediction was committed. There are five:
 
 | Counted experiment | The one thing changed | Compared with | Prediction |
 |---|---|---|---|
-| `boot-order-same` | `BootOrder` lists boot entry B before entry A; both entries hold the same signed loader | `normal-two-same-1` | committed, not run |
-| `boot-order-different` | The same change; entry B holds a second signed loader | `normal-two-different-1` | committed, not run |
-| `signature-byte` | One byte inside the signature value of the loader, Secure Boot on | `normal-1` | committed, not run |
-| `signature-byte-off` | The same byte, Secure Boot switched off | `normal-1` | committed, not run |
+| `boot-order-same` | `BootOrder` lists boot entry B before entry A; both entries hold the same signed loader | `normal-two-same-1` | committed, then run once: `boot-order-same-1` |
+| `boot-order-different` | The same change; entry B holds a second signed loader | `normal-two-different-1` | committed, then run once: `boot-order-different-1` |
+| `signature-byte` | One byte inside the signature value of the loader, Secure Boot on | `normal-1` | committed, then run once: `signature-byte-1` |
+| `signature-byte-off` | The same byte, Secure Boot switched off | `normal-1` | committed, then run once: `signature-byte-off-1` |
 | `rebuilt-firmware` | Firmware rebuilt with one driver changed | `normal-1` | none; no such firmware has been built |
 
 The recorder refuses to run a counted experiment unless all of this holds:
@@ -116,7 +130,7 @@ The boot order experiments need a machine with two boot entries, so they have no
 - **One machine, one set of tool versions.** The recordings have been reproduced on the machine that made them. Another QEMU version, machine type or firmware package may give other register values; the recorder then says so instead of producing a recording that looks comparable.
 - **Event type names are tool names.** They are the names `tpm2_eventlog` prints, not citations of a specification. The Trusted Computing Group document that defines the event log has not been read for this project yet.
 - **The story stops assigned to events are this project's own mapping**, declared rule by rule in `recorder/storymap.py`.
-- **The counted experiments have never been booted**, not even in part. What is known about their staging comes from normal runs, from preparation boots and from tests that boot nothing; `docs/COUNTED.md` says exactly what.
+- **Each counted experiment was booted once.** Before its run, no changed configuration had been booted, in whole or in part; what was known about the staging came from normal runs, from preparation boots and from tests that boot nothing. One early research test had changed a boot order on another configuration. `docs/COUNTED.md` says exactly what, and `docs/RESULTS.md` what the single runs showed. A single run says nothing about how often a changed run repeats.
 - **The loader does not read `BootCurrent`.** The boot order predictions say what UEFI expects it to hold, and no recording can show it.
 - **The pilots edit the variable store file while the machine is off.** `e5` writes the revocation record directly and not through a signed update, so it shows how this firmware treats a list that is there, not how it treats an update.
 - **The test keys are public.** See `recorder/testkeys/README.md`. Never trust them anywhere.
@@ -166,7 +180,7 @@ If your tools build a different loader or a different template, or your firmware
 
 ### 2. Record a run
 
-The names `normal-1`, `normal-2`, `e1`, `e2`, `e4`, `e5` and the four that begin with `normal-two-` are the committed recordings. They are evidence, and `record` refuses to write over an existing name. So use names of your own:
+The names `normal-1`, `normal-2`, `e1`, `e2`, `e4`, `e5`, the four that begin with `normal-two-` and the four counted runs are the committed recordings. They are evidence, and `record` refuses to write over an existing name. So use names of your own:
 
 ```
 python3 -m recorder record my-normal --experiment normal
@@ -194,14 +208,14 @@ $ python3 -m recorder record blind --experiment rebuilt-firmware --for-the-recor
 refused: experiment 'rebuilt-firmware' is counted and must not run: no prediction file rebuilt-firmware.json exists
 ```
 
-**The four experiments that have a committed prediction are not refused for that reason any more.** For them `record` boots the changed configuration, and that boot is the counted run. So `record` asks for the words `--for-the-record` before it starts any counted experiment, and without them it refuses at once:
+**The four experiments that have a committed prediction are not refused for that reason.** For them `record` boots the changed configuration, and that boot is the counted run. All four have had theirs, under the names `<experiment>-1`. So `record` asks for the words `--for-the-record` before it starts any counted experiment, and without them it refuses at once:
 
 ```
 $ python3 -m recorder record blind --experiment signature-byte
 refused: experiment 'signature-byte' is counted: it is booted once, for the record. Pass --for-the-record when this boot is meant to be that one run
 ```
 
-Do not add those words to try the command out. `docs/COUNTED.md` says how each counted run is made, once.
+Do not add those words to try the command out. `docs/COUNTED.md` says how each counted run is made, once. A run of your own, under another name or in another folder, is a repetition and not the counted run.
 
 ### 3. Compare
 
@@ -240,7 +254,7 @@ mismatches: continues, pcr1
 written: results/ID.json
 ```
 
-**Exit code 0 means "scored", not "every row held".** A mismatch is a result and is listed by row; it is not an error. Exit code 1 means the score was refused: the comparison does not belong to that recording or baseline, the prediction was edited after the run or names another baseline recording, or the two normal runs are not identical. The file written with `--out` has the format `lux-score/1` (`docs/DESIGN.md` section 6.1) and is what a site would load for the two headline numbers.
+**Exit code 0 means "scored", not "every row held".** A mismatch is a result and is listed by row; it is not an error. Exit code 1 means the score was refused: the comparison does not belong to that recording or baseline, the prediction was edited after the run or names another baseline recording, or the two normal runs are not identical. The file written with `--out` has the format `lux-score/1` (`docs/DESIGN.md` section 6.1) and is what the site loads for the two headline numbers. The committed scores are in `recordings/scores/`.
 
 ## Tests
 
@@ -251,7 +265,7 @@ python3 -m unittest discover -s recorder/tests -t .
 Expected last lines (the time varies):
 
 ```
-Ran 358 tests in 40.680s
+Ran 366 tests in 40.680s
 
 OK (skipped=6)
 ```
@@ -262,7 +276,7 @@ The unit tests need no virtual machine; they were also run with Python 3.12 on W
 LUX_VM_TESTS=1 python3 -m unittest discover -s recorder/tests -t .
 ```
 
-It boots the normal run twice and the normal run with two boot entries once (about thirty seconds in total), asserts that the agreement gate passed, that the two runs are equal on every compared field, that a fresh run equals the committed `normal-1`, that a fresh two-entry run equals the committed `normal-two-same-1`, and that no process is left running. It never boots a changed run. Expected: `Ran 358 tests`, `OK`.
+It boots the normal run twice and the normal run with two boot entries once (about thirty seconds in total), asserts that the agreement gate passed, that the two runs are equal on every compared field, that a fresh run equals the committed `normal-1`, that a fresh two-entry run equals the committed `normal-two-same-1`, and that no process is left running. It never boots a changed run. Expected: `Ran 366 tests`, `OK`.
 
 The content has its own check, which the unit tests also run:
 
@@ -273,7 +287,7 @@ python3 scripts/check_content.py
 Expected last lines:
 
 ```
-content check: 5 files, 28 screens, 327 claims, 81 claims uefi-required, 26 claims uefi-platform, 19 claims tcg-unread, 38 claims this-firmware, 148 claims recording, 15 claims general, 10 recordings, 59 glossary entries
+content check: 5 files, 28 screens, 327 claims, 81 claims uefi-required, 26 claims uefi-platform, 19 claims tcg-unread, 38 claims this-firmware, 148 claims recording, 15 claims general, 14 recordings, 59 glossary entries
 content check: passed, no problems
 ```
 

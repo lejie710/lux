@@ -32,9 +32,11 @@ is expected there, where the expectation comes from (one of four labels),
 and a reason. `not_scored` lists what is expected and cannot be checked from
 a recording.
 
-**None of these four experiments has been run.** `docs/COUNTED.md` says how
-each is staged, what was booted to prepare them (normal runs and preparation
-boots only), and how each is to be run, once. A prediction is never edited
-after its run; a row that does not hold is reported as a mismatch.
+**Each of these four experiments has been run once, after its file was
+committed.** `docs/COUNTED.md` says how each was staged and what was booted
+to prepare them (normal runs and preparation boots only), and
+`docs/RESULTS.md` holds the result. A prediction is never edited after its
+run, so these files stay as they are; a row that does not hold is reported
+as a mismatch.
 
 `rebuilt-firmware` has no prediction, so the recorder still refuses it.

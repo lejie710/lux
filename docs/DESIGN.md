@@ -500,11 +500,11 @@ The pilots `e1`, `e4` and `e5` were staged by tests only when this section was f
 - The firmware reads a `SecureBootEnable` switch that was set to 0 in the store file while the machine was off (`e1`, `e4`).
 - The firmware reads, measures and enforces a `dbx` record appended to the store file directly (`e5`). The record was not written through a signed update, so the recording says nothing about how the firmware treats such an update.
 
-### Predicted and not yet run
+### Predicted, then run once
 
-Four counted experiments have a committed prediction: `boot-order-same`, `boot-order-different`, `signature-byte` and `signature-byte-off`. None of them has been booted, staged for a boot or tried in part. `docs/COUNTED.md` says how each is staged, what was booted to get there (normal runs and preparation boots only), and how each is to be run once. The two points that were open here are settled:
+Four counted experiments have a committed prediction: `boot-order-same`, `boot-order-different`, `signature-byte` and `signature-byte-off`. Until its prediction was committed, none of them had been booted, staged for a boot or tried in part. Each has since been booted once, and `docs/RESULTS.md` holds the scores (`recordings/scores/`). `docs/COUNTED.md` says how each was staged and what was booted to get there (normal runs and preparation boots only). The two points that were open here were settled before the runs:
 
-- The boot order is written by the firmware in a preparation boot, into a store with two boot entries (D6). What is proven about that staging comes from the original order: the two-entry normal runs boot entry A, repeat, and pass the agreement gate. That the same code works for the changed order is proven by tests with fakes and by the check on the two store files, not by a boot.
+- The boot order is written by the firmware in a preparation boot, into a store with two boot entries (D6). What is proven about that staging comes from the original order: the two-entry normal runs boot entry A, repeat, and pass the agreement gate. Before the counted runs, that the same code works for the changed order was proven by tests with fakes and by the check on the two store files, not by a boot.
 - The signature byte is chosen: byte 128 of the signature value (D8).
 
 `rebuilt-firmware` has no prediction and no firmware file, and stays refused.
