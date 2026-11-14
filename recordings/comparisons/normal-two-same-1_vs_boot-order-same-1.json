@@ -1,0 +1,182 @@
+{
+  "baseline": {
+    "experiment": "normal-two-same",
+    "kind": "normal",
+    "recording_sha256": "1dcd310e75d7bcccd55c3c56b33a1ff8a0d5a59389aec8f36eabeb92a02dcde9",
+    "run": "normal-two-same-1"
+  },
+  "changed": {
+    "experiment": "boot-order-same",
+    "kind": "counted",
+    "recording_sha256": "6b4ffac17532c11a106a34d59af0c1c8e048e15e1bffbd358e328582d1fa4573",
+    "run": "boot-order-same-1"
+  },
+  "console_first_differing_line": 1,
+  "console_first_differing_text": {
+    "baseline": "BdsDxe: loading Boot0002 \"Lux entry A\" from \\EFI\\LUX\\A.EFI",
+    "changed": "BdsDxe: loading Boot0003 \"Lux entry B\" from \\EFI\\LUX\\B.EFI"
+  },
+  "events_only_in_baseline": [
+    {
+      "digest_sha256": "6fefab5c7f39cab95876143225a19b4674e522a12ff9f80b64c841f50fe9fe30",
+      "index": 14,
+      "pcr": 1,
+      "type": "EV_EFI_VARIABLE_BOOT"
+    }
+  ],
+  "events_only_in_changed": [
+    {
+      "digest_sha256": "af165fc35b8a79bd6a5146f7dd669e7004c22a81cce51c81c5df5ae29fe0651d",
+      "index": 14,
+      "pcr": 1,
+      "type": "EV_EFI_VARIABLE_BOOT"
+    }
+  ],
+  "first_differing_event": {
+    "baseline": {
+      "digest_sha256": "6fefab5c7f39cab95876143225a19b4674e522a12ff9f80b64c841f50fe9fe30",
+      "pcr": 1,
+      "type": "EV_EFI_VARIABLE_BOOT"
+    },
+    "changed": {
+      "digest_sha256": "af165fc35b8a79bd6a5146f7dd669e7004c22a81cce51c81c5df5ae29fe0651d",
+      "pcr": 1,
+      "type": "EV_EFI_VARIABLE_BOOT"
+    },
+    "index": 14,
+    "stop": 5
+  },
+  "format": "lux-comparison/1",
+  "identical": false,
+  "loader_report_first_differing_line": null,
+  "other_fields_differing": [
+    "event_log.sha256",
+    "provenance.boot_order",
+    "provenance.vars_template_sha256",
+    "vars_after_sha256"
+  ],
+  "outcome": {
+    "baseline": "accepted",
+    "changed": "accepted"
+  },
+  "pcrs_differing": {
+    "sha1": [
+      1
+    ],
+    "sha256": [
+      1
+    ],
+    "sha384": [
+      1
+    ],
+    "sha512": [
+      1
+    ]
+  },
+  "pcrs_same": {
+    "sha1": [
+      0,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23
+    ],
+    "sha256": [
+      0,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23
+    ],
+    "sha384": [
+      0,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23
+    ],
+    "sha512": [
+      0,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23
+    ]
+  },
+  "refusal_lines": {
+    "baseline": [],
+    "changed": []
+  }
+}
