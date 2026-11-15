@@ -173,10 +173,11 @@ button {
   position: absolute;
   left: 0;
   right: 0;
-  top: calc(var(--nav) + 1cqh);
+  /* Some air between the navigation and the lid, and between the base and the title. */
+  top: calc(var(--nav) + 5cqh);
   margin-inline: auto;
   width: auto;
-  height: min(60cqh, 66cqw, 100cqh - var(--nav) - 1cqh - var(--title-block));
+  height: min(54cqh, 62cqw, 100cqh - var(--nav) - 5cqh - 24px - var(--title-block));
   transform-origin: 50% 74%;
   transition:
     transform 1.3s var(--ease),
