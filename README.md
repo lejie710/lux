@@ -409,6 +409,6 @@ Names of specifications, standards bodies and software projects belong to their 
 
 Not published. The intended repository name is `lux`, under the GitHub account `lejie710`; there is no live demo, and the site runs locally only. Its last screen links on to the earlier site, Nox, at https://lejie710.github.io/nox/, where the story of the running machine continues.
 
-**No licence has been chosen for this repository.** Until a licence file is added, the usual default applies: all rights are reserved, and this README's description of how to re-run the recorder is not a grant of any right. The firmware, virtual machine and TPM programs it drives are separate projects under their own licences.
+Licence: the software is under the MIT License (see [LICENSE](LICENSE)). That licence covers the code only: the explanatory text shown on the site and the images are not part of the grant. The images are generated illustrations, not photographs of real products or places. Text and images are copyright 2026 Le Jie Tan, all rights reserved. Quote them with a link, but do not republish them. The recordings are output of the firmware, virtual machine and TPM programs the recorder drives; those are separate projects under their own licences, listed above.
 
 A personal project based on public specifications. Not affiliated with or endorsed by any employer or vendor.
