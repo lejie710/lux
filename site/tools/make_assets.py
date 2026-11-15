@@ -83,6 +83,10 @@ LIFT = {
     },
 }
 
+# The laptop with its screen lit is taken from the picture in which the light under the keys is turned
+# down, so that on the last screen the lit display is the brightest thing in view.
+SOURCE = {"laptop-awake": "laptop-awake-calm"}
+
 # The lid of the laptop, in source pixels: the box its rim lies in, and the glass inside the rim.
 LID_BOX = (570, 296, 1830, 986)
 GLASS = [(610, 334), (1790, 334), (1768, 972), (632, 972)]
@@ -185,7 +189,7 @@ def lifted(plates: Path, name: str, lid: bool = False) -> Image.Image:
     """A picture lifted, with its measurements printed. With `lid`, the laptop's lid gets its own lift as well."""
     setting = dict(LIFT[name])
     box = setting.pop("box")
-    before = on_black(plates / f"lux-{name}.png")
+    before = on_black(plates / f"lux-{SOURCE.get(name, name)}.png")
     after = lift(before, **setting)
     if lid:
         after = lid_lift(after)
@@ -245,7 +249,7 @@ def preview(plates: Path, dark: Image.Image) -> Image.Image:
     size = (round(height * LAPTOP_OUT[0] / LAPTOP_OUT[1]), height)
     fade = edge_fade(LAPTOP_OUT, EDGE_FADE).convert("RGB")
     setting = {key: value for key, value in LIFT["laptop-awake"].items() if key != "box"}
-    awake = lift(on_black(plates / "lux-laptop-awake.png"), **setting)
+    awake = lift(on_black(plates / f"lux-{SOURCE['laptop-awake']}.png"), **setting)
     for laptop, left in ((dark, -8), (awake, PREVIEW[0] - size[0] + 8)):
         cut = ImageChops.multiply(laptop.crop(LAPTOP_BOX).resize(LAPTOP_OUT, Image.LANCZOS), fade)
         # Lighter of the two where they overlap, so neither laptop's black margin covers the other.

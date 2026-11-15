@@ -336,21 +336,9 @@ button {
     top: calc(var(--nav) + 4.4cqh);
   }
 }
-/* The light under the keys is part of both pictures of this laptop. As the screen lights, a shade over the
-   lower part of the picture, from the hinge down, turns that light down with it: the page behind is black, so
-   the shade only dims. The lit screen is then the brightest thing in view. */
-.ending::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(transparent 59%, rgba(0, 0, 0, 0.5) 65%, rgba(0, 0, 0, 0.6));
-  opacity: 0;
-  transition: opacity 0.6s ease;
-}
-.ending[data-dawn="true"]::after {
-  opacity: 1;
-  transition: opacity 2.4s ease 0.9s;
-}
+/* The picture with the screen lit is one in which the light under the keys is already turned down, so as it
+   fades in over the picture before it, that light goes down by itself and the lit screen is the brightest
+   thing in view. No shade is laid over it. */
 
 /* The words of a step, over the picture. The block does not fade as one: its parts do, each at its own
    time. The statement comes first and soon; the line of evidence follows it, as proof follows a claim. */
