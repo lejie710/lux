@@ -319,18 +319,20 @@ button {
   opacity: 1;
   transition: opacity 2.4s ease 0.9s;
 }
-/* Where there is room, a tall and wide stage, the laptop of the ending is the largest picture of the story,
-   also under a supporting line: the words above it are set smaller and leave it the room. */
-@container (min-height: 800px) and (min-aspect-ratio: 5 / 4) {
+/* Where there is room, a tall and wide stage, the laptop of the last screen is the largest picture of the
+   story, also under its supporting line: the words above it are set smaller and leave it the room. Only the
+   last screen: there the light under the keys is turned down as the laptop grows. The experiment screen
+   before it keeps the smaller laptop, clear of its label and of a two-line evidence line. */
+@container (min-height: 800px) and (min-aspect-ratio: 3 / 2) {
   .ending {
     top: 33cqh;
     height: min(55cqh, 72cqw);
   }
-  .ending[data-low="true"][data-on="true"] {
+  .ending[data-low="true"][data-on="true"][data-dawn="true"] {
     transform: none;
   }
-  /* The words over it start a little higher, so a supporting line stands clear of the laptop's lid. */
-  .words-stop[data-view^="laptop"] .head {
+  /* The words of the last screen start a little higher, so the way on stands clear of the laptop's lid. */
+  .words-stop:has(.aside-handover) .head {
     top: calc(var(--nav) + 4.4cqh);
   }
 }
