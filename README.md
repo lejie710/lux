@@ -103,7 +103,7 @@ npm ci
 npm run dev
 ```
 
-`npm ci` ends with a line like `added 47 packages, and audited 48 packages in 13s`. Open `http://127.0.0.1:5183/`. There is no live demo: the site has only been run locally.
+`npm ci` prints a line like `added 47 packages, and audited 48 packages in 7s` (the time varies), then a note on funding and `found 0 vulnerabilities`. Open `http://127.0.0.1:5183/`. There is no live demo: the site has only been run locally.
 
 The port is fixed, and the command stops with `Port 5183 is already in use` when something else holds it. Then name another one, and open that address:
 
@@ -372,7 +372,7 @@ site/                the site: React, TypeScript and Vite
 |---|---|
 | [`docs/ENGINEERING.md`](docs/ENGINEERING.md) | The entry point: purpose and requirements, the architecture of the whole system, two operations traced end to end, the file formats, the decisions, operating guidance |
 | [`docs/VERIFICATION.md`](docs/VERIFICATION.md) | Acceptance checks mapped to tests, the failures most likely to hurt a reader, test counts, what was checked by eye, defects found, the release assessment |
-| [`docs/FRESH_CLONE_RUN.md`](docs/FRESH_CLONE_RUN.md) | This README followed in a new clone: what was typed, what came back, what it found, and which steps were repeated after the README was corrected |
+| [`docs/FRESH_CLONE_RUN.md`](docs/FRESH_CLONE_RUN.md) | This README followed in a new clone: what was typed, what came back, what it found, which steps were repeated after the README was corrected, and a third clone in which the packages were installed and the site's commands and the checks that boot nothing were typed |
 | [`docs/RESULTS.md`](docs/RESULTS.md) | Every row of every counted run, the two numbers and their limits |
 | [`docs/DESIGN.md`](docs/DESIGN.md) | The recorder's modules, the four file formats and decisions D1 to D8 |
 | [`docs/PILOTS.md`](docs/PILOTS.md), [`docs/COUNTED.md`](docs/COUNTED.md), [`docs/MUTATION_CHECKS.md`](docs/MUTATION_CHECKS.md) | The pilots as recorded; how the counted experiments were staged; nine rules broken on purpose |

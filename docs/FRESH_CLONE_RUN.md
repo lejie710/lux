@@ -1,8 +1,8 @@
 # A run from a fresh clone, following the README
 
-The repository was cloned into a new, empty folder outside the project at commit `b3222a5`, and `README.md` was followed in its own order, typing what it says. This file records what was typed, what came back, and every place where the README was wrong, incomplete, ambiguous or assumed something it does not state. Nothing in the repository was changed to make a step pass. Sections 1 to 5 are that run as it was. Section 6 records what was corrected in the README afterwards and which steps were then typed again in a second new clone.
+The repository was cloned into a new, empty folder outside the project at commit `b3222a5`, and `README.md` was followed in its own order, typing what it says. This file records what was typed, what came back, and every place where the README was wrong, incomplete, ambiguous or assumed something it does not state. Nothing in the repository was changed to make a step pass. Sections 1 to 5 are that run as it was. Section 6 records what was corrected in the README afterwards and which steps were then typed again in a second new clone. Section 7 records a third new clone, at commit `2d2c5ba`, in which `npm ci` was run and the site's commands and the checks that boot nothing were typed in the clone itself.
 
-Both runs were made on 2026-11-15. No counted experiment was booted. The first clone and both work directories were deleted afterwards. The second clone is a folder outside the repository that nothing depends on.
+All three runs were made on 2026-11-15. No counted experiment was booted. The first and the third clone and both work directories were deleted afterwards. The second clone is a folder outside the repository that nothing depends on.
 
 ## 1. Result in one table
 
@@ -123,6 +123,68 @@ The README was corrected in commit `89fa143` for findings F1 to F10; two numbers
 
 In the working tree at the same commit: `npm test` gave `Test Files  9 passed (9)`, `Tests  329 passed (329)`; `npm run build` gave 936.94 kB, gzip 185.68 kB, the chunk warning and `built in`; `npm run format:check` gave `All matched files use Prettier code style!`.
 
-**What this second pass is not.** It is not a complete run from start to end in one clone. `npm ci` was not repeated, because nothing was downloaded for it, so the site's commands were run in the working tree and not in the second clone. The default port 5183 was again not seen. Taken together, every step of the corrected README has been typed and has matched, either in a new clone or, for the site's commands, in the working tree at the same commit; a single pass that does all of it in one new clone has not been made.
+**What this second pass is not.** It is not a complete run from start to end in one clone. `npm ci` was not repeated, because nothing was downloaded for it, so the site's commands were run in the working tree and not in the second clone. The default port 5183 was again not seen. Taken together, every step of the corrected README has been typed and has matched, either in a new clone or, for the site's commands, in the working tree at the same commit; a single pass that does all of it in one new clone has not been made. Section 7 closes the first of these gaps: there `npm ci` and every site command were run in one new clone.
 
 Boots made by the second pass: the enrolment boots of `prepare`, the three recordings above, and the three normal runs of `test-with-vm.sh`. All are normal runs or the pilot `e2`. Afterwards no virtual machine, no software TPM and no guest memory file was left.
+
+## 7. A third clone: the packages installed, the site and the offline checks in one clone
+
+The repository was cloned a third time, from the local repository into a new, empty folder outside it, at commit `2d2c5ba`, on the machine of section 2. Before anything was installed the clone's `site/` folder held no `node_modules/` and no `dist/`. Nothing was copied into the clone. This run exists because the second pass had not repeated `npm ci`.
+
+### 7.1 Environment
+
+| Item | Version |
+|---|---|
+| Windows | Windows 11, version 10.0.26100.9711 |
+| Node.js, npm | 24.22.0, 11.19.1 |
+| Python on Windows | 3.12.10, as `python`; `python3` still prints `Python was not found` |
+| git on Windows | 2.54.0.windows.1, `core.autocrlf=true` |
+| Browser for the screenshot | Microsoft Edge 157.0.4341.42, headless, window 1440 x 900 |
+| WSL distribution | Ubuntu 24.04.5 LTS under WSL 2, kernel 6.18.33.2-microsoft-standard-WSL2, commands run as root |
+| Python, git in WSL | 3.12.3, 2.43.0 |
+
+### 7.2 What was typed and what came back
+
+On Windows, from the clone's `site/` folder:
+
+| Command | Output | Against the README |
+|---|---|---|
+| `npm ci` | `added 47 packages, and audited 48 packages in 7s`, `15 packages are looking for funding`, `found 0 vulnerabilities`. The packages came from the public npm registry, as the lock file pins them; `node_modules/` was 101 MB afterwards | The line the README quotes came back, with 7 seconds where it said 13. It is not the last line, which the README said it was (finding F12) |
+| `npm run dev` | `Error: Port 5183 is already in use` | Equal to the message the README quotes: another process on the machine, not part of the clone, held the port |
+| `npm run dev -- --port 5200` | Server started; `http://127.0.0.1:5200/` answered 200 with the title `Lux: what your laptop does before it wakes` | The README's own example uses port 5191; 5200 was chosen for this run. One screenshot of `/` shows the opening the README's first picture describes: the dark laptop, "Lux", "Before light.", "What your laptop does before it wakes.", "Scroll to follow one boot", the three links of the navigation and the note "Illustration, not a real product. The evidence is the recording." |
+| `npm test` | `Test Files  9 passed (9)`, `Tests  331 passed (331)` | Equal |
+| `npm run build` | `index-*.js 936.99 kB`, `gzip: 185.69 kB`, the warning that a chunk is larger than 500 kB, `built in 586ms`; 17 font files in `dist/assets` | Equal to what the README describes: 936 kB, 186 kB, 17 font files |
+| `npm run format:check` | `All matched files use Prettier code style!` | Equal |
+| `npm run preview -- --port 5201` | The built site answered 200 with the same title and served `og.jpg` | As the README's "Hosting" section says, on another port than its example. No screenshot was taken of it |
+
+On Windows, from the clone's root, with `python` as the README says for Windows:
+
+| Command | Output | Against the README |
+|---|---|---|
+| `python scripts/check_content.py` | `content check: 5 files, 28 screens, 354 claims, 85 claims uefi-required, 28 claims uefi-platform, 21 claims tcg-unread, 38 claims this-firmware, 167 claims recording, 15 claims general, 14 recordings, 59 glossary entries`, `content check: passed, no problems` | Equal, both lines |
+| `python -m unittest discover -s recorder/tests -t .` | `Ran 368 tests in 32.777s`, `OK (skipped=6)` | Equal, apart from the time |
+
+Under WSL, as root, from the clone's root on the Windows drive, the two commands of the README's "4. Check the committed scores":
+
+| Command | Output | Against the README |
+|---|---|---|
+| `python3 -m recorder compare recordings/normal-1/recording.json recordings/signature-byte-1/recording.json --out scratch/my-comparison.json` | `identical: false`, `registers differing (sha256): [4, 5, 7]`, `written: scratch/my-comparison.json`, exit 0 | Equal, all three lines. The command made the folder `scratch/` itself |
+| `python3 -m recorder check scratch/my-comparison.json --prediction predictions/signature-byte.json --recording recordings/signature-byte-1/recording.json --baseline recordings/normal-1/recording.json --repeat recordings/comparisons/normal-1_vs_normal-2.json` | `specification-required rows met: 1 of 1`, `open rows predicted correctly: 17 of 17`, `mismatches: none`, exit 0 | Equal, all three lines |
+
+`git status` in the clone was clean after all of this, with `node_modules/`, `dist/` and `scratch/` on disk. Both servers were stopped, and the clone was deleted.
+
+### 7.3 Finding
+
+| # | Kind | What the README said | What happened |
+|---|---|---|---|
+| F12 | Small mismatch | "`npm ci` ends with a line like `added 47 packages, and audited 48 packages in 13s`" | That line is followed by a note on funding and by `found 0 vulnerabilities`, so it is not the end of the output, and it took 7 seconds here. The README now says "prints a line like", gives 7 seconds, says the time varies and names the two lines that follow |
+
+### 7.4 What this third run does not show
+
+- **Nothing was booted.** `prepare`, the three recordings, the refusal of a counted experiment, the two comparisons of step 3 and `bash scripts/test-with-vm.sh` were not typed in this clone. They were last typed in the second clone (section 6), at commit `89fa143`.
+- **Not one pass of the whole README in one clone.** The first run was that, against the README before its corrections. With this run every part of the corrected README has matched in a new clone, the booting steps in the second and everything else in the third; no single clone has done both.
+- **Not the default port.** The same other process held 5183, so the site was seen on 5200 and 5201 only.
+- **Not a cold package cache.** Whether npm fetched all 47 packages over the network in this run or took some from its cache on this machine was not looked at.
+- **Not a second machine, not another Node.js or npm version, not the hosted workflow.**
+- **One still screenshot of one address.** No scrolling, no keyboard, no other page, no other browser.
+- **The unit tests under WSL and the content check under WSL** were not repeated in this clone; both ran on Windows.
