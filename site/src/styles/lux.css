@@ -361,8 +361,7 @@ button {
   pointer-events: auto;
 }
 .words > .head,
-.words-opening > *,
-.foot > .pill {
+.words-opening > * {
   opacity: 0;
   transform: translateY(10px);
   transition:
@@ -377,21 +376,18 @@ button {
     opacity 0.45s ease 0.18s,
     transform 0.6s var(--ease) 0.18s;
 }
-.words[data-on="true"] > .foot > .pill {
-  opacity: 1;
-  transform: none;
-  transition:
-    opacity 0.4s ease 0.5s,
-    transform 0.5s var(--ease) 0.5s;
-}
-/* The control and the rail are the same things at every step. The control of one step dissolves into the
-   next one's with no wait between them, and the rail is swapped, so neither is ever gone from the foot. */
+/* The evidence line and the control that opens it stay in place: the pair of the step before is seen until
+   the pair of this step dissolves over it, a beat after the statement, so the foot is never empty. The rail
+   is the same thing at every step and is swapped. */
+.foot > .pill,
 .foot > .open-evidence {
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.2s ease 0.4s;
 }
+.words[data-on="true"] > .foot > .pill,
 .words[data-on="true"] > .foot > .open-evidence {
   opacity: 1;
+  transition: opacity 0.3s ease 0.4s;
 }
 .foot > .rail {
   opacity: 0;
@@ -647,6 +643,32 @@ button {
   padding: 0 16px;
   border-radius: 22px;
   background: rgba(10, 10, 11, 0.86);
+}
+/* In a window wide enough for one row, the evidence line and the control that opens it are one capsule: the
+   line is its left part and the control its right, as tall as the line when the line takes two. */
+@media (min-width: 761px) {
+  .foot {
+    align-items: stretch;
+    column-gap: 0;
+  }
+  .foot .pill {
+    border-radius: 22px 0 0 22px;
+  }
+  .foot .open-evidence {
+    margin-right: 14px;
+    border: 1px solid var(--line);
+    border-left: 0;
+    border-radius: 0 22px 22px 0;
+    text-decoration: none;
+  }
+  /* Beside evidence that does not exist the control has the same dashed edge. */
+  .foot .pill-missing + .open-evidence {
+    border-style: dashed;
+    border-color: rgba(255, 255, 255, 0.26);
+  }
+  .foot .rail {
+    align-self: flex-end;
+  }
 }
 .rail {
   display: flex;
