@@ -2,7 +2,7 @@
 
 _What your laptop does before it wakes: one boot of open-source UEFI firmware, told from reset to the moment firmware hands the machine over and recorded from the firmware's first measurement on, and what happens when one thing in that chain is changed._
 
-![The opening screen of the site: a laptop before power, dark, with the words "Lux. Before light. What your laptop does before it wakes." and an invitation to scroll.](docs/images/opening.png)
+![The opening screen of the site: a laptop before power, dark, with the words "Lux. Before light. What your laptop does before it wakes." and an invitation to scroll that names the author: "An explainer of the UEFI boot by Le Jie Tan, from public specifications and one recorded boot".](docs/images/opening.png)
 
 ## The question
 
@@ -66,7 +66,7 @@ What this project does not show, stated so that nobody has to find out.
 
 Not tested, and carried here from `docs/VERIFICATION.md`:
 
-- **No automated test opens a browser.** The site's tests render pages to HTML. Motion, layout and focus were checked by eye and by a scripted drive in one Chromium-based browser at 1440 x 900, 430 x 932, 390 x 844 and 375 x 812. Firefox, Safari, a physical phone, a phone held sideways, a window under 600 px tall and a screen reader have not been tested.
+- **No automated test opens a browser.** The site's tests render pages to HTML. Motion, layout and focus were checked by eye and by a scripted drive in one Chromium-based browser at 1440 x 900, 430 x 932, 390 x 844 and 375 x 812. Firefox, Safari, a physical phone, a phone held sideways, a window under 600 px tall, a screen with a device pixel ratio above 1 and a screen reader have not been tested. Motion was judged by the timing a script read and by the author's own scrolling, not by a second person.
 - **The hosted workflow has never run.** `.github/workflows/check.yml` was written for a hosted runner and has only been reasoned about; every command in it passes locally.
 - **There is no live demo.** The site has been run locally only, and link previews have not been checked against a public address.
 - **Process cleanup when the virtual machine is killed from outside** is covered by the integration test and a script, not by a unit test.
@@ -86,7 +86,7 @@ Not tested, and carried here from `docs/VERIFICATION.md`:
 
 ## What the site shows
 
-![Stop 6 of 7, "Load and verify": the statement "Before the loader runs, firmware checks who signed it", a lit circuit board, one line from the recording (PCR 7, EV_EFI_VARIABLE_AUTHORITY, "variable db, 851 data bytes") and the control "Open the evidence".](docs/images/stop-6.png)
+![Stop 6 of 7, "Load and verify": the statement "Before the loader runs, firmware checks who signed it", a circuit board whose lit parts rest at half their light, one line from the recording (PCR 7, EV_EFI_VARIABLE_AUTHORITY, "variable db, 851 data bytes") and the control "Open the evidence".](docs/images/stop-6.png)
 
 - **The story**: the opening, the way inside the machine, and seven stops from power and reset to the handoff, in 22 steps. A screen holds one statement, one line copied from a recording, a citation marker and "Open the evidence". Behind that control are the console lines, the log records with their digests, the register values, every claim with its basis label and source, the terms, and what the recording does not show.
 - **The experiments**: the two numbers as the score files have them, with what they do not show directly under them; the normal run and a changed run side by side; a card per pilot and per counted experiment; and what the specification leaves open.
@@ -305,7 +305,7 @@ python3 -m unittest discover -s recorder/tests -t .
 ```
 
 ```
-Ran 373 tests in 26.215s
+Ran 373 tests in 35.466s
 
 OK (skipped=6)
 ```
@@ -339,7 +339,7 @@ npm run format:check
 
 ```
  Test Files  9 passed (9)
-      Tests  333 passed (333)
+      Tests  335 passed (335)
 ```
 
 `npm run build` prints a line that contains `built in`, and a warning that one chunk is larger than 500 kB. `npm run format:check` ends with `All matched files use Prettier code style!`.
@@ -407,7 +407,7 @@ Names of specifications, standards bodies and software projects belong to their 
 
 ## Status and licence
 
-Not published. The intended repository name is `lux`, under the GitHub account `lejie710`; there is no live demo, and the site runs locally only. Its last screen links on to the earlier site, Nox, at https://lejie710.github.io/nox/, where the story of the running machine continues.
+Made by Le Jie Tan, who is named on the site's opening screen in the same place and form as on the earlier site. Not published. The intended repository name is `lux`, under the GitHub account `lejie710`; there is no live demo, and the site runs locally only. Its last screen links on to the earlier site, Nox, at https://lejie710.github.io/nox/, where the story of the running machine continues.
 
 Licence: the software is under the MIT License (see [LICENSE](LICENSE)). That licence covers the code only: the explanatory text shown on the site and the images are not part of the grant. The images are generated illustrations, not photographs of real products or places. Text and images are copyright 2026 Le Jie Tan, all rights reserved. Quote them with a link, but do not republish them. The recordings are output of the firmware, virtual machine and TPM programs the recorder drives; those are separate projects under their own licences, listed above.
 
