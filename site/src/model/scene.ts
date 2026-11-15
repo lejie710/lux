@@ -77,6 +77,11 @@ export interface PartLayer {
   order: number;
   /** Whether this step is about the part: it is lit a little more strongly. */
   strong: boolean;
+  /**
+   * Whether the part is lit but is not what this step is about: its light is turned down, so the part the
+   * step is about is the one warm point of the picture. Nothing rests once the whole board is lit.
+   */
+  rest: boolean;
 }
 
 export interface Layers {
@@ -97,21 +102,25 @@ export interface Layers {
  */
 export function layersAt(step: SceneStep): Layers {
   const parts = {} as Record<Part, PartLayer>;
+  const all = PARTS.every((part) => step.lit.includes(part));
+  // A board step that is about some of its parts, while the boot is still under way, turns the others down.
+  const rationed = step.view === "board" && step.attention.length > 0 && !all;
   for (const part of PARTS) {
     const on = step.lit.includes(part);
+    const strong = on && step.view === "board" && step.attention.includes(part);
     parts[part] = {
       on,
       order: on ? Math.max(0, step.newlyLit.indexOf(part)) : 0,
-      strong: on && step.view === "board" && step.attention.includes(part),
+      strong,
+      rest: on && !strong && rationed,
     };
   }
-  const all = PARTS.every((part) => parts[part].on);
   return {
     laptop: step.view === "laptop-dark",
     board: step.view === "board",
     ending: step.view === "laptop-inside" || step.view === "laptop-awake",
     screenLit: step.view === "laptop-awake",
-    whole: { on: all, order: all ? step.newlyLit.length : 0, strong: false },
+    whole: { on: all, order: all ? step.newlyLit.length : 0, strong: false, rest: false },
     parts,
   };
 }

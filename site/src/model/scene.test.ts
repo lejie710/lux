@@ -18,6 +18,7 @@ import {
 
 const litParts = (n: number) => PARTS.filter((part) => layersAt(STEPS[n]).parts[part].on);
 const strongParts = (n: number) => PARTS.filter((part) => layersAt(STEPS[n]).parts[part].strong);
+const restingParts = (n: number) => PARTS.filter((part) => layersAt(STEPS[n]).parts[part].rest);
 const at = (id: string) => STEPS.findIndex((step) => step.id === id);
 const storyScreens = STOPS.flatMap((s) => s.screens);
 
@@ -136,6 +137,26 @@ describe("the layers a step shows", () => {
     expect(strongParts(at("s6-verify"))).toEqual(["security"]);
     expect(strongParts(at("s6-load"))).toEqual(["storage"]);
     for (let n = 0; n < STEP_COUNT; n++) for (const part of strongParts(n)) expect(litParts(n)).toContain(part);
+  });
+
+  it("turns down the lit parts a step is not about, so the part it is about is the one warm point", () => {
+    const verify = at("s6-verify");
+    expect(restingParts(verify)).toEqual(litParts(verify).filter((part) => part !== "security"));
+    expect(restingParts(verify).length).toBeGreaterThan(0);
+    for (let n = 0; n < STEP_COUNT; n++) {
+      // A part rests only while it is lit, never while the step is about it, and only on the board.
+      for (const part of restingParts(n)) expect(litParts(n)).toContain(part);
+      expect(restingParts(n).filter((part) => strongParts(n).includes(part))).toEqual([]);
+      if (STEPS[n].view !== "board") expect(restingParts(n)).toEqual([]);
+    }
+  });
+
+  it("rests nothing once the whole board is lit: the last board step is the brightest of the story", () => {
+    const lastBoard = STEPS.map((step) => step.view).lastIndexOf("board");
+    expect(litParts(lastBoard)).toEqual([...PARTS]);
+    expect(restingParts(lastBoard)).toEqual([]);
+    expect(layersAt(STEPS[lastBoard]).whole).toMatchObject({ on: true, rest: false });
+    for (let n = 0; n < STEP_COUNT; n++) if (layersAt(STEPS[n]).whole.on) expect(restingParts(n)).toEqual([]);
   });
 
   it("lights the ground between the parts only once every part is lit", () => {

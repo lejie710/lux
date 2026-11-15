@@ -100,7 +100,8 @@ export function Stage({ current, solo = false, anchors = true, onOpen, onStep }:
 
 /**
  * The light of one part: a copy of the awake picture cut out by the part's mask, and over it a second copy
- * that adds a little more light while the step is about that part.
+ * that adds a little more light while the step is about that part. A lit part the step is not about rests:
+ * its light is turned down.
  */
 function Light({ name, layer, solo }: { name: string; layer: PartLayer; solo: boolean }) {
   const style = {
@@ -110,7 +111,9 @@ function Light({ name, layer, solo }: { name: string; layer: PartLayer; solo: bo
   } as CSSProperties;
   return (
     <>
-      {(layer.on || !solo) && <div className="lit" data-part={name} data-on={layer.on} style={style} />}
+      {(layer.on || !solo) && (
+        <div className="lit" data-part={name} data-on={layer.on} data-rest={layer.rest} style={style} />
+      )}
       {name !== "whole" && (layer.strong || !solo) && (
         <div className="glow" data-part={name} data-on={layer.strong} style={style} />
       )}

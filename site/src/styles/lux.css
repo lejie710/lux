@@ -239,6 +239,12 @@ button {
   opacity: 1;
   transition: opacity 1.9s ease calc(0.5s + var(--order) * 0.9s);
 }
+/* A lit part that this step is not about rests at half its light, so the part the step is about is the one
+   warm point of the picture. */
+.lit[data-on="true"][data-rest="true"] {
+  opacity: 0.5;
+  transition: opacity 1.2s ease;
+}
 /* The part a step is about gets a little more light: a second copy of the same cut-out, added on top. */
 .glow {
   position: absolute;
