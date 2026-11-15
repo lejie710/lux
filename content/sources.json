@@ -303,7 +303,7 @@
       "publisher": "UEFI Forum, Inc.",
       "url": "https://uefi.org/specs/UEFI/2.11/",
       "citation_line": "UEFI Specification, version 2.11. Copyright UEFI Forum, Inc. All rights reserved.",
-      "citation_line_note": "The copyright line is given as a citation. Its exact printed wording should be checked against the publisher's page before publication.",
+      "citation_line_note": "The copyright line is given as a citation. Its exact printed wording should be checked against the publisher's page. That check has not been made.",
       "rights": "All rights reserved. The publisher grants readers no licence to reproduce the text.",
       "how_used": "Paraphrased and cited by section, title and PDF page. No table or figure is reproduced. Page numbers are pages of the published PDF, not the numbers printed at the foot of a page.",
       "used_for": "What Secure Boot must do with a boot image, how the boot manager chooses a boot option, and what happens at the handoff to the loader.",
