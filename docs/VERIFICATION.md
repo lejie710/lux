@@ -61,12 +61,12 @@ The untested parts of rows 1, 2, 5, 7 and 8 are carried into the limits of the R
 | **Recorder: tests of the committed evidence** (recordings, comparisons, scores, predictions) | The published files, not only the code, must still follow from each other | 48 |
 | **Recorder: integration with real `git`** | The prediction gate sends real git commands; a fake only proves the answers | 3 |
 | **Recorder: integration with a real virtual machine** | Only a real boot shows that a normal run repeats on this machine | 6, skipped unless `LUX_VM_TESTS=1` |
-| **Site: unit tests of the model** (steps, experiment state, addresses, panel keys, the mark) | Complete state per step and the state of an experiment are plain data, testable without drawing anything | 92 |
+| **Site: unit tests of the model** (steps, experiment state, addresses, panel keys, the mark) | Complete state per step and the state of an experiment are plain data, testable without drawing anything | 95 |
 | **Site: the content and the recordings as the site loads them** | Guards the site's own reading of the files | 45 |
 | **Site: pages rendered to HTML, with no browser**, and the stylesheet read as text | Proves that a page shows what the content and the files hold, and no more | 198 |
 | **Browser-level, automated** | None. Motion, layout and focus need a real window; they were checked by a scripted drive and by eye, outside the test suite | 0 |
 
-Recorder total 373 (25 in `test_capture.py`, 48 in `test_check_content.py`, 28 in `test_committed_recordings.py`, 41 in `test_compare_prediction.py`, 65 in `test_counted_set.py`, 32 in `test_eventlog_gate.py`, 6 in `test_integration_vm.py`, 5 in `test_recorded_bytes.py`, 65 in `test_session_runner.py`, 50 in `test_staging.py`, 8 in `test_story_and_repository.py`). The split of the first three rows is by test class: `test_check_content.py` is the second row; `test_committed_recordings.py`, `test_recorded_bytes.py` and the classes `CommittedPredictions` and `TwoEntryNormalRuns` of `test_counted_set.py` are the third. Site total 335 in nine files.
+Recorder total 373 (25 in `test_capture.py`, 48 in `test_check_content.py`, 28 in `test_committed_recordings.py`, 41 in `test_compare_prediction.py`, 65 in `test_counted_set.py`, 32 in `test_eventlog_gate.py`, 6 in `test_integration_vm.py`, 5 in `test_recorded_bytes.py`, 65 in `test_session_runner.py`, 50 in `test_staging.py`, 8 in `test_story_and_repository.py`). The split of the first three rows is by test class: `test_check_content.py` is the second row; `test_committed_recordings.py`, `test_recorded_bytes.py` and the classes `CommittedPredictions` and `TwoEntryNormalRuns` of `test_counted_set.py` are the third. Site total 338 in nine files.
 
 Coverage was not measured as a number. The mutation checks do the work a coverage figure cannot: nine rules were broken on purpose on the final code, seven in the recorder, one in the content check and one in the site, and each break failed at least two tests (`MUTATION_CHECKS.md`).
 
@@ -84,21 +84,21 @@ Run on that commit, on one machine: Windows 11 with Python 3.12.10 and Node.js 2
 | Site build | `npm run build` | type check passed, `built in` under one second, one warning: a chunk larger than 500 kB |
 | Site format | `npm run format:check` | `All matched files use Prettier code style!` |
 
-The run with the virtual machine boots the plain normal run twice and the two-entry normal run once, and took about two minutes for the whole suite. No counted experiment and no pilot was booted for this document. The same commands were run again after the last change to the documents of that day and gave the same summary lines, apart from the times. The counts in this table are those of that commit: five recorder tests, four site tests and three claims were added afterwards.
+The run with the virtual machine boots the plain normal run twice and the two-entry normal run once, and took about two minutes for the whole suite. No counted experiment and no pilot was booted for this document. The same commands were run again after the last change to the documents of that day and gave the same summary lines, apart from the times. The counts in this table are those of that commit: five recorder tests, seven site tests and three claims were added afterwards.
 
 ### Last results
 
-Run after the last change to the site and the content (sections 9, 10 and 11), on the same machine, on Windows only:
+Run after the last change to the site and the content (sections 9 to 12), on the same machine, on Windows only:
 
 | Check | Command | Summary line |
 |---|---|---|
-| Recorder unit tests, Windows | `python -m unittest discover -s recorder/tests -t .` | `Ran 373 tests in 27.247s`, `OK (skipped=6)` |
+| Recorder unit tests, Windows | `python -m unittest discover -s recorder/tests -t .` | `Ran 373 tests in 31.480s`, `OK (skipped=6)` |
 | Content check | `python scripts/check_content.py` | `content check: 5 files, 28 screens, 357 claims, 85 claims uefi-required, 28 claims uefi-platform, 21 claims tcg-unread, 38 claims this-firmware, 170 claims recording, 15 claims general, 14 recordings, 59 glossary entries`, `content check: passed, no problems` |
-| Site tests | `npm test` | `Test Files  9 passed (9)`, `Tests  335 passed (335)` |
-| Site build | `npm run build` | type check passed, one script of 939.93 kB (gzip 186.46 kB), `built in` under one second, one warning: a chunk larger than 500 kB |
+| Site tests | `npm test` | `Test Files  9 passed (9)`, `Tests  338 passed (338)` |
+| Site build | `npm run build` | type check passed, one script of 939.97 kB (gzip 186.57 kB), `built in` under one second, one warning: a chunk larger than 500 kB |
 | Site format | `npm run format:check` | `All matched files use Prettier code style!` |
 
-**Not repeated after that change:** the recorder's unit tests under WSL and the suite with the virtual machine. The five tests added since read committed files only and boot nothing, so the README's expected `Ran 373 tests` for the suite with the virtual machine is the same test discovery with the six booting tests included; it was not run. The fresh-clone runs (`FRESH_CLONE_RUN.md`) and the mutation checks (`MUTATION_CHECKS.md`) were made before that change and were not repeated; each file states the counts of its own commit.
+**Not repeated after that change:** the recorder's unit tests under WSL and the suite with the virtual machine. The five tests added since read committed files only and boot nothing, so the README's expected `Ran 373 tests` for the suite with the virtual machine is the same test discovery with the six booting tests included; it was not run. The fresh-clone runs (`FRESH_CLONE_RUN.md`) and the mutation checks (`MUTATION_CHECKS.md`) were made before that change and were not repeated; each file states the counts of its own commit. The same offline commands also passed on a hosted runner, at two earlier commits (section 12).
 
 ## 4. What was looked at, and what was only checked by script
 
@@ -158,6 +158,7 @@ These were found by review, by a test or by driving the site. None was planted. 
 | 23 | In a wide window under about 1240 px across, the evidence capsule in the foot is two to four lines high and lay over the laptop of steps 15, 20 and 21: over the palm rest on the last step at 1024 x 768, over the whole keyboard on step 15 there, and over the palm rest on step 15 at 1180 x 820. The record of section 10 said that no final screenshot showed overlap | A closing audit that read the project's own shot of the last step at 1024 x 768 | In a window between 761 and 1240 px across the laptop of those steps is smaller and ends above the capsule, and smaller again when the window is at most 700 px high (commit `64c970a`) | No test: a judgement of the eye. Steps 15, 20 and 21 were shot again at thirteen window sizes and read; the measured edges are in section 11 |
 | 24 | On a card of the counted set at 1440 x 900 the value "1 and 4" broke into two lines beside its long label | The same audit | On a card a value does not shrink, so its label wraps beside it (commit `64c970a`) | No test. The counted set was shot again and read |
 | 25 | Three stale sentences and a dead link. The opening's evidence still said that the only changed run committed was a pilot and that no score was claimed; the sources page still said that no licence had been chosen and gave no licence for two tools that the README names; the link to the reset vector file on the firmware project's master branch answered "not found", because that branch has renamed the file | The same audit | The sentences say what is committed; the link leads to the tag `edk2-stable202402`, where the file has its name, and the page says so (commit `778bfa2`) | The content check passes before and after: it cannot see a stale explanation or a dead address. Read by hand; the tag's page was opened on 2026-11-15 |
+| 26 | From a middle step of the scrolled story the End key carries the page to its foot, and the stage could stay on the step the jump left behind: the last markers can pass the window's middle line between two observations, and the rule of defect 22 was applied to the first observation only. Seen on the live site: the page at its foot with the stage on stop 5 of 7, and in a second drive on the step before the last | The walk of the live site (section 12) | Whenever an observation has no marker on the middle line, the step is the last one whose marker starts above it (`stepShown` in `site/src/model/scene.ts`, used by `site/src/stage/useStepScroll.ts`; commit `8413843`) | `model/scene.test.ts`, three tests of `stepShown`. A scripted drive of a local build pressed End and then Home from five different steps, ten times in all, and landed on the last step and on the opening every time. The site's tests do not open a browser, so the observer itself is not under test |
 
 ### Open, known, not fixed
 
@@ -167,22 +168,22 @@ These were found by review, by a test or by driving the site. None was planted. 
 | O2 | A few status sentences in `content/experiments.json` repeat what the files show (for example the status of a counted card) | They are true and checked by reading. Nothing fails if one goes stale |
 | O3 | Process cleanup when QEMU is killed from outside is not covered by a unit test | It needs real processes. The integration test and `scripts/check-clean.sh` cover it |
 | O4 | `recorder/pe.py` names Microsoft's Authenticode format document as its method reference, while the site lists that document as not read | The digest is confirmed against what the firmware measured, and no claim on the site cites the document. The README says both |
-| O5 | The exact printed wording of the UEFI specification's copyright line has not been checked against the publisher's page | To be done before publication; noted in `content/sources.json` |
+| O5 | The exact printed wording of the UEFI specification's copyright line has not been checked against the publisher's page | It was not done before the site was published on 2026-11-15, and is still open; noted in `content/sources.json` |
 | O6 | Closed. The code is under the MIT License and the site's text and images are reserved (commit `2c82429`) | It was the owner's decision, and it is made |
 | O7 | The rule `load-verify` in `recorder/storymap.py` gives as its basis "present when the loader is accepted, absent when it is refused". The refused pilot `e5` has the authority record all the same | The rule's name and the stop it assigns are right, and `PILOTS.md` and the site state what `e5` shows. The sentence in the code was written before `e5` was recorded and was left as it is; `DESIGN.md` section 7 carries a note |
 
 ## 6. Release assessment
 
-**Implemented.** The recorder with its four commands; 14 committed recordings, 11 comparisons, 4 predictions and 4 scores; the content in five files; the content check; the site with the story in 22 steps, the experiments page, the sources page, the strip of seven stops and the evidence panel; build settings for a static host; link-preview tags and picture; a hosted workflow definition.
+**Implemented.** The recorder with its four commands; 14 committed recordings, 11 comparisons, 4 predictions and 4 scores; the content in five files; the content check; the site with the story in 22 steps, the experiments page, the sources page, the strip of seven stops and the evidence panel; build settings for a static host; link-preview tags and picture; two hosted workflows, one that checks and one that checks and publishes; the site published at `https://lejie710.github.io/lux/`.
 
-**Tested.** Everything in section 3, on one machine. The acceptance checks A1 to A20 pass. Nine rules were broken on purpose on the final code and each break was noticed. The normal runs were booted again for this document and equal the committed recordings. The README was followed in a new clone; three of its steps failed as written, the README was corrected, and those steps were typed again in a second new clone and matched; in a third new clone the packages were installed with `npm ci` and the site's commands, the content check, the unit tests and the making of one score were typed and matched, with nothing booted (section 8).
+**Tested.** Everything in section 3, on one machine. The acceptance checks A1 to A20 pass. Nine rules were broken on purpose on the final code and each break was noticed. The normal runs were booted again for this document and equal the committed recordings. The README was followed in a new clone; three of its steps failed as written, the README was corrected, and those steps were typed again in a second new clone and matched; in a third new clone the packages were installed with `npm ci` and the site's commands, the content check, the unit tests and the making of one score were typed and matched, with nothing booted (section 8). The check workflow passed on a hosted runner at two commits, the publishing workflow at one, and the published site was walked once in a fresh browser profile (section 12).
 
 **Simulated, and labelled as such.** The machine is a virtual machine under software emulation and the TPM is a program; both are named on the site and in every limit list. Power sequencing does not exist there, and stop 1 says "described, not recorded". Tests that drive a whole run use a fake machine that replays a normal boot; the scores those tests produce mean nothing and only the path is proven (`DESIGN.md` section 10). The fixtures in `recorder/tests/fixtures/` are real output of two boots, made with an earlier key set. The pictures are illustrations.
 
 **Unverified.**
 
-- **The hosted workflow.** `.github/workflows/check.yml` has never run on a hosted runner. It uses the official checkout, Python and Node.js setup actions by major version, and every command in it passes locally on Windows and in WSL. A hosted runner may still differ: another Node.js or npm patch version, `npm ci` on another system than the one it succeeded on, another git version for the three tests that use real git. Whether the three setup actions resolve at the versions the file names was not checked, because nothing was fetched.
-- **Publication.** Nothing is published. There is no public address, so no deployed page has been opened, and the previews of a pasted link have not been seen (section 7).
+- **The hosted runner, beyond three runs.** The two workflows have passed on one runner image at the commits section 12 names. Another Node.js or npm patch version, or a later version of an action taken by its major number, may still differ. The runner boots nothing, so it says nothing about the recordings.
+- **The live site, beyond one walk.** One Chromium-based desktop browser, one connection, one day, at commit `0fa1d15`. No preview service has fetched the page, the 13 links that lead to other sites were not requested, and the fix of defect 26 was driven on a local build only (section 12).
 - **Any second machine.** The recordings were reproduced only on the machine that made them, in every run from a new clone as well. The recorder refuses another firmware package; what another QEMU version does was not tried.
 - **Any browser but one**, any real phone, a screen with a device pixel ratio above 1, and a screen reader (section 4).
 - **Motion.** It was judged by the timing a script read and by the author's own scrolling. Frame rate was not measured, and no second person has scrolled the story (section 10).
@@ -190,7 +191,7 @@ These were found by review, by a test or by driving the site. None was planted. 
 - **What a Trusted Computing Group document or the Platform Initialization specification requires.** Neither was read. No statement on the site or in the results claims a requirement from either.
 - **That no counted configuration was ever booted before its prediction.** The history and one audit of the work directory say so; no mechanism proves it, and the audit's script and output are not in the repository (`RESULTS.md`, "Checked a second time", marks the rows a reader cannot repeat).
 
-**Assessment.** The evidence chain from a boot to a number on the page is implemented and tested end to end without a virtual machine, and the one link that needs a real boot, that a normal run repeats, was run again and holds. The result is honest only together with its caveats: four counted experiments, one run each, rows that are not independent, one firmware build in a virtual machine with a software TPM, and two documents unread. With those stated beside the numbers, as the README and the experiments page now do, the project is ready to be shown as a private repository. Before it is made public, one thing remains: the hosted workflow must run green once. The licence is chosen: the MIT License for the code, with the site's text and images reserved. The author has scrolled the story by hand; nobody else has.
+**Assessment.** The evidence chain from a boot to a number on the page is implemented and tested end to end without a virtual machine, and the one link that needs a real boot, that a normal run repeats, was run again and holds. The result is honest only together with its caveats: four counted experiments, one run each, rows that are not independent, one firmware build in a virtual machine with a software TPM, and two documents unread. Those are stated beside the numbers, in the README and on the experiments page. The hosted check workflow has passed, and the repository is public and the site live since 2026-11-15 (section 12). The licence is chosen: the MIT License for the code, with the site's text and images reserved. The author has scrolled the story by hand; nobody else has.
 
 ## 7. Link-preview metadata
 
@@ -208,7 +209,7 @@ Read from the built `site/dist/index.html`:
 
 The picture `dist/og.jpg` is in the build and is 1200 x 630.
 
-**An absolute address for the preview picture can only be set once a public address exists.** A build made with `LUX_SITE_URL` set to a placeholder address and `LUX_BASE=/lux/` was checked: `og:image` then holds the absolute address of `og.jpg`, `og:url` and the canonical link appear, the asset paths start with `/lux/`, and the link in `404.html` leads to `/lux/`. That shows the mechanism, not a working preview: no preview service has fetched the page, because there is no page to fetch. After publication, the address should be opened in a fresh browser profile and checked with a link-preview inspector.
+**An absolute address for the preview picture needs a public address.** Before there was one, a build made with `LUX_SITE_URL` set to a placeholder address and `LUX_BASE=/lux/` was checked: `og:image` then holds the absolute address of `og.jpg`, `og:url` and the canonical link appear, the asset paths start with `/lux/`, and the link in `404.html` leads to `/lux/`. That showed the mechanism. Since 2026-11-15 the published build carries the real address, and the tags were read as served from a fresh browser profile (section 12). It is still not a seen preview: no preview service has been asked to fetch the page.
 
 The tags are also pinned by a test: `Pages.test.tsx`, "previews a link with a picture, a title and a description".
 
@@ -228,7 +229,7 @@ What the three runs together still do not show:
 - **Not a cold package cache.** Whether `npm ci` fetched every package over the network in the third run or took some from npm's cache on this machine was not looked at.
 - **Not the default port.** In all three runs another process on the machine held port 5183, so the site was seen on ports 5191, 5200 and 5201 only. `npm run dev` printed the message the README quotes.
 - **Not a clean install of the Ubuntu packages, not an ordinary Linux user, not a second machine.**
-- **Not the hosted workflow.**
+- **Not the hosted workflow.** It ran afterwards (section 12).
 
 An earlier clone at commit `dc52dbe` ran only the test commands on Windows, with the installed packages copied from the working tree. The three runs above replace it.
 
@@ -281,7 +282,7 @@ Made on 2026-11-15 after section 9, in the commits `99c9865`, `40137be`, `a33764
 - **A physical phone.** The narrow sizes are windows of a desktop browser, not a device, and none was held sideways.
 - **A screen reader.** None was run. The spoken status line and the labels are tested as rendered HTML only.
 - **A device pixel ratio above 1.** Every screenshot was taken at a ratio of 1, so how the pictures and the hairlines look on a dense screen was not seen.
-- **The hosted check workflow.** `.github/workflows/check.yml` has never run (section 6).
+- **The hosted check workflow.** It had never run when this section was written. It has since (section 12).
 - **Not repeated after these changes:** the evidence panel's keys and focus in a browser, the pages and panels from top to bottom at the narrow sizes (only the opening and the last step were taken again there), the recorder's unit tests under WSL, the suite with the virtual machine, the fresh-clone runs and the mutation checks.
 - **The brightness of the new picture of the lit laptop** was not written into `site/ASSETS.md`; its table still holds the values of the first picture.
 
@@ -312,10 +313,57 @@ At 1440 x 900, 1366 x 768, 1280 x 720 and 1280 x 1024 the measured edges are the
 
 **Still unverified, or known and left.**
 
-- **Everything listed at the end of section 10** still holds.
+- **Everything listed at the end of section 10** still held when this section was written; the hosted workflow has run since (section 12).
 - **Between 761 and 1240 px across the laptop is small**: 324 px wide on step 15 at 1024 x 768, and 210 px wide at 1024 x 650. It is clear of the words and of the capsule; it is not the picture the wide window has.
 - **Under 650 px of height in such a window** the capsule and the laptop were not shot. A window under 600 px tall is untested, as before.
 - **At 1366 x 768 and 1280 x 720 the box of the laptop on step 15 ends 13 and 17 px below the top of the capsule.** The box is larger than the drawn laptop, and on the screenshots the two do not touch; that is a judgement of the eye, unchanged by this section.
 - **The five firmware source links to the master branch** loaded on 2026-11-15. A branch moves, so any of them may stop loading, as the sixth did.
 - **The address `https://uefi.org/specs/UEFI/2.11/`** refused the tool that fetched the others. It was not opened in a browser for this section.
 - **The fresh-clone runs, the mutation checks, the unit tests under WSL and the suite with the virtual machine** were not repeated after these changes.
+
+## 12. Publication and the live site
+
+On 2026-11-15, after section 11, the repository was made public at `https://github.com/lejie710/lux` and the site was published on GitHub Pages at `https://lejie710.github.io/lux/`. No experiment was run again, and no recording, prediction or score was touched. No runner boots a virtual machine or records a run.
+
+### The hosted runs
+
+Read from the repository's public list of workflow runs on 2026-11-15. Times are UTC.
+
+| Workflow | Commit | Started | Result |
+|---|---|---|---|
+| `Check` | `6dab704` | 10:56 | Passed: both jobs, every step |
+| `Check` | `0fa1d15` | 11:29 | Passed: both jobs, every step. The recorder job ran the unit tests and the content check; the site job ran `npm ci`, the format check, the build and the tests |
+| `Deploy`, first attempt | `0fa1d15` | 11:29 | **Failed.** The content check, `npm ci`, the format check, the tests and the build passed; the step `actions/configure-pages` failed, because Pages had not yet been switched on in the repository's settings. Nothing was uploaded or published |
+| `Deploy`, second attempt | `0fa1d15` | finished 11:33 | Passed, after the Pages source was set to "GitHub Actions". The index of the site as served was last modified at 11:33:47 |
+
+`.github/workflows/deploy.yml` was added in commit `0fa1d15`. It sets `LUX_BASE=/lux/` and `LUX_SITE_URL=https://lejie710.github.io/lux/`, the two settings of section 7.
+
+### The walk of the live site
+
+The published address was opened on the same day in a new, empty profile of one Chromium-based desktop browser, run headless, with no cache, no cookies and no storage: what a first visitor has. The windows were 1440 x 900 and a true 390 x 844 window with phone emulation. The scripts, the screenshots and the list of every request are not in the repository.
+
+| What | Result |
+|---|---|
+| The 22 steps by `?step=N`, one evidence panel, the first screens of the two pages and of the still page, at 1440 x 900 | Every screenshot was opened. Each is byte for byte equal to the screenshot of the same address taken from the local build |
+| The pages read from top to bottom, at 1440 x 900 and at 390 x 844 | No missing picture, no fallback font and no path that fails under `/lux/`. Both fonts report as loaded, every picture has its natural size, and every request answered 200 |
+| The scrolled story | The wheel passed all 22 steps in order and mirrored them on the way back. Page Down, Page Up, Space and Shift with Space each moved one step |
+| The End key | Found defect 26 (section 5). The published build has it until the commit that fixes it is published |
+| Addresses opened directly, then reloaded | 13 addresses, among them `#step-12`, `#overview`, `#/experiments/experiment-e2`, `#/sources/glossary`, `?step=12&evidence` and `?static`, landed where the README's table says, before and after the reload. An unknown path answers 404 with the site's own page and a link back |
+| The link to the earlier site | Leads to `https://lejie710.github.io/nox/`, which answered 200 |
+| The README's demonstration steps | Each address and each key of its table behaved on the live site as the table says |
+| The first load | 14 files, 658,416 bytes of body as sent (661,781 bytes on the wire in the browser, headers included) and 1,443,573 bytes uncompressed. The opening screen uses 284,700 bytes of that; the other 373,716 are the seven pictures of later steps, fetched in the background. The script is 182,202 bytes as sent, of 939,807. Scrolling the whole story asked for nothing more. The experiments page opened directly: 9 files, 374,799 bytes; the sources page: 7 files, 286,626 bytes. Only two of the 17 font files were ever requested |
+| What the host does | It compresses the index, the script, the stylesheet and the icon with gzip, and does not offer brotli. Every file carries a cache lifetime of ten minutes. Neither can be set from the repository |
+| What leaves the device | 887 requests in the walk: 690 to `lejie710.github.io` and 197 addresses that begin `data:`, which are pictures written inside the script and the stylesheet and cause no request. No other host, and no method but GET. No cookie was set or sent. Local storage, session storage, IndexedDB, cache storage and service workers were empty after the first screen and at the end. Typing in the glossary filter made no request, left the address as it was, and was gone after a reload |
+| The link-preview tags as served | The title, the description, `og:type`, `og:site_name`, `og:url`, the canonical link and `twitter:card` are present. `og:image` is `https://lejie710.github.io/lux/og.jpg`, which answered 200 as `image/jpeg`, 66,058 bytes, 1200 x 630, the same bytes as `site/public/og.jpg` |
+
+### What the walk does not show
+
+- **One browser.** Firefox and Safari were not opened. No physical phone, no touch scroll, no screen reader, no slow connection.
+- **One connection, one day.** The sizes are what the host sent then.
+- **No preview service.** The tags were read; no service that draws a preview was asked to fetch the page.
+- **The 13 links that lead to other sites** (the firmware project's source files, the TPM emulator, the specification's publisher, the virtual machine's project) were not requested in the walk.
+- **One card's evidence address** was not opened by address. All twelve evidence controls on the two pages opened their panels.
+- **Six of 42 compared screenshots differ from the local ones.** One shows a value on one line that the older local shot wrapped (defect 24, fixed before publication). One page sits 1 px higher with the same words. The others differ faintly in a moving part of the picture; that was put down to the moment of the shot and was not proven.
+- **A page opened directly at the experiments or the sources fetches the dark laptop picture of the opening (30 kB) without using it**, because the index preloads it. Known and left.
+- **The fix of defect 26 on the live site.** It was driven on a local build of commit `8413843`. On the published build of `0fa1d15` the same drive showed the defect once; most of its other tries did not load in the time the script allowed and say nothing.
+- **Any later deployment.** Each push to `main` publishes again. The walk is of the build of `0fa1d15` only.

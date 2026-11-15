@@ -10,7 +10,7 @@ This is the entry point to the documentation of Lux as built. It describes the w
 | [`PILOTS.md`](PILOTS.md) | What each of the four pilots was observed to do. Pilots are shown and never counted |
 | [`COUNTED.md`](COUNTED.md) | How each counted experiment was staged and how its one run is made. Written before the runs and kept as it was |
 | [`MUTATION_CHECKS.md`](MUTATION_CHECKS.md) | Nine rules broken on purpose, and the tests that failed |
-| [`VERIFICATION.md`](VERIFICATION.md) | The acceptance checks, the failures most likely to hurt a reader, the test counts per layer, what was checked by eye, the defects found, and the release assessment |
+| [`VERIFICATION.md`](VERIFICATION.md) | The acceptance checks, the failures most likely to hurt a reader, the test counts per layer, what was checked by eye, the defects found, the release assessment, and the record of the deployment and of the walk of the live site |
 | [`FRESH_CLONE_RUN.md`](FRESH_CLONE_RUN.md) | The README followed in a new clone: what was typed, what came back, what it found, and what was repeated after the README was corrected |
 | [`../content/README.md`](../content/README.md) | The shape of the site's words as data, and every rule the content check enforces |
 | [`../site/ASSETS.md`](../site/ASSETS.md) | How each picture was made and how a stop's picture is put together |
@@ -306,7 +306,7 @@ Superseded in the recorder, as [`DESIGN.md`](DESIGN.md) section 11 records row b
 | Record a run | Ubuntu 24.04, or WSL 2 with it, and the packages `qemu-system-x86`, `ovmf`, `swtpm`, `binutils`, `python3`, `git` | The packages are installed once with the system's package manager. After that, none |
 | Rebuild the pictures | Python with Pillow, and the source pictures, which are not in the repository | None |
 
-There is no configuration file and no secret. Four environment variables exist: `LUX_WORK_DIR` (where the recorder keeps its scratch files, default `~/lux-work`), `LUX_VM_TESTS=1` (include the tests that boot a virtual machine), and for a published build `LUX_BASE` and `LUX_SITE_URL` (`README.md`, "Hosting").
+There is no configuration file and no secret. Four environment variables exist: `LUX_WORK_DIR` (where the recorder keeps its scratch files, default `~/lux-work`), `LUX_VM_TESTS=1` (include the tests that boot a virtual machine), and for a published build `LUX_BASE` and `LUX_SITE_URL` (`README.md`, "Hosting", and section 6.7).
 
 ### 6.2 Run
 
@@ -340,7 +340,7 @@ The commands are written as on Linux or WSL. On Windows the first and the third 
 | `npm run build` | `site/` | The type check, then the production build |
 | `npm run format:check` | `site/` | Prettier over the site |
 
-`.github/workflows/check.yml` runs all of these except the second on a hosted runner. [`VERIFICATION.md`](VERIFICATION.md) section 3 gives the counts and the last results.
+`.github/workflows/check.yml` runs all of these except the second on a hosted runner, on every push and pull request. `.github/workflows/deploy.yml` runs the last four again before it publishes (section 6.7). [`VERIFICATION.md`](VERIFICATION.md) section 3 gives the counts and the last results.
 
 ### 6.4 Troubleshooting
 
@@ -377,5 +377,21 @@ The recorder's scratch files live in the work directory (`~/lux-work`, or `LUX_W
 | Replace `recordings/normal-1`, `normal-2` or a two-entry normal run in a checkout you mean to commit | The predictions and the scores name their baseline recordings by hash. `scripts/record-pilots.sh` and `scripts/record-baselines.sh` do replace them, on purpose, for a reader who wants to see the runs repeat; the recording time changes, so the files then differ from the committed ones even when every compared field is equal |
 | Rewrite the fixtures in `recorder/tests/fixtures/` | They are real output of two boots and pin the two undocumented formats the recorder depends on |
 | Overwrite the pictures in `site/src/assets/` and `site/public/og.jpg` without the source pictures | They cannot be rebuilt from a clone |
+| Record a run on a hosted runner, or add a step to a workflow that boots a virtual machine | The recordings are committed evidence, made once on one machine with pinned tool versions. A runner has other versions, and a recording made there would not be comparable. Both workflows only read what is committed |
 
-Deployment is not described here because none was prepared beyond the build settings: the site has no public address, and the hosted workflow has not run. [`VERIFICATION.md`](VERIFICATION.md) section 6 says what that leaves unverified.
+### 6.7 Publishing the site
+
+The site is published on GitHub Pages at `https://lejie710.github.io/lux/`. Nobody publishes by hand: `.github/workflows/deploy.yml` does it.
+
+| Question | Answer |
+|---|---|
+| What starts it | A push to `main`, or the workflow started by hand from the repository's Actions page. A push to another branch and a pull request only start `check.yml`, which publishes nothing |
+| What it runs | `python3 scripts/check_content.py`, then in `site/`: `npm ci`, `npm run format:check`, `npm test`, `npm run build`. Then it uploads `site/dist/` and deploys it |
+| What a failing step does | It stops the run. Nothing is uploaded, so a change that the content check, the formatter, the tests or the type check reject is not published |
+| The two environment values | `LUX_BASE=/lux/`, the folder the site is served from: asset paths and the link in `404.html` start there. `LUX_SITE_URL=https://lejie710.github.io/lux/`, the full public address, which the link-preview tags need for the picture's absolute address. Both are set in the workflow file and nowhere else; a move to another address means changing both there |
+| The one setting outside the repository | Settings, Pages, Source must be "GitHub Actions". Without it the step `actions/configure-pages` fails, as it did on the first run |
+| What it never does | It boots no virtual machine, records no run and writes nothing back to the repository. Its permissions are to read the contents and to write to Pages |
+| What a push to `main` means | Every push to `main` that passes the checks replaces the public site, a push that changes only a document included. Run the four site and content commands of section 6.3 locally before a push |
+| After a deployment | Open the address in a new browser profile and look. [`VERIFICATION.md`](VERIFICATION.md) section 12 records the first deployment and what was looked at |
+
+The host compresses text with gzip and sets a cache lifetime of ten minutes on every file; neither can be changed from the repository.

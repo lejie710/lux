@@ -4,6 +4,8 @@ _What your laptop does before it wakes: one boot of open-source UEFI firmware, t
 
 ![The opening screen of the site: a laptop before power, dark, with the words "Lux. Before light. What your laptop does before it wakes." and an invitation to scroll that names the author: "An explainer of the UEFI boot by Le Jie Tan, from public specifications and one recorded boot".](docs/images/opening.png)
 
+**Live site:** https://lejie710.github.io/lux/
+
 ## The question
 
 **When one thing in a PC's boot chain is changed, what does the specification require, what does it leave open, and what does this firmware actually do?**
@@ -67,8 +69,8 @@ What this project does not show, stated so that nobody has to find out.
 Not tested, and carried here from `docs/VERIFICATION.md`:
 
 - **No automated test opens a browser.** The site's tests render pages to HTML. Motion, layout and focus were checked by eye and by a scripted drive in one Chromium-based browser at 1440 x 900, 430 x 932, 390 x 844 and 375 x 812; the three screens that show the whole laptop were also read at thirteen window sizes between 800 and 1440 px across. Firefox, Safari, a physical phone, a phone held sideways, a window under 600 px tall, a screen with a device pixel ratio above 1 and a screen reader have not been tested. Motion was judged by the timing a script read and by the author's own scrolling, not by a second person.
-- **The hosted workflow has never run.** `.github/workflows/check.yml` was written for a hosted runner and has only been reasoned about; every command in it passes locally.
-- **There is no live demo.** The site has been run locally only, and link previews have not been checked against a public address.
+- **The hosted runner boots nothing.** `.github/workflows/check.yml` passed on a hosted runner at commits `6dab704` and `0fa1d15`, and `.github/workflows/deploy.yml` at `0fa1d15`. That shows the offline commands pass on one runner image at those commits. The six tests that boot a virtual machine are skipped there, and no recording was ever made by a runner.
+- **The live site was walked once, in one browser.** After the first deployment the public address was opened in a new, empty profile of one Chromium-based desktop browser, at 1440 x 900 and in an emulated 390 x 844 window (`docs/VERIFICATION.md` section 12). The preview of a pasted link was read from the tags as served; no preview service was asked to fetch the page. The 13 links that lead to other sites were not requested in that walk.
 - **Process cleanup when the virtual machine is killed from outside** is covered by the integration test and a script, not by a unit test.
 
 ## Non-goals
@@ -94,9 +96,17 @@ Not tested, and carried here from `docs/VERIFICATION.md`:
 
 The site holds no fact of its own. Its words come from `content/`, and what has been run, compared, predicted and scored is read from the files when it is built. The pictures are illustrations; the evidence is the recording.
 
+### The live site
+
+The site is live at https://lejie710.github.io/lux/. It is the build of this repository's `main` branch, published by `.github/workflows/deploy.yml` (see "Hosting"). After the first deployment, on 2026-11-15 at commit `0fa1d15`, the public address was opened in a new, empty browser profile and walked from the opening to the last step, through both pages and by address; `docs/VERIFICATION.md` section 12 is the record. What that one walk supports, and no more:
+
+- **Where it works.** Seen working in one Chromium-based desktop browser at 1440 x 900, and in a 390 x 844 window with phone emulation in the same browser. Firefox, Safari, a physical phone, a touch scroll and a screen reader have not been tried.
+- **The first load.** A first visit asks for 14 files, about 0.66 MB as sent and 1.44 MB uncompressed: about 0.28 MB is what the opening screen uses, and about 0.37 MB is the pictures of the later steps, which arrive in the background. Scrolling the whole story asks for nothing more. The host compresses text with gzip and lets a browser keep a file for ten minutes; both are the host's behaviour and not a setting of this repository. Measured on one connection.
+- **What leaves the device.** In that walk every request went to `lejie710.github.io` and every one was a plain read. No cookie was set or sent, and nothing was written to the browser's storage. The site has one input, the glossary filter: typing in it made no request, and what was typed was gone after a reload. The host itself receives a visitor's network address and browser name, as any web server does. The links to other sites (the firmware project's source files, the specification, the earlier site) ask those sites for something only when a reader follows one.
+
 ### Run it locally
 
-Needs Node.js 22.12 or later in the 22 line, 24, or 26 and later (`engines` in `site/package.json`); only 24.22.0 with npm 11.19.1 has been used. `npm ci` downloads the pinned packages once; after that nothing is fetched. No address of another site is requested by the site's source, so the page asks no other address for anything; that was read from the source, not measured in a browser.
+Needs Node.js 22.12 or later in the 22 line, 24, or 26 and later (`engines` in `site/package.json`); only 24.22.0 with npm 11.19.1 has been used. `npm ci` downloads the pinned packages once; after that nothing is fetched. No address of another site is requested by the site's source, so the page asks no other address for anything; that was read from the source, and on the live site it was also measured in a browser (above).
 
 ```
 cd site
@@ -104,7 +114,7 @@ npm ci
 npm run dev
 ```
 
-`npm ci` prints a line like `added 47 packages, and audited 48 packages in 7s` (the time varies), then a note on funding and `found 0 vulnerabilities`. Open `http://127.0.0.1:5183/`. There is no live demo: the site has only been run locally.
+`npm ci` prints a line like `added 47 packages, and audited 48 packages in 7s` (the time varies), then a note on funding and `found 0 vulnerabilities`. Open `http://127.0.0.1:5183/`. It is the same site as the live one, built from the working tree.
 
 The port is fixed, and the command stops with `Port 5183 is already in use` when something else holds it. Then name another one, and open that address:
 
@@ -125,11 +135,13 @@ npm run dev -- --port 5191
 
 In the scrolled story one press of Space or Page Down is one step on, and Shift with Space or Page Up one step back. The first thing the keyboard reaches is a link to `/?static`, the whole story as a plain page.
 
-The first load is about 0.7 MB by the sizes of the built files: one script of 940 kB (186 kB compressed), one stylesheet, two font files and the pictures. That figure assumes a host that compresses text and a browser that fetches only the two Latin font files of the 17 the build writes; it was not measured in a browser. About two thirds of the script is the recordings and the content.
+The site is one script of 940 kB (182 kB as the live host sends it, compressed with gzip), one stylesheet, two font files and the pictures. The build writes 17 font files, and a browser fetches only the two Latin ones. About two thirds of the script is the recordings and the content. The measured first load is given under "The live site".
 
 ### Hosting
 
-Nothing has been published. The build is prepared for a static host: every page lives after the hash sign of one address, `npm run build` writes `dist/` with relative paths, and a `404.html` leads back to the start. To look at the built site, run `npm run preview` after `npm run build`; it serves `dist/` at the same address and port as `npm run dev`, and takes `-- --port 5191` in the same way. Two settings are read from the environment or a `.env` file. Neither is needed locally. **A published build needs both.**
+The site is published on GitHub Pages at https://lejie710.github.io/lux/ by `.github/workflows/deploy.yml`. On every push to `main`, and when it is started by hand, that workflow runs the content check, the format check, the site's tests and the build, and hands `site/dist/` to the host only if all of them pass. A failing check publishes nothing. The repository's Pages source must be set to "GitHub Actions": the workflow's first run stopped at its Pages step because that setting had not been made, and passed when it was run again. No runner boots a virtual machine or records a run; the recordings are committed evidence.
+
+The build suits any static host: every page lives after the hash sign of one address, `npm run build` writes `dist/` with relative paths, and a `404.html` leads back to the start. To look at the built site, run `npm run preview` after `npm run build`; it serves `dist/` at the same address and port as `npm run dev`, and takes `-- --port 5191` in the same way. Two settings are read from the environment or a `.env` file. Neither is needed locally. **A published build needs both**, and the workflow sets them to `/lux/` and `https://lejie710.github.io/lux/`.
 
 | Setting | Use |
 |---|---|
@@ -339,12 +351,12 @@ npm run format:check
 
 ```
  Test Files  9 passed (9)
-      Tests  335 passed (335)
+      Tests  338 passed (338)
 ```
 
 `npm run build` prints a line that contains `built in`, and a warning that one chunk is larger than 500 kB. `npm run format:check` ends with `All matched files use Prettier code style!`.
 
-`.github/workflows/check.yml` runs the recorder's unit tests, the content check and the three site commands on every push and pull request. It boots nothing and publishes nothing. `docs/VERIFICATION.md` maps each acceptance check to a named test, lists what is not tested, and gives the counts per layer.
+`.github/workflows/check.yml` runs the recorder's unit tests, the content check and the three site commands on every push and pull request. It boots nothing and publishes nothing. `.github/workflows/deploy.yml` runs the content check and the same three site commands on a push to `main`, and publishes the built site when they pass; it boots nothing either. `docs/VERIFICATION.md` maps each acceptance check to a named test, lists what is not tested, and gives the counts per layer.
 
 ## Repository map
 
@@ -366,13 +378,13 @@ site/                the site: React, TypeScript and Vite
   src/model/         the story's steps, the state of an experiment, the addresses
   src/components/    the stage, the evidence panel and the pages
   tools/             the script that makes the shipped pictures
-.github/workflows/   the offline checks for a hosted runner
+.github/workflows/   check.yml, the offline checks; deploy.yml, the same checks and the publication of the site
 ```
 
 | Document | What it holds |
 |---|---|
 | [`docs/ENGINEERING.md`](docs/ENGINEERING.md) | The entry point: purpose and requirements, the architecture of the whole system, two operations traced end to end, the file formats, the decisions, operating guidance |
-| [`docs/VERIFICATION.md`](docs/VERIFICATION.md) | Acceptance checks mapped to tests, the failures most likely to hurt a reader, test counts, what was checked by eye, defects found, the release assessment |
+| [`docs/VERIFICATION.md`](docs/VERIFICATION.md) | Acceptance checks mapped to tests, the failures most likely to hurt a reader, test counts, what was checked by eye, defects found, the release assessment, the deployment and the walk of the live site |
 | [`docs/FRESH_CLONE_RUN.md`](docs/FRESH_CLONE_RUN.md) | This README followed in a new clone: what was typed, what came back, what it found, which steps were repeated after the README was corrected, and a third clone in which the packages were installed and the site's commands and the checks that boot nothing were typed |
 | [`docs/RESULTS.md`](docs/RESULTS.md) | Every row of every counted run, the two numbers and their limits |
 | [`docs/DESIGN.md`](docs/DESIGN.md) | The recorder's modules, the four file formats and decisions D1 to D8 |
@@ -407,7 +419,7 @@ Names of specifications, standards bodies and software projects belong to their 
 
 ## Status and licence
 
-Made by Le Jie Tan, who is named on the site's opening screen in the same place and form as on the earlier site. Not published. The intended repository name is `lux`, under the GitHub account `lejie710`; there is no live demo, and the site runs locally only. Its last screen links on to the earlier site, Nox, at https://lejie710.github.io/nox/, where the story of the running machine continues.
+Made by Le Jie Tan, who is named on the site's opening screen in the same place and form as on the earlier site. The repository is public at https://github.com/lejie710/lux, and the site is live at https://lejie710.github.io/lux/ since 2026-11-15. Its last screen links on to the earlier site, Nox, at https://lejie710.github.io/nox/, where the story of the running machine continues.
 
 Licence: the software is under the MIT License (see [LICENSE](LICENSE)). That licence covers the code only: the explanatory text shown on the site and the images are not part of the grant. The images are generated illustrations, not photographs of real products or places. Text and images are copyright 2026 Le Jie Tan, all rights reserved. Quote them with a link, but do not republish them. The recordings are output of the firmware, virtual machine and TPM programs the recorder drives; those are separate projects under their own licences, listed above.
 

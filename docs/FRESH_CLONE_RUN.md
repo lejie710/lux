@@ -102,7 +102,7 @@ What matched without remark: the question and the headline table against `record
 - **Not a second machine.** Same computer, same package versions as the committed recordings.
 - **Not the default port.** The site was never seen on 5183 from the clone.
 - **Not a person's eye on motion.** Two still screenshots of two addresses; no scrolling, no keyboard, no other browser, no phone.
-- **Not the hosted workflow.** It has still never run.
+- **Not the hosted workflow.** It had not run at the time of this run; it ran afterwards (`VERIFICATION.md` section 12).
 - **Not a counted experiment.** None was booted, by rule; only the refusal of one was seen.
 - **Not a clean install of the Ubuntu packages**, and not an ordinary Linux user.
 
@@ -187,6 +187,6 @@ Under WSL, as root, from the clone's root on the Windows drive, the two commands
 - **Not one pass of the whole README in one clone.** The first run was that, against the README before its corrections. With this run every part of the corrected README has matched in a new clone, the booting steps in the second and everything else in the third; no single clone has done both.
 - **Not the default port.** The same other process held 5183, so the site was seen on 5200 and 5201 only.
 - **Not a cold package cache.** Whether npm fetched all 47 packages over the network in this run or took some from its cache on this machine was not looked at.
-- **Not a second machine, not another Node.js or npm version, not the hosted workflow.**
+- **Not a second machine, not another Node.js or npm version, not the hosted workflow** (which ran afterwards: `VERIFICATION.md` section 12).
 - **One still screenshot of one address.** No scrolling, no keyboard, no other page, no other browser.
 - **The unit tests under WSL and the content check under WSL** were not repeated in this clone; both ran on Windows.
