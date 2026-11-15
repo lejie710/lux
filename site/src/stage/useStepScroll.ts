@@ -2,7 +2,7 @@
 // marker is at the viewport's middle is the current one. Each step holds a complete state, so fast or
 // reverse scrolling lands correctly.
 import { useCallback, useEffect, useRef, useState } from "react";
-import { stepKey } from "../model/scene";
+import { stepKey, stepPassed } from "../model/scene";
 
 /** Controls that use Space themselves: a press on one of them is theirs, not a step. */
 const CONTROLS = "a[href], button, input, select, textarea, summary, [tabindex='0']";
@@ -45,11 +45,23 @@ export function useStepScroll() {
       // IntersectionObserver percentage margins use the root's width, even
       // vertically. Pixels keep the activation band at the viewport midpoint.
       const middle = Math.floor(window.innerHeight / 2);
+      let first = true;
       io = new IntersectionObserver(
         (entries) => {
+          let found = false;
           for (const entry of entries) {
-            if (entry.isIntersecting) setI(Number((entry.target as HTMLElement).dataset.index));
+            if (!entry.isIntersecting) continue;
+            setI(Number((entry.target as HTMLElement).dataset.index));
+            found = true;
           }
+          // A page opened below the story, at the strip of stops, has no marker on its middle line. The
+          // stage's last visible rows then belong to the last step, not to the opening.
+          if (first && !found) {
+            const tops = markers.current.map((marker) => marker?.getBoundingClientRect().top ?? Infinity);
+            const passed = stepPassed(tops, middle);
+            if (passed !== null) setI(passed);
+          }
+          first = false;
         },
         { rootMargin: `-${middle}px 0px -${Math.max(0, window.innerHeight - middle - 1)}px 0px` },
       );

@@ -13,6 +13,7 @@ import {
   spanAt,
   splitEmphasis,
   stepKey,
+  stepPassed,
   tileFrame,
 } from "./scene";
 
@@ -259,6 +260,18 @@ describe("stepKey", () => {
   it("leaves every other key alone", () => {
     for (const key of ["ArrowDown", "ArrowUp", "Enter", "Tab", "Home", "End", "a"])
       expect(stepKey({ key }, 3, STEP_COUNT)).toBeNull();
+  });
+});
+
+describe("stepPassed", () => {
+  it("gives the last step when the page is opened below the story, with every marker above the middle", () => {
+    const tops = Array.from({ length: STEP_COUNT }, (_, n) => -20000 + n * 900);
+    expect(stepPassed(tops, 450)).toBe(STEP_COUNT - 1);
+  });
+  it("gives the last marker that starts above the middle line, and none at the top of the page", () => {
+    expect(stepPassed([-900, 0, 900, 1800], 450)).toBe(1);
+    expect(stepPassed([600, 1500, 2400], 450)).toBeNull();
+    expect(stepPassed([], 450)).toBeNull();
   });
 });
 

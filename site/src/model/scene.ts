@@ -184,6 +184,19 @@ export function stepKey(key: { key: string; shiftKey?: boolean }, at: number, co
 }
 
 /**
+ * The step a page shows when it is opened below the story, where no marker lies on the window's middle
+ * line: the last step whose marker starts above that line. `tops` holds each marker's top edge in window
+ * pixels, in step order. Null when no marker starts above the line, so the step is left as it is.
+ */
+export function stepPassed(tops: readonly number[], middle: number): number | null {
+  let passed: number | null = null;
+  tops.forEach((top, n) => {
+    if (top < middle) passed = n;
+  });
+  return passed;
+}
+
+/**
  * How a small picture of the board frames some of its parts: how many times wider than its frame the board
  * is drawn, and where its left and top edges lie, as percentages of the frame's width and height. The parts
  * are centred and the board never leaves a gap at an edge. `shape` is the frame's width over its height.
