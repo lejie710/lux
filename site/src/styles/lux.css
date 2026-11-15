@@ -4,9 +4,10 @@
 :root {
   --black: #000;
   --text: #f4f2ec;
-  --soft: #c9c7c1;
-  --grey: #8e8e93;
-  --faint: #808086;
+  /* The greys lean a little towards blue: the cool rim light of the dark board, not a neutral grey. */
+  --soft: #cfd2de;
+  --grey: #9aa0b2;
+  --faint: #7f8597;
   --warm: #ffc56b;
   --line: rgba(255, 255, 255, 0.14);
   --surface: #0c0c0e;
@@ -153,7 +154,7 @@ button {
   container-type: size;
   /* The opening's title follows the stage's height as well as its width, and the laptop is given only the
      room the title block leaves: on a short, wide window the two never meet. */
-  --title-size: clamp(44px, min(7.4cqw, 14cqh), 108px);
+  --title-size: clamp(44px, min(6.4cqw, 12.5cqh), 92px);
   --subtitle-size: clamp(18px, min(1.9cqw, 3.6cqh), 27px);
   --opening-pad: clamp(40px, 8cqh, 76px);
   --title-block: calc(var(--title-size) + var(--subtitle-size) * 1.25 + 62px + var(--opening-pad));
@@ -349,9 +350,9 @@ button {
 .title {
   margin: 0;
   font-size: var(--title-size);
-  font-weight: 750;
+  font-weight: 600;
   line-height: 1;
-  letter-spacing: -0.045em;
+  letter-spacing: -0.03em;
 }
 .title em,
 .statement em {
@@ -406,10 +407,11 @@ button {
 .statement {
   margin: 0 auto;
   max-width: 15.5em;
-  font-size: clamp(34px, min(4.7cqw, 7.6cqh), 68px);
-  font-weight: 750;
-  line-height: 1.05;
-  letter-spacing: -0.04em;
+  /* Large and centred, and no louder than the picture under it. */
+  font-size: clamp(30px, min(3.7cqw, 6.2cqh), 52px);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.025em;
   text-wrap: balance;
   text-shadow: 0 0 28px var(--black);
 }
