@@ -63,10 +63,10 @@ The untested parts of rows 1, 2, 5, 7 and 8 are carried into the limits of the R
 | **Recorder: integration with a real virtual machine** | Only a real boot shows that a normal run repeats on this machine | 6, skipped unless `LUX_VM_TESTS=1` |
 | **Site: unit tests of the model** (steps, experiment state, addresses, panel keys, the mark) | Complete state per step and the state of an experiment are plain data, testable without drawing anything | 88 |
 | **Site: the content and the recordings as the site loads them** | Guards the site's own reading of the files | 45 |
-| **Site: pages rendered to HTML, with no browser**, and the stylesheet read as text | Proves that a page shows what the content and the files hold, and no more | 196 |
+| **Site: pages rendered to HTML, with no browser**, and the stylesheet read as text | Proves that a page shows what the content and the files hold, and no more | 198 |
 | **Browser-level, automated** | None. Motion, layout and focus need a real window; they were checked by a scripted drive and by eye, outside the test suite | 0 |
 
-Recorder total 368 (25 in `test_capture.py`, 48 in `test_check_content.py`, 28 in `test_committed_recordings.py`, 41 in `test_compare_prediction.py`, 65 in `test_counted_set.py`, 32 in `test_eventlog_gate.py`, 6 in `test_integration_vm.py`, 65 in `test_session_runner.py`, 50 in `test_staging.py`, 8 in `test_story_and_repository.py`). The split of the first three rows is by test class: `test_check_content.py` is the second row; `test_committed_recordings.py` and the classes `CommittedPredictions` and `TwoEntryNormalRuns` of `test_counted_set.py` are the third. Site total 329 in nine files.
+Recorder total 368 (25 in `test_capture.py`, 48 in `test_check_content.py`, 28 in `test_committed_recordings.py`, 41 in `test_compare_prediction.py`, 65 in `test_counted_set.py`, 32 in `test_eventlog_gate.py`, 6 in `test_integration_vm.py`, 65 in `test_session_runner.py`, 50 in `test_staging.py`, 8 in `test_story_and_repository.py`). The split of the first three rows is by test class: `test_check_content.py` is the second row; `test_committed_recordings.py` and the classes `CommittedPredictions` and `TwoEntryNormalRuns` of `test_counted_set.py` are the third. Site total 331 in nine files.
 
 Coverage was not measured as a number. The mutation checks do the work a coverage figure cannot: nine rules were broken on purpose on the final code, seven in the recorder, one in the content check and one in the site, and each break failed at least two tests (`MUTATION_CHECKS.md`).
 
@@ -80,7 +80,7 @@ Run on the commit that adds this file, on one machine: Windows 11 with Python 3.
 | Recorder unit tests, WSL | `bash scripts/test.sh` | `Ran 368 tests`, `OK (skipped=6)` |
 | Recorder tests with the virtual machine, WSL | `bash scripts/test-with-vm.sh` | `Ran 368 tests`, `OK`, then `virtual machines running: none`, `software TPMs running: none`, `guest memory files: none` |
 | Content check | `python scripts/check_content.py` | `content check: 5 files, 28 screens, 354 claims, 85 claims uefi-required, 28 claims uefi-platform, 21 claims tcg-unread, 38 claims this-firmware, 167 claims recording, 15 claims general, 14 recordings, 59 glossary entries`, `content check: passed, no problems` |
-| Site tests | `npm test` | `Test Files  9 passed (9)`, `Tests  329 passed (329)` |
+| Site tests | `npm test` | `Test Files  9 passed (9)`, `Tests  331 passed (331)` |
 | Site build | `npm run build` | type check passed, `built in` under one second, one warning: a chunk larger than 500 kB |
 | Site format | `npm run format:check` | `All matched files use Prettier code style!` |
 
@@ -91,6 +91,7 @@ The run with the virtual machine boots the plain normal run twice and the two-en
 | What | How | By eye or by script |
 |---|---|---|
 | All 22 steps of the story, the experiments and sources pages section by section, the strip of seven stops, the still page, and six evidence panels, at 1440 x 900; the steps, the pages and the strip also at 390 x 844 | Screenshots of the running site in a headless Chromium-based browser, read one by one. The phone width was taken through a frame of that width | **By eye**, on screenshots. Three of them are in `docs/images/` |
+| The same 22 steps, both pages from top to bottom, and the evidence panel of every step, in true windows of 375 x 812 and 430 x 932; the navigation alone at twelve widths from 280 to 761 px; twelve steps at 375 x 667 | A headless Chromium-based browser driven through its debugging port, with the window size set there and no frame. The script also measured each page for content wider than the window and found none | **By eye**, on screenshots, and by measurement. The script and the screenshots are not in the repository |
 | Brightness of the machine before power | Mean luminance of regions of the screenshots and of the pictures, printed by `site/tools/make_assets.py` and recorded in `site/ASSETS.md` | By script, after a judgement by eye that the first version was too dark |
 | Scrolling: Space and Shift with Space, Page Down and Page Up through all 22 steps, a jump to `#step-12`, the strip after the last step, reduced motion giving the still page | The running site driven in real time through the browser's debugging port | **By script only** |
 | The evidence panel: Enter and Space open it, Tab stays inside it from a control and from the claims heading, Escape closes it, focus returns to the opener, the page does not move | The same scripted drive | **By script only** |

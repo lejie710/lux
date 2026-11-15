@@ -65,7 +65,7 @@ What this project does not show, stated so that nobody has to find out.
 
 Not tested, and carried here from `docs/VERIFICATION.md`:
 
-- **No automated test opens a browser.** The site's tests render pages to HTML. Motion, layout and focus were checked by eye and by a scripted drive in one Chromium-based browser at 1440 x 900 and 390 x 844. Firefox, Safari, a physical phone, a phone held sideways, a window under 600 px tall and a screen reader have not been tested.
+- **No automated test opens a browser.** The site's tests render pages to HTML. Motion, layout and focus were checked by eye and by a scripted drive in one Chromium-based browser at 1440 x 900, 430 x 932, 390 x 844 and 375 x 812. Firefox, Safari, a physical phone, a phone held sideways, a window under 600 px tall and a screen reader have not been tested.
 - **The hosted workflow has never run.** `.github/workflows/check.yml` was written for a hosted runner and has only been reasoned about; every command in it passes locally.
 - **There is no live demo.** The site has been run locally only, and link previews have not been checked against a public address.
 - **Process cleanup when the virtual machine is killed from outside** is covered by the integration test and a script, not by a unit test.
@@ -338,7 +338,7 @@ npm run format:check
 
 ```
  Test Files  9 passed (9)
-      Tests  329 passed (329)
+      Tests  331 passed (331)
 ```
 
 `npm run build` prints a line that contains `built in`, and a warning that one chunk is larger than 500 kB. `npm run format:check` ends with `All matched files use Prettier code style!`.
