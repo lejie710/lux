@@ -88,14 +88,14 @@ The run with the virtual machine boots the plain normal run twice and the two-en
 
 ### Last results
 
-Run after the last change to the site and the content (sections 9 and 10), on the same machine, on Windows only:
+Run after the last change to the site and the content (sections 9, 10 and 11), on the same machine, on Windows only:
 
 | Check | Command | Summary line |
 |---|---|---|
-| Recorder unit tests, Windows | `python -m unittest discover -s recorder/tests -t .` | `Ran 373 tests in 35.466s`, `OK (skipped=6)` |
+| Recorder unit tests, Windows | `python -m unittest discover -s recorder/tests -t .` | `Ran 373 tests in 27.247s`, `OK (skipped=6)` |
 | Content check | `python scripts/check_content.py` | `content check: 5 files, 28 screens, 357 claims, 85 claims uefi-required, 28 claims uefi-platform, 21 claims tcg-unread, 38 claims this-firmware, 170 claims recording, 15 claims general, 14 recordings, 59 glossary entries`, `content check: passed, no problems` |
 | Site tests | `npm test` | `Test Files  9 passed (9)`, `Tests  335 passed (335)` |
-| Site build | `npm run build` | type check passed, one script of 939.24 kB (gzip 186.22 kB), `built in` under one second, one warning: a chunk larger than 500 kB |
+| Site build | `npm run build` | type check passed, one script of 939.93 kB (gzip 186.46 kB), `built in` under one second, one warning: a chunk larger than 500 kB |
 | Site format | `npm run format:check` | `All matched files use Prettier code style!` |
 
 **Not repeated after that change:** the recorder's unit tests under WSL and the suite with the virtual machine. The five tests added since read committed files only and boot nothing, so the README's expected `Ran 373 tests` for the suite with the virtual machine is the same test discovery with the six booting tests included; it was not run. The fresh-clone runs (`FRESH_CLONE_RUN.md`) and the mutation checks (`MUTATION_CHECKS.md`) were made before that change and were not repeated; each file states the counts of its own commit.
@@ -155,17 +155,20 @@ These were found by review, by a test or by driving the site. None was planted. 
 | 20 | The larger laptop made for the last screen was also drawn on the experiment screen and the screen before the last, where the light under its keys is not turned down. On the experiment screen its lid sat 11 px under the pilot label and its base ran 9 px into a two-line evidence line. In a window of about 1180 x 820 the larger laptop also touched a two-line evidence line on the last screen | Review of screenshots | The laptop is enlarged on the last screen only, and only in a window at least three wide to two high and 800 px high (commit `2ebfe4b`) | No test: a judgement of the eye. Screenshots of steps 15, 20 and 21 at 1440 x 900 and of step 21 at 1180 x 820 were read after the fix |
 | 21 | When stop 5 began to state the stored boot order from the raw log (0000 first), the limit "why option 0000 was not started" was dropped, although the log still does not show why the console names 0001. The same stop said "the recording shows" bytes that only the raw log holds | Review of the facts against the raw log | The limit is stated again in the form the log supports, and the sentence names the raw event log (commit `cf1fc46`) | Read by hand. `test_recorded_bytes.py` guards the byte values, not the wording of a limit |
 | 22 | A page opened at `/#overview`, below the story, showed the opening in the last rows of the pinned stage above the strip: the title cut off under the navigation and across the name beside the mark. No marker lies on the window's middle line there, so the step kept its first value | Reading the final screenshots | On the first report of the markers, when none is on the middle line, the step is the last one whose marker starts above it | `model/scene.test.ts`, "stepPassed" (two tests). The landing was then driven in a headless browser: `/#overview` shows the last step, `/#step-12` step 12, `/` the opening |
+| 23 | In a wide window under about 1240 px across, the evidence capsule in the foot is two to four lines high and lay over the laptop of steps 15, 20 and 21: over the palm rest on the last step at 1024 x 768, over the whole keyboard on step 15 there, and over the palm rest on step 15 at 1180 x 820. The record of section 10 said that no final screenshot showed overlap | A closing audit that read the project's own shot of the last step at 1024 x 768 | In a window between 761 and 1240 px across the laptop of those steps is smaller and ends above the capsule, and smaller again when the window is at most 700 px high (commit `64c970a`) | No test: a judgement of the eye. Steps 15, 20 and 21 were shot again at thirteen window sizes and read; the measured edges are in section 11 |
+| 24 | On a card of the counted set at 1440 x 900 the value "1 and 4" broke into two lines beside its long label | The same audit | On a card a value does not shrink, so its label wraps beside it (commit `64c970a`) | No test. The counted set was shot again and read |
+| 25 | Three stale sentences and a dead link. The opening's evidence still said that the only changed run committed was a pilot and that no score was claimed; the sources page still said that no licence had been chosen and gave no licence for two tools that the README names; the link to the reset vector file on the firmware project's master branch answered "not found", because that branch has renamed the file | The same audit | The sentences say what is committed; the link leads to the tag `edk2-stable202402`, where the file has its name, and the page says so (commit `778bfa2`) | The content check passes before and after: it cannot see a stale explanation or a dead address. Read by hand; the tag's page was opened on 2026-11-15 |
 
 ### Open, known, not fixed
 
 | # | What | Why it is open |
 |---|---|---|
-| O1 | The site is one script of 939 kB, and it grows with every recording | Splitting it by page means making the one synchronous door to the recordings asynchronous, a change of structure. Left with its measurement |
+| O1 | The site is one script of 940 kB, and it grows with every recording | Splitting it by page means making the one synchronous door to the recordings asynchronous, a change of structure. Left with its measurement |
 | O2 | A few status sentences in `content/experiments.json` repeat what the files show (for example the status of a counted card) | They are true and checked by reading. Nothing fails if one goes stale |
 | O3 | Process cleanup when QEMU is killed from outside is not covered by a unit test | It needs real processes. The integration test and `scripts/check-clean.sh` cover it |
 | O4 | `recorder/pe.py` names Microsoft's Authenticode format document as its method reference, while the site lists that document as not read | The digest is confirmed against what the firmware measured, and no claim on the site cites the document. The README says both |
 | O5 | The exact printed wording of the UEFI specification's copyright line has not been checked against the publisher's page | To be done before publication; noted in `content/sources.json` |
-| O6 | No licence has been chosen | The owner's decision |
+| O6 | Closed. The code is under the MIT License and the site's text and images are reserved (commit `2c82429`) | It was the owner's decision, and it is made |
 | O7 | The rule `load-verify` in `recorder/storymap.py` gives as its basis "present when the loader is accepted, absent when it is refused". The refused pilot `e5` has the authority record all the same | The rule's name and the stop it assigns are right, and `PILOTS.md` and the site state what `e5` shows. The sentence in the code was written before `e5` was recorded and was left as it is; `DESIGN.md` section 7 carries a note |
 
 ## 6. Release assessment
@@ -187,7 +190,7 @@ These were found by review, by a test or by driving the site. None was planted. 
 - **What a Trusted Computing Group document or the Platform Initialization specification requires.** Neither was read. No statement on the site or in the results claims a requirement from either.
 - **That no counted configuration was ever booted before its prediction.** The history and one audit of the work directory say so; no mechanism proves it, and the audit's script and output are not in the repository (`RESULTS.md`, "Checked a second time", marks the rows a reader cannot repeat).
 
-**Assessment.** The evidence chain from a boot to a number on the page is implemented and tested end to end without a virtual machine, and the one link that needs a real boot, that a normal run repeats, was run again and holds. The result is honest only together with its caveats: four counted experiments, one run each, rows that are not independent, one firmware build in a virtual machine with a software TPM, and two documents unread. With those stated beside the numbers, as the README and the experiments page now do, the project is ready to be shown as a private repository. Before it is made public, two things remain: the hosted workflow must run green once, and a licence must be chosen. The author has scrolled the story by hand; nobody else has.
+**Assessment.** The evidence chain from a boot to a number on the page is implemented and tested end to end without a virtual machine, and the one link that needs a real boot, that a normal run repeats, was run again and holds. The result is honest only together with its caveats: four counted experiments, one run each, rows that are not independent, one firmware build in a virtual machine with a software TPM, and two documents unread. With those stated beside the numbers, as the README and the experiments page now do, the project is ready to be shown as a private repository. Before it is made public, one thing remains: the hosted workflow must run green once. The licence is chosen: the MIT License for the code, with the site's text and images reserved. The author has scrolled the story by hand; nobody else has.
 
 ## 7. Link-preview metadata
 
@@ -241,7 +244,7 @@ Made on 2026-11-15 in nine commits, `5cf4d0a` to `cf1fc46`, after every run and 
 |---|---|
 | A step's statement is at most 52 px at weight 600 (was 68 px at 750), the title at most 92 px at weight 600; the three greys carry a cool tint | `site/src/styles/lux.css` |
 | A lit part that a board step is not about rests at half its light, so the part the step is about is the warm point. Once every part is lit (steps 18 and 19) nothing rests | `layersAt` in `site/src/model/scene.ts`, two tests in `scene.test.ts` |
-| On the last screen, in a window at least 800 px high and three wide to two high, the laptop is drawn at 660 x 495 at 1440 x 900 (was 535 x 401); as its screen lights, a shade from the hinge down turns down the light under the keys; "Continue in Nox" is a filled button | `lux.css`, one attribute in `components/Stage.tsx` |
+| On the last screen, in a window at least 800 px high and three wide to two high, the laptop is drawn at 660 x 495 at 1440 x 900 (was 535 x 401); as its screen lights, a shade from the hinge down turns down the light under the keys (the shade was removed again, section 10); "Continue in Nox" is a filled button | `lux.css`, one attribute in `components/Stage.tsx` |
 | A step's statement arrives sooner; the rail and the foot no longer fade out at each step change | `lux.css` |
 | The opening's laptop stands lower under the navigation | `lux.css` |
 | In a window wider than 760 px the evidence line and "Open the evidence" form one capsule | `lux.css` |
@@ -269,7 +272,7 @@ Made on 2026-11-15 after section 9, in the commits `99c9865`, `40137be`, `a33764
 | The opening's invitation to scroll names the author: "An explainer of the UEFI boot by Le Jie Tan, from public specifications and one recorded boot", the same place and form as on the earlier site | `content/story-a.json` |
 | A page opened below the story shows the last step in the stage's last rows (defect 22) | `site/src/stage/useStepScroll.ts`, `stepPassed` in `site/src/model/scene.ts`, two tests |
 
-**Checked.** The checks of section 3, "Last results", all run after the last of these changes. The screenshots of section 4, the row "After the final changes": every one was opened and read, and none showed overlap, clipped text or a line past the window's edge. The three pictures in `docs/images/` are from that set.
+**Checked.** The checks of section 3, "Last results", all run after the last of these changes. The screenshots of section 4, the row "After the final changes": every one was opened and read, and none was seen to show overlap, clipped text or a line past the window's edge. That reading missed one: the shot of the last step at 1024 x 768 shows the evidence capsule lying over the laptop (defect 23, section 11). The three pictures in `docs/images/` are from that set.
 
 **Still unverified.**
 
@@ -281,3 +284,38 @@ Made on 2026-11-15 after section 9, in the commits `99c9865`, `40137be`, `a33764
 - **The hosted check workflow.** `.github/workflows/check.yml` has never run (section 6).
 - **Not repeated after these changes:** the evidence panel's keys and focus in a browser, the pages and panels from top to bottom at the narrow sizes (only the opening and the last step were taken again there), the recorder's unit tests under WSL, the suite with the virtual machine, the fresh-clone runs and the mutation checks.
 - **The brightness of the new picture of the lit laptop** was not written into `site/ASSETS.md`; its table still holds the values of the first picture.
+
+## 11. Closing corrections
+
+Made on 2026-11-15 after section 10, in the commits `778bfa2` and `64c970a`, and the commit that added this section. They answer a closing audit of the repository at commit `40984d1` (defects 23 to 25). No experiment was run again, and no recording, prediction or score was touched.
+
+| Change | Where |
+|---|---|
+| The opening's evidence says that four pilots and four counted runs are committed. The sources page states the licence of the recordings and of two tools as the README does | `content/story-a.json`, `content/sources.json` |
+| The reset vector file is linked at the tag `edk2-stable202402`. The five other firmware source links still lead to the master branch, where those files were read | `content/sources.json`, `content/story-a.json` |
+| In a window between 761 and 1240 px across, the laptop of steps 15, 20 and 21 is 39 percent of the stage's height (32 percent when the stage is at most 700 px high), so it ends above the evidence capsule | `site/src/styles/lux.css` |
+| On a card of the experiments page a value keeps its width and the label wraps | `site/src/styles/pages.css` |
+
+**Checked.** The checks of section 3, "Last results", all run after these changes. Steps 15, 20 and 21 were shot through the browser's debugging port in true windows of 1024 x 768, 1024 x 700, 1024 x 650, 1180 x 820, 1100 x 720, 1200 x 760, 1000 x 1000, 900 x 720, 800 x 1100, 1280 x 1024, 1440 x 900, 1366 x 768 and 1280 x 720, and the edges of the laptop's box and of the foot were read by script. Twelve of the shots were opened and read: steps 15 and 21 at 1024 x 768 and at 1180 x 820, step 20 at 1024 x 768, and step 15 at 1024 x 700, 1024 x 650, 1100 x 720, 1000 x 1000, 1280 x 1024, 1366 x 768 and 1280 x 720. The counted set of the experiments page was shot at 1440 px across and read.
+
+| Window | Step | Laptop's box ends at | Capsule begins at |
+|---|---|---|---|
+| 1024 x 768 | 15 | 548 px | 559 px |
+| 1024 x 768 | 21 | 548 px | 618 px |
+| 1024 x 700 | 15 | 474 px | 494 px |
+| 1024 x 650 | 15 | 440 px | 444 px |
+| 1180 x 820 | 15 | 585 px | 669 px |
+| 1000 x 1000 | 15 | 714 px | 778 px |
+| 900 x 720 | 15 | 514 px | 514 px |
+
+At 1440 x 900, 1366 x 768, 1280 x 720 and 1280 x 1024 the measured edges are the same as before the change, to the pixel. The tag's page of the reset vector file was opened and begins "First code executed by processor after resetting".
+
+**Still unverified, or known and left.**
+
+- **Everything listed at the end of section 10** still holds.
+- **Between 761 and 1240 px across the laptop is small**: 324 px wide on step 15 at 1024 x 768, and 210 px wide at 1024 x 650. It is clear of the words and of the capsule; it is not the picture the wide window has.
+- **Under 650 px of height in such a window** the capsule and the laptop were not shot. A window under 600 px tall is untested, as before.
+- **At 1366 x 768 and 1280 x 720 the box of the laptop on step 15 ends 13 and 17 px below the top of the capsule.** The box is larger than the drawn laptop, and on the screenshots the two do not touch; that is a judgement of the eye, unchanged by this section.
+- **The five firmware source links to the master branch** loaded on 2026-11-15. A branch moves, so any of them may stop loading, as the sixth did.
+- **The address `https://uefi.org/specs/UEFI/2.11/`** refused the tool that fetched the others. It was not opened in a browser for this section.
+- **The fresh-clone runs, the mutation checks, the unit tests under WSL and the suite with the virtual machine** were not repeated after these changes.

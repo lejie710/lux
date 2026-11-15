@@ -292,7 +292,7 @@ Superseded in the recorder, as [`DESIGN.md`](DESIGN.md) section 11 records row b
 *Chosen.* What has been run, compared, predicted and scored is worked out at build time from `recordings/`, `predictions/` and the score files (`site/src/model/experiments.ts`): not run, pilot, recorded, or scored. The headline score is the sum over the score files, and with no score file the page claims no score.
 *Weighed.* Writing the status and the numbers into the content (simpler, and the content check could verify them, but two places would have to change together).
 *Consequences.* The page cannot show a score that is not on file, and tests cover the page with nothing on file, with a pilot and with a score.
-*Cost.* Every recording is part of the site's script, which is about 939 kB before compression and grows with each recording. The content still carries a few status sentences beside the files' state, and those must be kept true by hand.
+*Cost.* Every recording is part of the site's script, which is about 940 kB before compression and grows with each recording. The content still carries a few status sentences beside the files' state, and those must be kept true by hand.
 
 ## 6. Operating guidance
 

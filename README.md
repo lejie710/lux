@@ -66,7 +66,7 @@ What this project does not show, stated so that nobody has to find out.
 
 Not tested, and carried here from `docs/VERIFICATION.md`:
 
-- **No automated test opens a browser.** The site's tests render pages to HTML. Motion, layout and focus were checked by eye and by a scripted drive in one Chromium-based browser at 1440 x 900, 430 x 932, 390 x 844 and 375 x 812. Firefox, Safari, a physical phone, a phone held sideways, a window under 600 px tall, a screen with a device pixel ratio above 1 and a screen reader have not been tested. Motion was judged by the timing a script read and by the author's own scrolling, not by a second person.
+- **No automated test opens a browser.** The site's tests render pages to HTML. Motion, layout and focus were checked by eye and by a scripted drive in one Chromium-based browser at 1440 x 900, 430 x 932, 390 x 844 and 375 x 812; the three screens that show the whole laptop were also read at thirteen window sizes between 800 and 1440 px across. Firefox, Safari, a physical phone, a phone held sideways, a window under 600 px tall, a screen with a device pixel ratio above 1 and a screen reader have not been tested. Motion was judged by the timing a script read and by the author's own scrolling, not by a second person.
 - **The hosted workflow has never run.** `.github/workflows/check.yml` was written for a hosted runner and has only been reasoned about; every command in it passes locally.
 - **There is no live demo.** The site has been run locally only, and link previews have not been checked against a public address.
 - **Process cleanup when the virtual machine is killed from outside** is covered by the integration test and a script, not by a unit test.
@@ -125,7 +125,7 @@ npm run dev -- --port 5191
 
 In the scrolled story one press of Space or Page Down is one step on, and Shift with Space or Page Up one step back. The first thing the keyboard reaches is a link to `/?static`, the whole story as a plain page.
 
-The first load is about 0.7 MB by the sizes of the built files: one script of 939 kB (186 kB compressed), one stylesheet, two font files and the pictures. That figure assumes a host that compresses text and a browser that fetches only the two Latin font files of the 17 the build writes; it was not measured in a browser. About two thirds of the script is the recordings and the content.
+The first load is about 0.7 MB by the sizes of the built files: one script of 940 kB (186 kB compressed), one stylesheet, two font files and the pictures. That figure assumes a host that compresses text and a browser that fetches only the two Latin font files of the 17 the build writes; it was not measured in a browser. About two thirds of the script is the recordings and the content.
 
 ### Hosting
 
@@ -390,7 +390,7 @@ Public sources only. Nothing from any employer or vendor system was read or used
 | What | How it is used | Licence or terms |
 |---|---|---|
 | UEFI Forum, *Unified Extensible Firmware Interface (UEFI) Specification*, version 2.11 | The chapters the story needs were read page by page, and the whole published PDF was searched by keyword; some chapters were not read, and figures have no text to read. Paraphrased and cited by section and PDF page. No table or figure is reproduced | Copyright UEFI Forum, Inc. All rights reserved |
-| EDK II and its OVMF firmware | Run as packaged by Ubuntu; not redistributed here. Six of its source files are named as the basis of claims and linked from the sources page. They were read at the project's master branch, not at the tag of the packaged build, and the package's build settings were not confirmed | BSD-2-Clause-Patent |
+| EDK II and its OVMF firmware | Run as packaged by Ubuntu; not redistributed here. Six of its source files are named as the basis of claims and linked from the sources page. They were read at the project's master branch, not at the tag of the packaged build, and the package's build settings were not confirmed. One of them has since been renamed on that branch, so its link leads to the tag `edk2-stable202402`, where it has the name given | BSD-2-Clause-Patent |
 | QEMU | Run; not redistributed | GNU General Public License, version 2; stated per file in its source tree |
 | swtpm | Run; not redistributed | BSD-3-Clause |
 | tpm2-tools | The event type names it prints are kept as a test fixture; the program is not redistributed | BSD-3-Clause, by the copyright file of its Ubuntu package |
