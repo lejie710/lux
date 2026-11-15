@@ -127,6 +127,11 @@
   color: var(--text);
   text-align: right;
 }
+/* On a card a short value stays on one line and its label wraps beside it. */
+.card-result dd {
+  flex: none;
+  max-width: 62%;
+}
 dd[data-outcome="refused"],
 dd[data-outcome="timeout"] {
   color: var(--refused);

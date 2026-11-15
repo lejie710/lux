@@ -311,6 +311,20 @@ button {
     transform: scale(0.76);
   }
 }
+/* A wide window that is under 1240 px across, such as 1024 x 768 or 1180 x 820: the evidence capsule in the
+   foot is two to four lines there, so the laptop is smaller and ends above it. */
+@container (min-width: 761px) and (max-width: 1240px) {
+  .ending {
+    top: 33cqh;
+    height: min(39cqh, 72cqw);
+  }
+}
+@container (min-width: 761px) and (max-height: 700px) and (max-width: 1240px) {
+  .ending {
+    top: 38cqh;
+    height: min(32cqh, 72cqw);
+  }
+}
 .ending .dawn {
   opacity: 0;
   transition: opacity 0.6s ease;
