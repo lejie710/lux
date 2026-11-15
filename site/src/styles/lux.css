@@ -349,24 +349,54 @@ button {
   transition: opacity 2.4s ease 0.9s;
 }
 
-/* The words of a step, over the picture. */
+/* The words of a step, over the picture. The block does not fade as one: its parts do, each at its own
+   time. The statement comes first and soon; the line of evidence follows it, as proof follows a claim. */
 .words {
   position: absolute;
   inset: 0;
-  opacity: 0;
-  transform: translateY(14px);
   pointer-events: none;
-  transition:
-    opacity 0.35s ease,
-    transform 0.5s var(--ease);
 }
 .words[data-on="true"] {
+  pointer-events: auto;
+}
+.words > .head,
+.words-opening > *,
+.foot > .pill {
+  opacity: 0;
+  transform: translateY(10px);
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
+}
+.words[data-on="true"] > .head,
+.words-opening[data-on="true"] > * {
   opacity: 1;
   transform: none;
-  pointer-events: auto;
   transition:
-    opacity 0.7s ease 0.45s,
-    transform 0.9s var(--ease) 0.45s;
+    opacity 0.45s ease 0.18s,
+    transform 0.6s var(--ease) 0.18s;
+}
+.words[data-on="true"] > .foot > .pill {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.4s ease 0.5s,
+    transform 0.5s var(--ease) 0.5s;
+}
+/* The control and the rail are the same things at every step. The control of one step dissolves into the
+   next one's with no wait between them, and the rail is swapped, so neither is ever gone from the foot. */
+.foot > .open-evidence {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.words[data-on="true"] > .foot > .open-evidence {
+  opacity: 1;
+}
+.foot > .rail {
+  opacity: 0;
+}
+.words[data-on="true"] > .foot > .rail {
+  opacity: 1;
 }
 
 /* Opening: the title low on the left, clear of the laptop; the invitation low on the right. */
@@ -645,7 +675,6 @@ button {
   background: var(--warm);
   transform: scaleX(var(--fill));
   transform-origin: 0 50%;
-  transition: transform 0.5s var(--ease);
 }
 .rail a:hover i,
 .rail a:focus-visible i {
