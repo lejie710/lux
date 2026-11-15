@@ -197,6 +197,18 @@ export function stepPassed(tops: readonly number[], middle: number): number | nu
 }
 
 /**
+ * The step to show after one observation of the markers. `onLine` holds the steps whose markers were seen
+ * coming onto the window's middle line, in step order: the last of them is the step. When none came onto
+ * it, the line may have left the story, as it does when the End key carries the page from a middle step
+ * to its foot in one jump; the step is then the one `stepPassed` gives, at every observation and not only
+ * at the first. Null leaves the step as it is.
+ */
+export function stepShown(onLine: readonly number[], tops: () => readonly number[], middle: number): number | null {
+  if (onLine.length > 0) return onLine[onLine.length - 1];
+  return stepPassed(tops(), middle);
+}
+
+/**
  * How a small picture of the board frames some of its parts: how many times wider than its frame the board
  * is drawn, and where its left and top edges lie, as percentages of the frame's width and height. The parts
  * are centred and the board never leaves a gap at an edge. `shape` is the frame's width over its height.

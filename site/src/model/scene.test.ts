@@ -14,6 +14,7 @@ import {
   splitEmphasis,
   stepKey,
   stepPassed,
+  stepShown,
   tileFrame,
 } from "./scene";
 
@@ -272,6 +273,24 @@ describe("stepPassed", () => {
     expect(stepPassed([-900, 0, 900, 1800], 450)).toBe(1);
     expect(stepPassed([600, 1500, 2400], 450)).toBeNull();
     expect(stepPassed([], 450)).toBeNull();
+  });
+});
+
+describe("stepShown", () => {
+  const never = () => {
+    throw new Error("the markers were measured without need");
+  };
+  it("gives the marker that came onto the middle line, without measuring", () => {
+    expect(stepShown([10], never, 450)).toBe(10);
+    expect(stepShown([10, 11], never, 450)).toBe(11);
+  });
+  it("gives the last step when a jump to the foot of the page leaves a middle step's marker behind", () => {
+    const tops = Array.from({ length: STEP_COUNT }, (_, n) => -20000 + n * 900);
+    expect(stepShown([], () => tops, 450)).toBe(STEP_COUNT - 1);
+  });
+  it("gives the marker the line lies in when none was reported, and leaves the step alone above the story", () => {
+    expect(stepShown([], () => [-900, 0, 900, 1800], 450)).toBe(1);
+    expect(stepShown([], () => [600, 1500, 2400], 450)).toBeNull();
   });
 });
 
