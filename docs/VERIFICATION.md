@@ -261,7 +261,7 @@ Made on 2026-11-15 in nine commits, `5cf4d0a` to `cf1fc46`, after every run and 
 
 ## 10. The final changes
 
-Made on 2026-11-15 after section 9, in the commits `99c9865`, `40137be` and `a337644` and the commit that added this section. No experiment was run again, and no recording, prediction or score was touched.
+Made on 2026-11-15 after section 9, in the commits `99c9865`, `40137be`, `a337644` and `8454239`, and the commit that added this section. No experiment was run again, and no recording, prediction or score was touched.
 
 | Change | Where |
 |---|---|
