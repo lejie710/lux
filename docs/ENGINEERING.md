@@ -376,7 +376,7 @@ The recorder's scratch files live in the work directory (`~/lux-work`, or `LUX_W
 | Regenerate the keys in `recorder/testkeys/`, or sign the loaders again | Register 7 depends on the certificate bytes, and a signature is not repeatable. Every recording would stop being reproducible |
 | Replace `recordings/normal-1`, `normal-2` or a two-entry normal run in a checkout you mean to commit | The predictions and the scores name their baseline recordings by hash. `scripts/record-pilots.sh` and `scripts/record-baselines.sh` do replace them, on purpose, for a reader who wants to see the runs repeat; the recording time changes, so the files then differ from the committed ones even when every compared field is equal |
 | Rewrite the fixtures in `recorder/tests/fixtures/` | They are real output of two boots and pin the two undocumented formats the recorder depends on |
-| Overwrite the pictures in `site/src/assets/` and `site/public/og.jpg` without the source pictures | They cannot be rebuilt from a clone |
+| Overwrite the pictures in `site/src/assets/` and `site/public/cover.jpg` without the source pictures | They cannot be rebuilt from a clone |
 | Record a run on a hosted runner, or add a step to a workflow that boots a virtual machine | The recordings are committed evidence, made once on one machine with pinned tool versions. A runner has other versions, and a recording made there would not be comparable. Both workflows only read what is committed |
 
 ### 6.7 Publishing the site

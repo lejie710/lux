@@ -14,7 +14,7 @@ Every picture on the site is an illustration of a fictional laptop and a fiction
 | `src/assets/masks/<part>.webp`  | Eight soft masks, 600 x 375, one per part of the board                 | Composed in code: a polygon per part, drawn and blurred by the same script. The shape is in the alpha channel                                                                                                                            |
 | `src/assets/masks/whole.webp`   | One soft mask of the whole board                                       | Composed in code the same way, with a wider blur                                                                                                                                                                                         |
 | `src/assets/parts.json`         | Where each part lies on the board, as fractions of the picture         | Composed in code: the bounds of each part's polygon, written by the same script. A narrow window uses it to keep the parts a step is about in view                                                                                       |
-| `public/og.jpg`                 | The picture a link to the site is previewed with, 1200 x 630           | The cover picture of the README (`docs/cover.webp`, described below), scaled to the preview's height by the same script, with the same small strip cut from its left and right. A link to the site is therefore previewed with the cover |
+| `public/cover.jpg`              | The picture a link to the site is previewed with, 1200 x 630           | The cover picture of the README (`docs/cover.webp`, described below), scaled to the preview's height by the same script, with the same small strip cut from its left and right. A link to the site is therefore previewed with the cover |
 | `public/favicon.svg`            | The mark                                                               | Drawn by hand as SVG from the geometry in `src/model/mark.ts`; a test keeps the two equal                                                                                                                                                |
 
 The full-size source pictures are not in this repository. With them in a folder, the shipped files are rebuilt by:
@@ -23,7 +23,7 @@ The full-size source pictures are not in this repository. With them in a folder,
 python tools/make_assets.py <folder with the source pictures>
 ```
 
-It needs Python 3 with Pillow, and is run from this folder. With `--preview-only` after the folder it writes only `public/og.jpg`. It reads `../docs/cover.webp`, so it needs no source pictures.
+It needs Python 3 with Pillow, and is run from this folder. With `--preview-only` after the folder it writes only `public/cover.jpg`. It reads `../docs/cover.webp`, so it needs no source pictures.
 
 ## The dark pictures are lifted
 

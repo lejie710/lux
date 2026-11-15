@@ -10,7 +10,7 @@ import react from "@vitejs/plugin-react";
  */
 function staticHosting(base: string, siteUrl: string | undefined): Plugin {
   const home = base.startsWith("/") ? base : "./";
-  const picture = siteUrl ? `${siteUrl.replace(/\/$/, "")}/og.jpg` : "og.jpg";
+  const picture = siteUrl ? `${siteUrl.replace(/\/$/, "")}/cover.jpg` : "cover.jpg";
   return {
     name: "lux-static-hosting",
     transformIndexHtml: () => [

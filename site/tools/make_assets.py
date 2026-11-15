@@ -11,7 +11,7 @@ repository. This script turns them into what the site ships:
   src/assets/masks/<part>.webp   one soft mask per part of the board
   src/assets/masks/whole.webp    one soft mask of the whole board, for the stop where every part is lit
   src/assets/parts.json          where each part lies on the board, as fractions of the plate
-  public/og.jpg                  the picture a link to the site is previewed with, 1200 x 630
+  public/cover.jpg                  the picture a link to the site is previewed with, 1200 x 630
 
 Four pictures are lifted on the way: the laptop and the board before power,
 the laptop with its inside awake, and the body (not the screen) of the laptop
@@ -33,7 +33,7 @@ on the left, the same laptop with its screen lit on the right, and the name of
 the site. It carries no other words.
 
 Usage: python tools/make_assets.py <folder with the source plates> [--preview-only]
-Needs Pillow. Run from the site folder. With --preview-only, only public/og.jpg is written.
+Needs Pillow. Run from the site folder. With --preview-only, only public/cover.jpg is written.
 """
 
 import json
@@ -252,8 +252,8 @@ def main() -> None:
         raise SystemExit(__doc__)
     plates = Path(arguments[0])
     if "--preview-only" in sys.argv:
-        cover_preview(Path("../docs/cover.webp")).save("public/og.jpg", quality=90, optimize=True)
-        print(f"public/og.jpg  {PREVIEW}  {Path('public/og.jpg').stat().st_size} bytes")
+        cover_preview(Path("../docs/cover.webp")).save("public/cover.jpg", quality=90, optimize=True)
+        print(f"public/cover.jpg  {PREVIEW}  {Path('public/cover.jpg').stat().st_size} bytes")
         return
     out = Path("src/assets")
     (out / "masks").mkdir(parents=True, exist_ok=True)
@@ -290,9 +290,9 @@ def main() -> None:
         }
     (out / "parts.json").write_text(json.dumps(boxes, indent=2) + chr(10), encoding="utf-8", newline=chr(10))
 
-    cover_preview(Path("../docs/cover.webp")).save("public/og.jpg", quality=90, optimize=True)
+    cover_preview(Path("../docs/cover.webp")).save("public/cover.jpg", quality=90, optimize=True)
 
-    for path in sorted([*out.rglob("*.webp"), Path("public/og.jpg")]):
+    for path in sorted([*out.rglob("*.webp"), Path("public/cover.jpg")]):
         print(f"{path.as_posix()}  {Image.open(path).size}  {path.stat().st_size} bytes")
 
 

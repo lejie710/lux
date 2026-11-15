@@ -202,12 +202,12 @@ Read from the built `site/dist/index.html`:
 | `<title>` | yes | `Lux: what your laptop does before it wakes` |
 | `meta name="description"` | yes | One sentence on what the site is |
 | `og:type`, `og:site_name`, `og:title`, `og:description` | yes | `website`, `Lux`, the title, the description |
-| `og:image` | yes | `og.jpg`, a relative address, in a plain build |
+| `og:image` | yes | `cover.jpg`, a relative address, in a plain build |
 | `og:image:width`, `og:image:height`, `og:image:alt` | yes | 1200, 630, and a sentence that says the picture is an illustration |
 | `twitter:card` | yes | `summary_large_image` |
 | `og:url`, `link rel="canonical"` | only with `LUX_SITE_URL` | |
 
-The picture `dist/og.jpg` is in the build and is 1200 x 630.
+The picture `dist/cover.jpg` is in the build and is 1200 x 630. It is the README's cover fitted to that size. Until 2026-11-15 the file was named `og.jpg` and held another picture; the records below that name `og.jpg` describe that earlier file. It was renamed so that services which had stored the earlier picture under its address fetch the new one.
 
 **An absolute address for the preview picture needs a public address.** Before there was one, a build made with `LUX_SITE_URL` set to a placeholder address and `LUX_BASE=/lux/` was checked: `og:image` then holds the absolute address of `og.jpg`, `og:url` and the canonical link appear, the asset paths start with `/lux/`, and the link in `404.html` leads to `/lux/`. That showed the mechanism. Since 2026-11-15 the published build carries the real address, and the tags were read as served from a fresh browser profile (section 12). It is still not a seen preview: no preview service has been asked to fetch the page.
 

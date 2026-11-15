@@ -148,7 +148,7 @@ The build suits any static host: every page lives after the hash sign of one add
 | Setting | Use |
 |---|---|
 | `LUX_BASE` | The folder the site is served from, for example `/lux/`. Asset paths and the link in `404.html` then start there |
-| `LUX_SITE_URL` | The full public address. A link preview needs an absolute address for its picture (`og.jpg`); without this setting the tag holds a relative one, which preview services do not follow |
+| `LUX_SITE_URL` | The full public address. A link preview needs an absolute address for its picture (`cover.jpg`); without this setting the tag holds a relative one, which preview services do not follow |
 
 ## Re-recording on Linux or WSL
 
