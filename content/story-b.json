@@ -262,7 +262,7 @@
               }
             ],
             "console_note": "No console line belongs to these records.",
-            "explanation": "Secure Boot is the thread that can block, and its policy is five stored variables: a switch, two keys and two lists. UEFI 2.11 defines what each one means and who may change it, but not that they are recorded in the TPM or in which register; that belongs to a Trusted Computing Group document that has not been read for this project. What is shown here is what this firmware did: five records, in this order, all in register 7, before any record about a loaded program. The recording keeps each record's size and digest, not the value inside.",
+            "explanation": "Secure Boot is the thread that can block, and its policy is five stored variables: a switch, two keys and two lists. UEFI 2.11 defines what each one means and who may change it, but not that they are recorded in the TPM or in which register; that belongs to a Trusted Computing Group document that has not been read for this project. What is shown here is what this firmware did: five records, in this order, all in register 7, before any record about a loaded program. The file recording.json keeps each record's size and digest, and the raw log stored beside it, eventlog.bin, keeps the value itself: for the switch that is one byte, 01.",
             "definitions": [
               {
                 "glossary": "secure-boot"
@@ -395,10 +395,10 @@
               "source": "observed in recording normal-1 events 3 to 7 (index fields 4 to 8)"
             },
             {
-              "text": "The recording stores each record's size and digest. It does not store the value of the SecureBoot byte.",
+              "text": "The file recording.json stores each record's size and digest. The raw event log stored beside it holds the value: the SecureBoot variable of this run is one byte, 01.",
               "basis": "recording",
               "run": "normal-1",
-              "field": "events[3]: summary, digest_sha256"
+              "field": "events[3] (index field 4): summary, digest_sha256; the value is in eventlog.bin, beside this file"
             },
             {
               "text": "The three key files this run was prepared with are named in the recording by their fingerprints.",
@@ -619,9 +619,8 @@
         ]
       },
       "not_shown": [
-        "The contents of the boot variables. The recording keeps each one's name, size and digest only.",
+        "A console line or a log record that names option 0000 after its own measurement. The console names only 0001, and the one record of a boot option being called, record 17, names no option.",
         "Which option the firmware marked as the current one. That variable was not read from the machine.",
-        "Why option 0000 was not started.",
         "Which file on the disk was read. The console names the disk, not a file."
       ],
       "headline": "s5-boot-order",
@@ -680,7 +679,7 @@
               }
             ],
             "console_note": "The console line for this stop is on the next screen.",
-            "explanation": "UEFI 2.11 is firm here: for a normal boot the firmware must use the stored boot order, first entry first. It also leaves room: the firmware may add options or remove invalid ones, and a change to the order is only guaranteed to act after a reset. The recording shows the order variable and two boot options written to register 1, after four configuration records in the same register. That these go to register 1 is what this firmware did; the rule for it is in a Trusted Computing Group document that has not been read for this project.",
+            "explanation": "UEFI 2.11 is firm here: for a normal boot the firmware must use the stored boot order, first entry first. It also leaves room: the firmware may add options or remove invalid ones, and a change to the order is only guaranteed to act after a reset. The recording shows the order variable, whose four bytes are 00 00 01 00, and two boot options written to register 1, after four configuration records in the same register. That these go to register 1 is what this firmware did; the rule for it is in a Trusted Computing Group document that has not been read for this project.",
             "definitions": [
               {
                 "glossary": "boot-manager"
@@ -740,7 +739,7 @@
               "field": "events[13].summary (index field 14)"
             },
             {
-              "text": "Four bytes is room for two 16-bit entries. This is a reading of the size against the UEFI format; the recording does not hold the bytes themselves.",
+              "text": "Four bytes is room for two 16-bit entries. This is a reading of the size against the UEFI format.",
               "basis": "uefi-required",
               "citation": {
                 "document": "UEFI Specification",
@@ -749,6 +748,12 @@
                 "title": "Globally Defined Variables",
                 "pdf_page": 165
               }
+            },
+            {
+              "text": "The four bytes are 00 00 01 00 in the raw event log stored beside the recording. Read as two 16-bit numbers with the low byte first, they are 0000 and then 0001, the numbers in the names of the two options recorded after it.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "events[13] (index field 14); the value is in eventlog.bin, beside this file"
             },
             {
               "text": "Two boot option variables are recorded after it: Boot0000 with 62 data bytes and Boot0001 with 110.",
@@ -811,7 +816,7 @@
             "text": "Firmware picks option 0001: the disk.",
             "emphasis": "the disk"
           },
-          "support": "Two boot options were recorded, the console names only 0001, and this recording does not show why 0000 was not started.",
+          "support": "The stored order lists option 0000 first and 0001 second, the two options begin with different bytes, and the console names only 0001.",
           "evidence": {
             "recorded": true,
             "kind": "console",
@@ -857,7 +862,7 @@
                 "bank": "sha256"
               }
             ],
-            "explanation": "This is the first thing the firmware prints. It names boot option 0001 and where that option points: a disk on a storage controller. The path ends at the disk and names no file; UEFI 2.11 describes a default file name for that case, and the recording does not show which file was read. Option 0000 was recorded too, but no console line mentions it, and the recording does not say why.",
+            "explanation": "This is the first thing the firmware prints. It names boot option 0001 and where that option points: a disk on a storage controller. The path ends at the disk and names no file; UEFI 2.11 describes a default file name for that case, and the recording does not show which file was read. Option 0000 was recorded too and stands first in the stored order: its bytes carry the text UiApp and begin 09 01 00 00, where option 0001 begins 01 00 00 00, and no console line mentions it.",
             "definitions": [
               {
                 "glossary": "boot-option"
@@ -895,6 +900,18 @@
               "basis": "recording",
               "run": "normal-1",
               "field": "console"
+            },
+            {
+              "text": "In the raw event log stored beside the recording, the value of Boot0000 begins with the bytes 09 01 00 00 and carries the text UiApp. The value of Boot0001 begins with 01 00 00 00 and carries the text UEFI QEMU HARDDISK QM00001, the name in quotation marks on the first console line.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "events[14] and events[15] (index fields 15 and 16), and console[0]; the values are in eventlog.bin, beside this file"
+            },
+            {
+              "text": "Read as one number with the low byte first, those four bytes are 0x00000109 for Boot0000 and 0x00000001 for Boot0001. This page calls that number the option's attributes and the text its description, and it gives the bytes without a rule for what the difference means.",
+              "basis": "recording",
+              "run": "normal-1",
+              "field": "events[14] and events[15] (index fields 15 and 16); the values are in eventlog.bin, beside this file"
             },
             {
               "text": "When a boot option names a device and no file, UEFI describes a default file name to look for.",

@@ -332,10 +332,10 @@
               }
             },
             {
-              "text": "Earlier in the same log the whole db variable was recorded with 879 data bytes; this record has 851. The recording does not say why the two sizes differ, and no explanation is offered here.",
+              "text": "Earlier in the same log the whole db variable was recorded with 879 data bytes; this record has 851. In the raw event log stored beside the recording, the 879 bytes are 28 bytes followed by the 851 bytes of this record, byte for byte: 28 + 851 = 879.",
               "basis": "recording",
               "run": "normal-1",
-              "field": "events[6] (index 7) and events[24] (index 25): summary"
+              "field": "events[6] (index 7) and events[24] (index 25): summary; the values are in eventlog.bin, beside this file"
             }
           ],
           "picture": {
