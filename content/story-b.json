@@ -619,6 +619,7 @@
         ]
       },
       "not_shown": [
+        "Why the console names 0001 when the stored order lists 0000 first. The log holds the bytes of both options and no record that says how they were used.",
         "A console line or a log record that names option 0000 after its own measurement. The console names only 0001, and the one record of a boot option being called, record 17, names no option.",
         "Which option the firmware marked as the current one. That variable was not read from the machine.",
         "Which file on the disk was read. The console names the disk, not a file."
@@ -679,7 +680,7 @@
               }
             ],
             "console_note": "The console line for this stop is on the next screen.",
-            "explanation": "UEFI 2.11 is firm here: for a normal boot the firmware must use the stored boot order, first entry first. It also leaves room: the firmware may add options or remove invalid ones, and a change to the order is only guaranteed to act after a reset. The recording shows the order variable, whose four bytes are 00 00 01 00, and two boot options written to register 1, after four configuration records in the same register. That these go to register 1 is what this firmware did; the rule for it is in a Trusted Computing Group document that has not been read for this project.",
+            "explanation": "UEFI 2.11 is firm here: for a normal boot the firmware must use the stored boot order, first entry first. It also leaves room: the firmware may add options or remove invalid ones, and a change to the order is only guaranteed to act after a reset. The recording shows the order variable, four bytes that the raw event log beside it holds as 00 00 01 00, and two boot options written to register 1, after four configuration records in the same register. That these go to register 1 is what this firmware did; the rule for it is in a Trusted Computing Group document that has not been read for this project.",
             "definitions": [
               {
                 "glossary": "boot-manager"
