@@ -441,7 +441,7 @@
           "field": "console[0]"
         }
       ],
-      "source_files_note": "Each file below is named as the basis of a claim. Each was read on the project's main branch, not at the release the recorded package was built from."
+      "source_files_note": "Each file below is named as the basis of a claim. Each was read on the project's main branch, not at the release the recorded package was built from. One of them, the reset vector file, has since been renamed on that branch, and its link leads to the release tag edk2-stable202402, where it has the name given here."
     },
     {
       "id": "emulator",
@@ -488,7 +488,7 @@
       "title": "tpm2-tools",
       "version": "5.6",
       "url": null,
-      "licence": "Not recorded in this project's research.",
+      "licence": "BSD-3-Clause, by the copyright file of its Ubuntu package.",
       "how_used": "The event type names shown on this site, such as EV_SEPARATOR, are the names this tool prints for the type codes in the log. They are tool names. They are not citations of a specification.",
       "claims": [
         {
@@ -506,7 +506,7 @@
       "title": "GNU binutils and Python",
       "version": "binutils 2.42 (package 2.42-4ubuntu2.10), Python 3.12.3, on Ubuntu 24.04",
       "url": null,
-      "licence": "Not recorded in this project's research.",
+      "licence": "GNU General Public License, version 3 or later, for binutils; Python Software Foundation License for Python. Neither licence text was checked for this project.",
       "how_used": "binutils assembled and linked the project's own small loader. Python ran the recorder, using its standard library only. The test keys and the signed loader were created once with OpenSSL 3.0.13, sbsigntool 0.9.4 and efitools 1.9.2.",
       "claims": [
         {
@@ -524,7 +524,7 @@
       "title": "The committed recordings of this project",
       "version": "Format lux-recording/1 and lux-comparison/1",
       "url": null,
-      "licence": "Program output recorded by this project. No licence has been chosen for the repository yet.",
+      "licence": "Program output recorded by this project, and part of its repository. The recorder's code is under the MIT License; the programs that produced the output are separate projects under their own licences.",
       "files": [
         "recordings/normal-1/recording.json",
         "recordings/normal-2/recording.json",
@@ -567,8 +567,8 @@
       "kind": "firmware source",
       "project": "EDK II (TianoCore), OvmfPkg",
       "path": "OvmfPkg/ResetVector/Ia16/ResetVectorVtf0.asm",
-      "url": "https://github.com/tianocore/edk2/blob/master/OvmfPkg/ResetVector/Ia16/ResetVectorVtf0.asm",
-      "read_at": "master branch, not the tag the recorded package was built from",
+      "url": "https://github.com/tianocore/edk2/blob/edk2-stable202402/OvmfPkg/ResetVector/Ia16/ResetVectorVtf0.asm",
+      "read_at": "master branch first, which has since renamed the file; the link leads to the tag edk2-stable202402, where it has this name",
       "licence": "BSD-2-Clause-Patent"
     },
     {

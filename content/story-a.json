@@ -78,7 +78,7 @@
           "why": "A second normal boot matched the first."
         }
       ],
-      "explanation": "The story follows one boot that was recorded and then recorded again. The two recordings match on every compared field, so what follows is not a lucky run. Only the fields named in the recording's own may_vary list are left out of that comparison: the date, the run's name and two durations. After the seven stops come experiments, where one thing is changed and the machine boots again; the changed run committed so far is a pilot, made before any prediction was written, and no score is claimed.",
+      "explanation": "The story follows one boot that was recorded and then recorded again. The two recordings match on every compared field, so what follows is not a lucky run. Only the fields named in the recording's own may_vary list are left out of that comparison: the date, the run's name and two durations. After the seven stops come experiments, where one thing is changed and the machine boots again; four of the changed runs are pilots, made before any prediction was written and shown without a score, and four are counted runs, each booted once after its prediction was committed and scored against it.",
       "definitions": [
         {
           "glossary": "firmware"
@@ -280,7 +280,7 @@
               "basis": "this-firmware",
               "source": "OvmfPkg/ResetVector/Ia16/ResetVectorVtf0.asm",
               "source_ref": "fw-reset-vector",
-              "note": "Read on the master branch, not at the tag the recorded package was built from. Not observed in the recording."
+              "note": "First read on the master branch, which has since renamed the file; opened again at the tag edk2-stable202402, where it has this name. Ubuntu's own changes to the recorded package were not read. Not observed in the recording."
             }
           ],
           "picture": {
