@@ -318,6 +318,36 @@ button {
   opacity: 1;
   transition: opacity 2.4s ease 0.9s;
 }
+/* Where there is room, a tall and wide stage, the laptop of the ending is the largest picture of the story,
+   also under a supporting line: the words above it are set smaller and leave it the room. */
+@container (min-height: 800px) and (min-aspect-ratio: 5 / 4) {
+  .ending {
+    top: 33cqh;
+    height: min(55cqh, 72cqw);
+  }
+  .ending[data-low="true"][data-on="true"] {
+    transform: none;
+  }
+  /* The words over it start a little higher, so a supporting line stands clear of the laptop's lid. */
+  .words-stop[data-view^="laptop"] .head {
+    top: calc(var(--nav) + 4.4cqh);
+  }
+}
+/* The light under the keys is part of both pictures of this laptop. As the screen lights, a shade over the
+   lower part of the picture, from the hinge down, turns that light down with it: the page behind is black, so
+   the shade only dims. The lit screen is then the brightest thing in view. */
+.ending::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(transparent 59%, rgba(0, 0, 0, 0.5) 65%, rgba(0, 0, 0, 0.6));
+  opacity: 0;
+  transition: opacity 0.6s ease;
+}
+.ending[data-dawn="true"]::after {
+  opacity: 1;
+  transition: opacity 2.4s ease 0.9s;
+}
 
 /* The words of a step, over the picture. */
 .words {
@@ -424,8 +454,8 @@ button {
 /* Over the pulled-back laptop the statement is set smaller and wider, so it stays on two lines and the
    laptop has the room under it. */
 .words-stop[data-view^="laptop"] .statement {
-  max-width: 21em;
-  font-size: clamp(30px, min(3.8cqw, 6.2cqh), 56px);
+  max-width: 24em;
+  font-size: clamp(30px, min(3.2cqw, 5.4cqh), 44px);
 }
 .eyebrow .thread {
   color: var(--soft);
@@ -459,9 +489,24 @@ button {
   font-weight: 650;
   white-space: nowrap;
 }
+/* The way on from the last screen: one line where the window is wide enough for it. */
+.aside-handover {
+  max-width: 76em;
+  font-size: clamp(14px, min(1.25cqw, 2.3cqh), 16px);
+}
+/* The one filled control of the site: the way on to the next story. */
 .aside-handover a {
-  color: var(--warm);
-  text-underline-offset: 5px;
+  margin-left: 10px;
+  padding: 7px 16px;
+  border-radius: 18px;
+  background: var(--warm);
+  color: #1a1205;
+  font-weight: 600;
+  text-decoration: none;
+  text-shadow: none;
+}
+.aside-handover a:hover {
+  background: #ffd591;
 }
 /* The way on before it has an address: words in the page's own white, not the colour of a link. */
 .handover-pending {

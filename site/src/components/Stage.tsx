@@ -68,9 +68,10 @@ export function Stage({ current, solo = false, anchors = true, onOpen, onStep }:
             <Light name="whole" layer={layers.whole} solo={solo} />
           </div>
         )}
-        {/* The laptop of the ending: its inside awake, and over that the same laptop with its screen lit. */}
+        {/* The laptop of the ending: its inside awake, and over that the same laptop with its screen lit. As
+            the screen lights, the stylesheet turns down the light under the keys. */}
         {drawn(layers.ending) && (
-          <div className="ending" data-on={layers.ending} data-low={low}>
+          <div className="ending" data-on={layers.ending} data-low={low} data-dawn={layers.screenLit}>
             <img src={laptopInside} alt="" width={1280} height={960} />
             {drawn(layers.screenLit) && (
               <img className="dawn" src={laptopAwake} alt="" width={1280} height={960} data-on={layers.screenLit} />
