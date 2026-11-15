@@ -584,6 +584,25 @@ describe("the stylesheet", () => {
     expect((luminance + 0.05) / 0.05).toBeGreaterThan(4.5);
   });
 
+  it("keeps the navigation on one line, with a 44 px reach for each link in a narrow window", () => {
+    const flat = css.replace(/\s+/g, " ");
+    expect(flat).toContain(".lnav .name, .lnav .links { flex: none; white-space: nowrap; }");
+    const narrow = flat.slice(flat.indexOf("@media (max-width: 760px)"));
+    expect(narrow).toMatch(/\.lnav \.links a \{[^}]*min-height: 44px;[^}]*padding: 0 8px;/);
+    // Under 360 px the word beside the mark is hidden from the eye only: the link keeps its name.
+    const tiny = flat.slice(flat.indexOf("@media (max-width: 359px)"));
+    expect(tiny).toMatch(/\.lnav \.name-word \{[^}]*clip-path: inset\(50%\);/);
+    expect(tiny.slice(0, tiny.indexOf("@container"))).not.toContain("display: none");
+    expect(renderToStaticMarkup(<App mode={{ kind: "scroll" }} />)).toContain('<span class="name-word">Lux</span>');
+  });
+
+  it("makes the board and the laptop smaller on a stage that is narrow and short, never the words", () => {
+    const flat = css.replace(/\s+/g, " ");
+    expect(flat).toMatch(/--plate: min\(var\(--wide\), max\(\d+cqw, \d+cqh - \d+px\)\);/);
+    expect(flat).toContain("width: var(--plate);");
+    expect(flat).toMatch(/\.ending \{ --tall: min\(\d+cqh, \d+cqw, 100cqh - \d+px\);/);
+  });
+
   it("keeps the page black", () => {
     expect(css).toMatch(/--black: #000;/);
     expect(css).toMatch(/html \{\s+background: var\(--black\);/);

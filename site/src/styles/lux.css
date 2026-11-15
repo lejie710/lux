@@ -86,6 +86,12 @@ button {
   letter-spacing: -0.02em;
   text-decoration: none;
 }
+/* Neither side of the bar gives way: a name stays on one line and the two sides never share room. */
+.lnav .name,
+.lnav .links {
+  flex: none;
+  white-space: nowrap;
+}
 .lnav .links {
   display: flex;
   align-items: baseline;
@@ -1013,9 +1019,26 @@ html[data-mode="still"] .stage {
 
 /* Narrow windows: the foot stacks and the invitation sits under the title. */
 @media (max-width: 760px) {
+  /* A page scrolls under the bar here, close to its words: the bar is black down to below them. */
+  .lnav {
+    background: linear-gradient(var(--black) 84%, transparent);
+  }
+  .lnav .name {
+    min-height: 44px;
+  }
+  /* The links stand side by side with no gap: each one's padding is its reach, 44 px tall. The last one's
+     words still end at the page's edge. */
   .lnav .links {
-    gap: 16px;
+    align-items: center;
+    gap: 0;
+    margin-right: -8px;
     font-size: 13px;
+  }
+  .lnav .links a {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 8px;
   }
   .laptop {
     top: calc(var(--nav) + 5cqh);
@@ -1050,7 +1073,8 @@ html[data-mode="still"] .stage {
     margin-bottom: 10px;
   }
   .foot {
-    bottom: 42px;
+    /* Clear of the note under it, which may take two lines. */
+    bottom: 50px;
     gap: 6px 12px;
     align-items: center;
   }
@@ -1099,6 +1123,20 @@ html[data-mode="still"] .stage {
     font-size: clamp(17px, 4.7vw, 20px);
   }
 }
+/* Narrower than a small phone: the mark stands alone, and the word beside it is kept for a screen reader. */
+@media (max-width: 359px) {
+  .lnav {
+    padding-inline: 14px;
+  }
+  .lnav .name-word {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+}
 
 /* A stage taller than it is wide (a phone, a tablet held upright): the whole board would be a thin strip
    with a black band above it. It is drawn one and a half windows wide instead, slid so the parts this step
@@ -1110,14 +1148,17 @@ html[data-mode="still"] .stage {
        step is about parts that lie further apart than the window is wide, it is drawn as much smaller as
        keeps them all in view. The plate turns about the middle of its lower half, at its left edge. */
     --wide: 250cqw;
+    /* A stage that is narrow and also short has less room between the statement and the foot than a board
+       of that width is tall: there the plate is as much narrower as keeps the board between the two. */
+    --plate: min(var(--wide), max(110cqw, 322cqh - 1420px));
     --zoom: min(1, 0.44 / var(--span));
-    width: var(--wide);
+    width: var(--plate);
     margin-inline: 0;
     right: auto;
     bottom: auto;
-    top: calc(55cqh - 112.5cqw);
+    top: calc(55cqh - 0.45 * var(--plate));
     transform-origin: 0 72%;
-    --pan: clamp(100cqw - var(--zoom) * var(--wide), 50cqw - var(--zoom) * var(--focus) * var(--wide), 0px);
+    --pan: clamp(100cqw - var(--zoom) * var(--plate), 50cqw - var(--zoom) * var(--focus) * var(--plate), 0px);
     transform: translateX(var(--pan)) scale(var(--zoom));
     -webkit-mask-image: none;
     mask-image: none;
@@ -1125,11 +1166,20 @@ html[data-mode="still"] .stage {
   .board[data-on="false"] {
     transform: translateX(var(--pan)) scale(calc(var(--zoom) * 0.6));
   }
+  /* The laptop stands just above the foot, and on a short stage it is as much smaller as the words need. */
   .ending {
-    top: 38cqh;
-    height: min(40cqh, 78cqw);
+    --tall: min(40cqh, 78cqw, 100cqh - 480px);
+    top: calc(100cqh - 212px - var(--tall));
+    height: var(--tall);
   }
   .words-stop[data-kind="inside"] .head {
     top: calc(var(--nav) + 9cqh);
+  }
+}
+/* The same stage when it is short as well: under a supporting line the laptop sits a little lower still,
+   clear of that line and still above the foot. */
+@container (max-aspect-ratio: 4 / 5) and (max-height: 700px) {
+  .ending[data-low="true"][data-on="true"] {
+    transform: translateY(14px) scale(0.76);
   }
 }

@@ -31,7 +31,8 @@ export function Nav({
       )}
       <a className="name" href={hrefOf("story")}>
         <Mark />
-        Lux
+        {/* In a very narrow window the word gives its room to the three links; the link keeps its name. */}
+        <span className="name-word">Lux</span>
       </a>
       <span className="links">
         {PAGES.map((p) => (

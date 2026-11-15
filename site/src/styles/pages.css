@@ -781,6 +781,13 @@ dd[data-outcome="accepted"] {
   .page-run {
     margin-left: 14px;
   }
+  /* A short value stays on one line and its label wraps beside it; only a long value takes a second line. */
+  .score dd,
+  .card-result dd,
+  .sheet-pairs dd {
+    flex: none;
+    max-width: 62%;
+  }
   .page-foot {
     justify-content: flex-start;
   }
