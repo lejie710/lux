@@ -1,0 +1,56 @@
+# Checks, tests, builds and publishes the site to GitHub Pages on every push to main.
+# The repository's Pages source must be set to "GitHub Actions" (Settings, Pages).
+# Nothing here boots a virtual machine or records a run: the recordings are committed evidence.
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    env:
+      # The folder the site is served from, and its full public address for the link-preview tags.
+      LUX_BASE: /lux/
+      LUX_SITE_URL: https://lejie710.github.io/lux/
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: site/package-lock.json
+      # A failing check stops the deployment: nothing is published that the content check, the formatter
+      # or the tests reject.
+      - run: python3 scripts/check_content.py
+      - run: npm ci
+        working-directory: site
+      - run: npm run format:check
+        working-directory: site
+      - run: npm test
+        working-directory: site
+      - run: npm run build
+        working-directory: site
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: site/dist
+      - id: deployment
+        uses: actions/deploy-pages@v4
