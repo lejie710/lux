@@ -233,39 +233,17 @@ PREVIEW = (1200, 630)
 NAME_FONTS = ("segoeuib.ttf", "arialbd.ttf", "DejaVuSans-Bold.ttf")
 
 
-def name_font(size: int) -> ImageFont.ImageFont:
-    for name in NAME_FONTS:
-        try:
-            return ImageFont.truetype(name, size)
-        except OSError:
-            continue
-    return ImageFont.load_default(size)
+def cover_preview(cover: Path) -> Image.Image:
+    """The link preview: the cover picture of the README, fitted to the preview size.
 
-
-def preview(plates: Path, dark: Image.Image) -> Image.Image:
-    """The link preview: the laptop before power, the same laptop awake, and the name. No other words."""
-    picture = Image.new("RGB", PREVIEW, (0, 0, 0))
-    height = 470
-    size = (round(height * LAPTOP_OUT[0] / LAPTOP_OUT[1]), height)
-    fade = edge_fade(LAPTOP_OUT, EDGE_FADE).convert("RGB")
-    setting = {key: value for key, value in LIFT["laptop-awake"].items() if key != "box"}
-    awake = lift(on_black(plates / f"lux-{SOURCE['laptop-awake']}.png"), **setting)
-    for laptop, left in ((dark, -8), (awake, PREVIEW[0] - size[0] + 8)):
-        cut = ImageChops.multiply(laptop.crop(LAPTOP_BOX).resize(LAPTOP_OUT, Image.LANCZOS), fade)
-        # Lighter of the two where they overlap, so neither laptop's black margin covers the other.
-        layer = Image.new("RGB", PREVIEW, (0, 0, 0))
-        layer.paste(cut.resize(size, Image.LANCZOS), (left, PREVIEW[1] - height - 20))
-        picture = ImageChops.lighter(picture, layer)
-    draw = ImageDraw.Draw(picture)
-    # The mark: a lens of light in a dark disc, as in the navigation bar. Then the name.
-    cx, cy, r = 86, 84, 26
-    draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=(21, 21, 23), outline=(58, 58, 62))
-    lens = Image.new("L", PREVIEW, 0)
-    lens_draw = ImageDraw.Draw(lens)
-    lens_draw.ellipse((cx - 19, cy - 9, cx + 19, cy + 9), fill=255)
-    picture.paste((255, 227, 173), mask=lens.filter(ImageFilter.GaussianBlur(0.8)))
-    draw.text((cx + r + 18, cy), "Lux", font=name_font(58), fill=(244, 242, 236), anchor="lm")
-    return picture
+    The cover is 2 : 1 and the preview a little less wide, so the cover is scaled to the preview's height
+    and the same small strip is cut from its left and right. Words and laptop lie well inside.
+    """
+    picture = Image.open(cover).convert("RGB")
+    width = round(picture.width * PREVIEW[1] / picture.height)
+    scaled = picture.resize((width, PREVIEW[1]), Image.LANCZOS)
+    left = (width - PREVIEW[0]) // 2
+    return scaled.crop((left, 0, left + PREVIEW[0], PREVIEW[1]))
 
 
 def main() -> None:
@@ -274,7 +252,7 @@ def main() -> None:
         raise SystemExit(__doc__)
     plates = Path(arguments[0])
     if "--preview-only" in sys.argv:
-        preview(plates, lifted(plates, "laptop-dark", lid=True)).save("public/og.jpg", quality=88, optimize=True)
+        cover_preview(Path("../docs/cover.webp")).save("public/og.jpg", quality=90, optimize=True)
         print(f"public/og.jpg  {PREVIEW}  {Path('public/og.jpg').stat().st_size} bytes")
         return
     out = Path("src/assets")
@@ -312,7 +290,7 @@ def main() -> None:
         }
     (out / "parts.json").write_text(json.dumps(boxes, indent=2) + chr(10), encoding="utf-8", newline=chr(10))
 
-    preview(plates, laptops["laptop-dark"]).save("public/og.jpg", quality=88, optimize=True)
+    cover_preview(Path("../docs/cover.webp")).save("public/og.jpg", quality=90, optimize=True)
 
     for path in sorted([*out.rglob("*.webp"), Path("public/og.jpg")]):
         print(f"{path.as_posix()}  {Image.open(path).size}  {path.stat().st_size} bytes")
