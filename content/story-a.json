@@ -29,7 +29,7 @@
     },
     "invitation": {
       "label": "Scroll to follow one boot",
-      "line": "Seven stops. Every claim says where it comes from."
+      "line": "An explainer of the UEFI boot by Le Jie Tan, from public specifications and one recorded boot"
     },
     "scope_note": "This is open-source firmware in a virtual machine with a software TPM. It does not show what any maker's firmware does on real hardware.",
     "detail": {
