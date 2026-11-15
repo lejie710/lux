@@ -64,4 +64,6 @@ Inter: Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter).
 
 ## Screenshots in the documentation
 
+`docs/cover.webp`, the picture at the top of the README, is not a picture of the site. It is a generated illustration of the same laptop before power, in front of the first light on a horizon, 2400 x 1200, with the site's opening words set on it afterwards in the site's own font (Inter, weight 600) and colours. It shows no screen of the site.
+
 The three files in `docs/images/` (`opening.png`, `experiment.png`, `stop-6.png`) are pictures of the running site in a window of 1440 x 900, taken in a headless browser. They hold nothing but the pictures and fonts listed above and the site's own words.

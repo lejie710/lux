@@ -2,7 +2,7 @@
 
 _What your laptop does before it wakes: one boot of open-source UEFI firmware, told from reset to the moment firmware hands the machine over and recorded from the firmware's first measurement on, and what happens when one thing in that chain is changed._
 
-![The opening screen of the site: a laptop before power, dark, with the words "Lux. Before light. What your laptop does before it wakes." and an invitation to scroll that names the author: "An explainer of the UEFI boot by Le Jie Tan, from public specifications and one recorded boot".](docs/images/opening.png)
+![Lux. Before light. What your laptop does before it wakes. An open laptop with a dark screen, in front of the first line of light on the horizon before sunrise.](docs/cover.webp)
 
 **Live site:** https://lejie710.github.io/lux/
 
@@ -87,6 +87,8 @@ Not tested, and carried here from `docs/VERIFICATION.md`:
 | A measure of whether readers understand it | No reader study was run |
 
 ## What the site shows
+
+![The opening screen of the site: a laptop before power, dark, with the words "Lux. Before light. What your laptop does before it wakes." and an invitation to scroll that names the author: "An explainer of the UEFI boot by Le Jie Tan, from public specifications and one recorded boot".](docs/images/opening.png)
 
 ![Stop 6 of 7, "Load and verify": the statement "Before the loader runs, firmware checks who signed it", a circuit board whose lit parts rest at half their light, one line from the recording (PCR 7, EV_EFI_VARIABLE_AUTHORITY, "variable db, 851 data bytes") and the control "Open the evidence".](docs/images/stop-6.png)
 
