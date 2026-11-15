@@ -171,6 +171,8 @@ Where the record came from: event 25 of `normal-1` was written by the firmware i
 
 What guards this path: the content check fails if `variable db, 851 data bytes` is not exactly `events[24].summary` of that recording; the site's own `screenProblems` fails a test if the line is not that event's summary; and a site test renders the panel of every screen of the story (21) and requires every claim, term, line, digest and register the content names. The seven screens of the experiments and sources pages have panel tests for selected screens only.
 
+A recording keeps each record's summary, size and digest, not its value. Where the story states a value (the `SecureBoot` byte, the bytes of `BootOrder`, the first bytes and names of the two boot options, and that the 851 bytes of this record are the end of the 879 bytes of the `db` variable), the claim's `field` names `eventlog.bin` beside the recording, and `recorder/tests/test_recorded_bytes.py` reads the value from that file with the recorder's parser and compares it with the sentence. The content check does not open `eventlog.bin`, so that test is the only guard of those sentences.
+
 ### 3.2 A counted experiment, from its prediction to the score on the page
 
 The experiment traced here is `signature-byte`: one byte inside the signature value of the loader is changed, with Secure Boot on.

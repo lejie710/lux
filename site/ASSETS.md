@@ -48,11 +48,11 @@ The lit board is not changed.
 
 No stop has a picture file of its own. The page draws `board-dark.webp` and stacks `board-awake.webp` over it once per part, each copy cut out by that part's mask. A step of the story sets which copies are seen, and the stylesheet fades them in one after another, so light spreads across the board. Because every stop is made from the same two pictures, a part never moves between stops.
 
-Which parts are lit at a stop is not decided here. It is read from the `picture` field of each screen in `content/`. The same field can name the lit parts a screen is about; those get a second copy of the same cut-out added on top, which makes them a little brighter. Once every part is lit, the ground between the parts lights too, through the mask of the whole board.
+Which parts are lit at a stop is not decided here. It is read from the `picture` field of each screen in `content/`. The same field can name the lit parts a screen is about; those get a second copy of the same cut-out added on top, which makes them a little brighter, and the other lit parts are then drawn at half their light. Once every part is lit, the ground between the parts lights too, through the mask of the whole board.
 
 The strip after the story draws the same board seven times, small, each with the parts lit that its stop ends with. A small picture of the whole board looks alike at every stop, so each is drawn close on the parts its stop is about, and the last, where every part is lit, shows the whole board. The two laptops of the experiments page are the pictures with the screen lit and with the inside awake, side by side.
 
-At the pilot screen and at the end of the story the board gives way to the laptop with its inside awake, and on the last screen the picture with the lit screen fades in over it. The three laptop pictures are cut alike, so nothing moves when one fades into the next.
+At the pilot screen and at the end of the story the board gives way to the laptop with its inside awake, and on the last screen the picture with the lit screen fades in over it. The light under the keys is part of both pictures, so on the last screen the stylesheet lays a shade over the lower part of the picture, from the hinge down, as the screen lights; no picture file was changed for it. The three laptop pictures are cut alike, so nothing moves when one fades into the next.
 
 ## Fonts
 

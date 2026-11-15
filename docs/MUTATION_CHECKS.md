@@ -2,7 +2,7 @@
 
 A test suite that passes proves little unless it can also fail. For nine rules the project's question depends on, the rule was broken on purpose, the full suite was run, and the rule was restored. Each time at least one test had to fail. All nine did.
 
-Checks 1 to 7 break rules of the recorder, check 8 a rule of the content check, and check 9 a rule of the site. All nine were made on the final code. For checks 1 to 8 the recorder's suite before and after each was `Ran 368 tests`, `OK (skipped=6)`; for check 9 the site's suite was `Tests  329 passed (329)`. The skipped tests are the ones that boot the virtual machine; they were not part of these checks. Checks 1 to 7 had been made before on earlier revisions (suites of 231 and 356 tests), where each also failed; the lists below are from the repeat on the final code.
+Checks 1 to 7 break rules of the recorder, check 8 a rule of the content check, and check 9 a rule of the site. All nine were made on the final code. For checks 1 to 8 the recorder's suite before and after each was `Ran 368 tests`, `OK (skipped=6)`; for check 9 the site's suite was `Tests  329 passed (329)`. The skipped tests are the ones that boot the virtual machine; they were not part of these checks. Tests were added after these checks (five in the recorder, giving 373, and in the site, giving 333); none of the nine rules was changed, and the checks were not repeated. Checks 1 to 7 had been made before on earlier revisions (suites of 231 and 356 tests), where each also failed; the lists below are from the repeat on the final code.
 
 ## 1. The extend order in the replay
 

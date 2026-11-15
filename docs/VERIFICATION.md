@@ -58,21 +58,21 @@ The untested parts of rows 1, 2, 5, 7 and 8 are carried into the limits of the R
 |---|---|---|
 | **Recorder: unit tests, tests on fixtures of two real boots, and whole runs through a fake machine** | The rules the question depends on are pure functions over bytes and documents, so most faults can be caught where one function is wrong, with no virtual machine | 268 |
 | **Recorder: the content check's own tests** | A check that cannot fail proves nothing, so each rule is broken once on small content | 48 |
-| **Recorder: tests of the committed evidence** (recordings, comparisons, scores, predictions) | The published files, not only the code, must still follow from each other | 43 |
+| **Recorder: tests of the committed evidence** (recordings, comparisons, scores, predictions) | The published files, not only the code, must still follow from each other | 48 |
 | **Recorder: integration with real `git`** | The prediction gate sends real git commands; a fake only proves the answers | 3 |
 | **Recorder: integration with a real virtual machine** | Only a real boot shows that a normal run repeats on this machine | 6, skipped unless `LUX_VM_TESTS=1` |
-| **Site: unit tests of the model** (steps, experiment state, addresses, panel keys, the mark) | Complete state per step and the state of an experiment are plain data, testable without drawing anything | 88 |
+| **Site: unit tests of the model** (steps, experiment state, addresses, panel keys, the mark) | Complete state per step and the state of an experiment are plain data, testable without drawing anything | 90 |
 | **Site: the content and the recordings as the site loads them** | Guards the site's own reading of the files | 45 |
 | **Site: pages rendered to HTML, with no browser**, and the stylesheet read as text | Proves that a page shows what the content and the files hold, and no more | 198 |
 | **Browser-level, automated** | None. Motion, layout and focus need a real window; they were checked by a scripted drive and by eye, outside the test suite | 0 |
 
-Recorder total 368 (25 in `test_capture.py`, 48 in `test_check_content.py`, 28 in `test_committed_recordings.py`, 41 in `test_compare_prediction.py`, 65 in `test_counted_set.py`, 32 in `test_eventlog_gate.py`, 6 in `test_integration_vm.py`, 65 in `test_session_runner.py`, 50 in `test_staging.py`, 8 in `test_story_and_repository.py`). The split of the first three rows is by test class: `test_check_content.py` is the second row; `test_committed_recordings.py` and the classes `CommittedPredictions` and `TwoEntryNormalRuns` of `test_counted_set.py` are the third. Site total 331 in nine files.
+Recorder total 373 (25 in `test_capture.py`, 48 in `test_check_content.py`, 28 in `test_committed_recordings.py`, 41 in `test_compare_prediction.py`, 65 in `test_counted_set.py`, 32 in `test_eventlog_gate.py`, 6 in `test_integration_vm.py`, 5 in `test_recorded_bytes.py`, 65 in `test_session_runner.py`, 50 in `test_staging.py`, 8 in `test_story_and_repository.py`). The split of the first three rows is by test class: `test_check_content.py` is the second row; `test_committed_recordings.py`, `test_recorded_bytes.py` and the classes `CommittedPredictions` and `TwoEntryNormalRuns` of `test_counted_set.py` are the third. Site total 333 in nine files.
 
 Coverage was not measured as a number. The mutation checks do the work a coverage figure cannot: nine rules were broken on purpose on the final code, seven in the recorder, one in the content check and one in the site, and each break failed at least two tests (`MUTATION_CHECKS.md`).
 
-### Last results
+### Results at the commit that added this file
 
-Run on the commit that adds this file, on one machine: Windows 11 with Python 3.12.10 and Node.js 24.22.0 (npm 11.19.1); Ubuntu 24.04 under WSL 2 with Python 3.12.3, QEMU 8.2.2, OVMF 2024.02, swtpm 0.7.3.
+Run on that commit, on one machine: Windows 11 with Python 3.12.10 and Node.js 24.22.0 (npm 11.19.1); Ubuntu 24.04 under WSL 2 with Python 3.12.3, QEMU 8.2.2, OVMF 2024.02, swtpm 0.7.3.
 
 | Check | Command | Summary line |
 |---|---|---|
@@ -84,7 +84,21 @@ Run on the commit that adds this file, on one machine: Windows 11 with Python 3.
 | Site build | `npm run build` | type check passed, `built in` under one second, one warning: a chunk larger than 500 kB |
 | Site format | `npm run format:check` | `All matched files use Prettier code style!` |
 
-The run with the virtual machine boots the plain normal run twice and the two-entry normal run once, and took about two minutes for the whole suite. No counted experiment and no pilot was booted for this document. The same commands were run again after the last change to the documents and gave the same summary lines, apart from the times.
+The run with the virtual machine boots the plain normal run twice and the two-entry normal run once, and took about two minutes for the whole suite. No counted experiment and no pilot was booted for this document. The same commands were run again after the last change to the documents of that day and gave the same summary lines, apart from the times. The counts in this table are those of that commit: five recorder tests, two site tests and three claims were added afterwards.
+
+### Last results
+
+Run after the last change to the site and the content (section 9), on the same machine, on Windows only:
+
+| Check | Command | Summary line |
+|---|---|---|
+| Recorder unit tests, Windows | `python -m unittest discover -s recorder/tests -t .` | `Ran 373 tests in 26.215s`, `OK (skipped=6)` |
+| Content check | `python scripts/check_content.py` | `content check: 5 files, 28 screens, 357 claims, 85 claims uefi-required, 28 claims uefi-platform, 21 claims tcg-unread, 38 claims this-firmware, 170 claims recording, 15 claims general, 14 recordings, 59 glossary entries`, `content check: passed, no problems` |
+| Site tests | `npm test` | `Test Files  9 passed (9)`, `Tests  333 passed (333)` |
+| Site build | `npm run build` | type check passed, one script of 939.01 kB (gzip 186.12 kB), `built in` under one second, one warning: a chunk larger than 500 kB |
+| Site format | `npm run format:check` | `All matched files use Prettier code style!` |
+
+**Not repeated after that change:** the recorder's unit tests under WSL and the suite with the virtual machine. The five tests added since read committed files only and boot nothing, so the README's expected `Ran 373 tests` for the suite with the virtual machine is the same test discovery with the six booting tests included; it was not run. The fresh-clone runs (`FRESH_CLONE_RUN.md`) and the mutation checks (`MUTATION_CHECKS.md`) were made before that change and were not repeated; each file states the counts of its own commit.
 
 ## 4. What was looked at, and what was only checked by script
 
@@ -92,6 +106,7 @@ The run with the virtual machine boots the plain normal run twice and the two-en
 |---|---|---|
 | All 22 steps of the story, the experiments and sources pages section by section, the strip of seven stops, the still page, and six evidence panels, at 1440 x 900; the steps, the pages and the strip also at 390 x 844 | Screenshots of the running site in a headless Chromium-based browser, read one by one. The phone width was taken through a frame of that width | **By eye**, on screenshots. Three of them are in `docs/images/` |
 | The same 22 steps, both pages from top to bottom, and the evidence panel of every step, in true windows of 375 x 812 and 430 x 932; the navigation alone at twelve widths from 280 to 761 px; twelve steps at 375 x 667 | A headless Chromium-based browser driven through its debugging port, with the window size set there and no frame. The script also measured each page for content wider than the window and found none | **By eye**, on screenshots, and by measurement. The script and the screenshots are not in the repository |
+| After the last change to the look (section 9): all 22 steps, the first screen of the experiments and sources pages and of the still page at 1440 x 900; steps 0, 12 and 21 in a true window of 390 x 844; the last step at 1180 x 820; the experiment screen of the experiments page | Screenshots of the running site in a headless Chromium-based browser, read one by one; the narrow and the 1180 x 820 windows through the debugging port, which also measured each page for content wider than the window and found none | **By eye**, on screenshots. Three of them replace the pictures in `docs/images/` |
 | Brightness of the machine before power | Mean luminance of regions of the screenshots and of the pictures, printed by `site/tools/make_assets.py` and recorded in `site/ASSETS.md` | By script, after a judgement by eye that the first version was too dark |
 | Scrolling: Space and Shift with Space, Page Down and Page Up through all 22 steps, a jump to `#step-12`, the strip after the last step, reduced motion giving the still page | The running site driven in real time through the browser's debugging port | **By script only** |
 | The evidence panel: Enter and Space open it, Tab stays inside it from a control and from the claims heading, Escape closes it, focus returns to the opener, the page does not move | The same scripted drive | **By script only** |
@@ -136,12 +151,14 @@ These were found by review, by a test or by driving the site. None was planted. 
 | 17 | "Continue in Nox" was a link that led nowhere | Review | The label is a link only when the content holds an `https://` address, and the content check refuses anything else; the address is now set | A20 |
 | 18 | A prediction's panel showed "Written 2026-11-15" beside a run recorded on 2026-11-14 (UTC), which reads as if the run came first. The prediction's date is a local calendar date, eight hours ahead of UTC | A second check of the results | The panel says that the date is a local one and names the commit the run was scored under; `RESULTS.md` puts every time on one clock | `Pages.test.tsx`, "says that a prediction's date is a local one, and names the commit it was scored under" |
 | 19 | The two headline numbers stood on the experiments page with their caveat one press away | Review of the page against the README | The sentence that the rows are not independent stands directly under the numbers, from the content | A16 |
+| 20 | The larger laptop made for the last screen was also drawn on the experiment screen and the screen before the last, where the light under its keys is not turned down. On the experiment screen its lid sat 11 px under the pilot label and its base ran 9 px into a two-line evidence line. In a window of about 1180 x 820 the larger laptop also touched a two-line evidence line on the last screen | Review of screenshots | The laptop is enlarged on the last screen only, and only in a window at least three wide to two high and 800 px high (commit `2ebfe4b`) | No test: a judgement of the eye. Screenshots of steps 15, 20 and 21 at 1440 x 900 and of step 21 at 1180 x 820 were read after the fix |
+| 21 | When stop 5 began to state the stored boot order from the raw log (0000 first), the limit "why option 0000 was not started" was dropped, although the log still does not show why the console names 0001. The same stop said "the recording shows" bytes that only the raw log holds | Review of the facts against the raw log | The limit is stated again in the form the log supports, and the sentence names the raw event log (commit `cf1fc46`) | Read by hand. `test_recorded_bytes.py` guards the byte values, not the wording of a limit |
 
 ### Open, known, not fixed
 
 | # | What | Why it is open |
 |---|---|---|
-| O1 | The site is one script of 936 kB, and it grows with every recording | Splitting it by page means making the one synchronous door to the recordings asynchronous, a change of structure. Left with its measurement |
+| O1 | The site is one script of 939 kB, and it grows with every recording | Splitting it by page means making the one synchronous door to the recordings asynchronous, a change of structure. Left with its measurement |
 | O2 | A few status sentences in `content/experiments.json` repeat what the files show (for example the status of a counted card) | They are true and checked by reading. Nothing fails if one goes stale |
 | O3 | Process cleanup when QEMU is killed from outside is not covered by a unit test | It needs real processes. The integration test and `scripts/check-clean.sh` cover it |
 | O4 | `recorder/pe.py` names Microsoft's Authenticode format document as its method reference, while the site lists that document as not read | The digest is confirmed against what the firmware measured, and no claim on the site cites the document. The README says both |
@@ -208,3 +225,33 @@ What the three runs together still do not show:
 - **Not the hosted workflow.**
 
 An earlier clone at commit `dc52dbe` ran only the test commands on Windows, with the installed packages copied from the working tree. The three runs above replace it.
+
+## 9. The last change to the look and to stops 4 to 6
+
+Made on 2026-11-15 in nine commits, `5cf4d0a` to `cf1fc46`, after every run and check described above. No experiment was run again, and no recording, prediction or score was touched.
+
+**What changed in the content.** Stops 4, 5 and 6 state values that the summary in `recording.json` does not hold and the raw event log beside it does: the `SecureBoot` variable is one byte, `01`; `BootOrder` is `00 00 01 00`; the value of `Boot0000` begins `09 01 00 00` and carries the text `UiApp`; the value of `Boot0001` begins `01 00 00 00` and carries the disk's name; and the 879 bytes of the `db` variable are 28 bytes followed, byte for byte, by the 851 bytes of the key record. `recorder/tests/test_recorded_bytes.py` (5 tests) reads each value from `recordings/normal-1/eventlog.bin` with the recorder's own parser and compares it with the sentence in the content. No sentence was added about what a specification requires, what the 28 bytes are, or why the console names option 0001 when the stored order lists 0000 first; stop 5 lists that last point as not shown.
+
+**What changed in the look.**
+
+| Change | Where |
+|---|---|
+| A step's statement is at most 52 px at weight 600 (was 68 px at 750), the title at most 92 px at weight 600; the three greys carry a cool tint | `site/src/styles/lux.css` |
+| A lit part that a board step is not about rests at half its light, so the part the step is about is the warm point. Once every part is lit (steps 18 and 19) nothing rests | `layersAt` in `site/src/model/scene.ts`, two tests in `scene.test.ts` |
+| On the last screen, in a window at least 800 px high and three wide to two high, the laptop is drawn at 660 x 495 at 1440 x 900 (was 535 x 401); as its screen lights, a shade from the hinge down turns down the light under the keys; "Continue in Nox" is a filled button | `lux.css`, one attribute in `components/Stage.tsx` |
+| A step's statement arrives sooner; the rail and the foot no longer fade out at each step change | `lux.css` |
+| The opening's laptop stands lower under the navigation | `lux.css` |
+| In a window wider than 760 px the evidence line and "Open the evidence" form one capsule | `lux.css` |
+
+**Checked.** The checks of section 3, "Last results". The site's test that nothing but `transform` and `opacity` moves still passes, and no existing test was edited. The screenshots of section 4, first row. During the change, steps 0, 2, 6, 12, 15, 19, 20 and 21 were also read at 1280 x 720 after each commit; in a review after it, the last step at 1366 x 768 and 1920 x 1080.
+
+**Not verified, or known and left.**
+
+- **Motion was not seen by eye.** That the statement is readable sooner (about 0.6 s after a step change, before about 1.15 s) was measured by reading the computed opacity at sampled times in a headless browser. Frame rate was not measured. A person has still not scrolled the story by hand (section 4).
+- **For about 0.4 s after a step change** the evidence line and the control still seen are those of the step being left, and that control does not respond; the control of the new step is in place under it. Keyboard reach and the return of focus were not driven again in a browser; the panel's code and its tests are unchanged.
+- **Under 800 px of height the last screen is calmer but not larger**: at 1280 x 720 its laptop is 428 x 321, smaller than the opening's. The same holds in a window narrower than three to two.
+- **On steps 6, 7, 10, 12 and 13 the part the step is about is the small security chip**, so the warm point is small and the board reads as evenly dim. Steps 18 and 19 are at full light by decision, so they have no single warm point.
+- **The shade also darkens the metal deck** of the laptop on the last screen. Whether that reads as too dark is a judgement nobody but the builder has made.
+- **The section titles of the experiments and sources pages and the title of the evidence panel** keep their heavier weight; only the statements changed.
+- **One claim at stop 5** names the first four bytes of a boot option "attributes" and its text "description" under the basis "recording". The numbers are in the bytes; the two names are a reading of the bytes against the UEFI layout, for which no citation was added. The sentence says "this page calls".
+- **The suite with the virtual machine, the unit tests under WSL, the fresh-clone runs and the mutation checks were not repeated** after this change (section 3).

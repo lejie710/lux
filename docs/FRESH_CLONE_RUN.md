@@ -2,6 +2,8 @@
 
 The repository was cloned into a new, empty folder outside the project at commit `b3222a5`, and `README.md` was followed in its own order, typing what it says. This file records what was typed, what came back, and every place where the README was wrong, incomplete, ambiguous or assumed something it does not state. Nothing in the repository was changed to make a step pass. Sections 1 to 5 are that run as it was. Section 6 records what was corrected in the README afterwards and which steps were then typed again in a second new clone. Section 7 records a third new clone, at commit `2d2c5ba`, in which `npm ci` was run and the site's commands and the checks that boot nothing were typed in the clone itself.
 
+The test counts below (368 recorder tests, 329 and 331 site tests, 354 claims) are those of the commit each run was made at. Five recorder tests, two site tests and three claims were added later the same day; the runs were not repeated after that, and `VERIFICATION.md` section 3 gives the counts of the present code.
+
 All three runs were made on 2026-11-15. No counted experiment was booted. The first and the third clone and both work directories were deleted afterwards. The second clone is a folder outside the repository that nothing depends on.
 
 ## 1. Result in one table

@@ -36,7 +36,8 @@ Read the numbers with these beside them:
 | Each prediction came before its run | Each counted recording stores the path, hash and commit of the prediction it ran under, and the recorder refuses a counted run whose prediction file is not byte for byte the committed one. The prediction commits are ancestors of the recording commits | `recordings/<run>/recording.json` field `provenance.prediction`, `docs/RESULTS.md` "How the runs were made" |
 | The normal run repeats | Each of the three normal runs was recorded twice, and each pair is identical on every compared field | `recordings/comparisons/*-1_vs_*-2.json` |
 | A recording follows from its boot | Three readings of each boot (the firmware's event log, the TPM's own log, the registers read from the TPM) agree on all 24 registers in four hash banks, in all 14 recordings. A test replays every committed event log | field `gate` of each recording, `eventlog.bin` beside it |
-| Every line the site quotes is in a recording | A check compares each evidence line with the field it names, letter for letter, and fails if a claim has no basis or a UEFI basis has no full citation | `scripts/check_content.py`: 354 claims, 28 screens |
+| Every line the site quotes is in a recording | A check compares each evidence line with the field it names, letter for letter, and fails if a claim has no basis or a UEFI basis has no full citation | `scripts/check_content.py`: 357 claims, 28 screens |
+| Every byte value the story states is in the raw event log | The story states a few values that `recording.json` does not hold (it keeps each record's size and digest): the Secure Boot switch, the stored boot order, the first bytes and the names of the two boot options, and that the 851 bytes of the key record are the end of the 879 bytes of the allowed list. A test reads each from the committed `eventlog.bin` and compares it with the sentence in the content | `recorder/tests/test_recorded_bytes.py`, `recordings/normal-1/eventlog.bin` |
 | The pilots are what they are said to be | Four recordings and their comparisons with the normal run, described one by one | `docs/PILOTS.md` |
 
 What one changed byte looks like on the site. This run is a pilot:
@@ -124,7 +125,7 @@ npm run dev -- --port 5191
 
 In the scrolled story one press of Space or Page Down is one step on, and Shift with Space or Page Up one step back. The first thing the keyboard reaches is a link to `/?static`, the whole story as a plain page.
 
-The first load is about 0.7 MB by the sizes of the built files: one script of 936 kB (186 kB compressed), one stylesheet, two font files and the pictures. That figure assumes a host that compresses text and a browser that fetches only the two Latin font files of the 17 the build writes; it was not measured in a browser. About two thirds of the script is the recordings and the content.
+The first load is about 0.7 MB by the sizes of the built files: one script of 939 kB (186 kB compressed), one stylesheet, two font files and the pictures. That figure assumes a host that compresses text and a browser that fetches only the two Latin font files of the 17 the build writes; it was not measured in a browser. About two thirds of the script is the recordings and the content.
 
 ### Hosting
 
@@ -304,7 +305,7 @@ python3 -m unittest discover -s recorder/tests -t .
 ```
 
 ```
-Ran 368 tests in 36.074s
+Ran 373 tests in 26.215s
 
 OK (skipped=6)
 ```
@@ -315,7 +316,7 @@ The time varies. The six skipped tests boot the virtual machine. To include them
 bash scripts/test-with-vm.sh
 ```
 
-It boots the normal run twice and the normal run with two boot entries once, asserts that the agreement gate passed, that the two runs are equal on every compared field, that a fresh run equals the committed `normal-1` and `normal-two-same-1`, and that nothing is left running. It never boots a changed run, and takes one to two minutes. Expected: `Ran 368 tests`, `OK`, then `virtual machines running: none`, `software TPMs running: none` and `guest memory files: none`.
+It boots the normal run twice and the normal run with two boot entries once, asserts that the agreement gate passed, that the two runs are equal on every compared field, that a fresh run equals the committed `normal-1` and `normal-two-same-1`, and that nothing is left running. It never boots a changed run, and takes one to two minutes. Expected: `Ran 373 tests`, `OK`, then `virtual machines running: none`, `software TPMs running: none` and `guest memory files: none`.
 
 The content check, from the repository root:
 
@@ -324,7 +325,7 @@ python3 scripts/check_content.py
 ```
 
 ```
-content check: 5 files, 28 screens, 354 claims, 85 claims uefi-required, 28 claims uefi-platform, 21 claims tcg-unread, 38 claims this-firmware, 167 claims recording, 15 claims general, 14 recordings, 59 glossary entries
+content check: 5 files, 28 screens, 357 claims, 85 claims uefi-required, 28 claims uefi-platform, 21 claims tcg-unread, 38 claims this-firmware, 170 claims recording, 15 claims general, 14 recordings, 59 glossary entries
 content check: passed, no problems
 ```
 
@@ -338,7 +339,7 @@ npm run format:check
 
 ```
  Test Files  9 passed (9)
-      Tests  331 passed (331)
+      Tests  333 passed (333)
 ```
 
 `npm run build` prints a line that contains `built in`, and a warning that one chunk is larger than 500 kB. `npm run format:check` ends with `All matched files use Prettier code style!`.
