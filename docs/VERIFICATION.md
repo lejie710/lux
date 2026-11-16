@@ -61,12 +61,12 @@ The untested parts of rows 1, 2, 5, 7 and 8 are carried into the limits of the R
 | **Recorder: tests of the committed evidence** (recordings, comparisons, scores, predictions) | The published files, not only the code, must still follow from each other | 48 |
 | **Recorder: integration with real `git`** | The prediction gate sends real git commands; a fake only proves the answers | 3 |
 | **Recorder: integration with a real virtual machine** | Only a real boot shows that a normal run repeats on this machine | 6, skipped unless `LUX_VM_TESTS=1` |
-| **Site: unit tests of the model** (steps, experiment state, addresses, panel keys, the mark) | Complete state per step and the state of an experiment are plain data, testable without drawing anything | 95 |
+| **Site: unit tests of the model** (steps, experiment state, addresses, panel keys, the mark) **and of the stage** (the board's light over time, the pieces a frame is drawn from, the words kept in the stage) | Complete state per step, the state of an experiment, and the level of every light at a time after a step change are plain data, testable without drawing anything | 156 |
 | **Site: the content and the recordings as the site loads them** | Guards the site's own reading of the files | 45 |
-| **Site: pages rendered to HTML, with no browser**, and the stylesheet read as text | Proves that a page shows what the content and the files hold, and no more | 198 |
+| **Site: pages rendered to HTML, with no browser**, and the stylesheet read as text | Proves that a page shows what the content and the files hold, and no more | 217 |
 | **Browser-level, automated** | None. Motion, layout and focus need a real window; they were checked by a scripted drive and by eye, outside the test suite | 0 |
 
-Recorder total 373 (25 in `test_capture.py`, 48 in `test_check_content.py`, 28 in `test_committed_recordings.py`, 41 in `test_compare_prediction.py`, 65 in `test_counted_set.py`, 32 in `test_eventlog_gate.py`, 6 in `test_integration_vm.py`, 5 in `test_recorded_bytes.py`, 65 in `test_session_runner.py`, 50 in `test_staging.py`, 8 in `test_story_and_repository.py`). The split of the first three rows is by test class: `test_check_content.py` is the second row; `test_committed_recordings.py`, `test_recorded_bytes.py` and the classes `CommittedPredictions` and `TwoEntryNormalRuns` of `test_counted_set.py` are the third. Site total 338 in nine files.
+Recorder total 373 (25 in `test_capture.py`, 48 in `test_check_content.py`, 28 in `test_committed_recordings.py`, 41 in `test_compare_prediction.py`, 65 in `test_counted_set.py`, 32 in `test_eventlog_gate.py`, 6 in `test_integration_vm.py`, 5 in `test_recorded_bytes.py`, 65 in `test_session_runner.py`, 50 in `test_staging.py`, 8 in `test_story_and_repository.py`). The split of the first three rows is by test class: `test_check_content.py` is the second row; `test_committed_recordings.py`, `test_recorded_bytes.py` and the classes `CommittedPredictions` and `TwoEntryNormalRuns` of `test_counted_set.py` are the third. Site total 418 in twelve files (338 in nine before section 13).
 
 Coverage was not measured as a number. The mutation checks do the work a coverage figure cannot: nine rules were broken on purpose on the final code, seven in the recorder, one in the content check and one in the site, and each break failed at least two tests (`MUTATION_CHECKS.md`).
 
@@ -94,8 +94,8 @@ Run after the last change to the site and the content (sections 9 to 12), on the
 |---|---|---|
 | Recorder unit tests, Windows | `python -m unittest discover -s recorder/tests -t .` | `Ran 373 tests in 31.480s`, `OK (skipped=6)` |
 | Content check | `python scripts/check_content.py` | `content check: 5 files, 28 screens, 357 claims, 85 claims uefi-required, 28 claims uefi-platform, 21 claims tcg-unread, 38 claims this-firmware, 170 claims recording, 15 claims general, 14 recordings, 59 glossary entries`, `content check: passed, no problems` |
-| Site tests | `npm test` | `Test Files  9 passed (9)`, `Tests  338 passed (338)` |
-| Site build | `npm run build` | type check passed, one script of 939.97 kB (gzip 186.57 kB), `built in` under one second, one warning: a chunk larger than 500 kB |
+| Site tests | `npm test` | `Test Files  9 passed (9)`, `Tests  338 passed (338)`; after section 13, `Test Files  12 passed (12)`, `Tests  418 passed (418)` |
+| Site build | `npm run build` | type check passed, one script of 939.97 kB (gzip 186.57 kB); after section 13, 953.27 kB (gzip 191.11 kB), `built in` under one second, one warning: a chunk larger than 500 kB |
 | Site format | `npm run format:check` | `All matched files use Prettier code style!` |
 
 **Not repeated after that change:** the recorder's unit tests under WSL and the suite with the virtual machine. The five tests added since read committed files only and boot nothing, so the README's expected `Ran 373 tests` for the suite with the virtual machine is the same test discovery with the six booting tests included; it was not run. The fresh-clone runs (`FRESH_CLONE_RUN.md`) and the mutation checks (`MUTATION_CHECKS.md`) were made before that change and were not repeated; each file states the counts of its own commit. The same offline commands also passed on a hosted runner, at two earlier commits (section 12).
@@ -116,7 +116,9 @@ Run after the last change to the site and the content (sections 9 to 12), on the
 | The sentence under the two numbers, and the note on a prediction's date | The running site at 1024 x 768 and 375 x 812: the positions of the parts of the first experiments screen were measured, and one phone screenshot was read | By script and by eye. On the phone size the first screen is now 36 px taller than the window |
 | Keyboard and focus on the experiments and sources pages (focus moving to the heading on a change of page, the glossary filter) | Tested as rendered HTML only | **Not driven in a real browser** |
 | The story scrolled by a person's hand on a real screen | The author scrolled the site in his own browser on the day of the final changes, and those changes answer what he saw | **By the author only.** No second person, and nothing about it was measured |
-| Firefox, Safari, a physical phone, a phone held sideways, a window under 600 px tall, a screen with a device pixel ratio above 1, a screen reader | | **Not checked** |
+| Firefox, a phone held sideways, a window under 600 px tall, a screen reader | | **Not checked** |
+| Safari on a physical phone | The owner opened the published build of `3a2767e` on an iPhone 14 Pro Max: the scrolled story ended the page after a little scrolling; the still page, read to its end, and a frozen step did not (section 13) | **By the owner, on the old build only.** The build of section 13 has not been opened on a phone |
+| A device pixel ratio above 1 | Section 13: screenshots at ratios 2 and 3 and memory at ratios 1, 2 and 3, in a desktop Chromium-based browser made to look like a phone | By script and by eye, in that one browser. Not on a dense screen itself |
 | The paraphrases of UEFI 2.11 | Each read against the section and PDF page it cites | By reading; no script can check it |
 | The link-preview tags (section 7) | The built `dist/index.html` read, and one build made with a placeholder address | By script. No preview service was asked |
 
@@ -159,6 +161,7 @@ These were found by review, by a test or by driving the site. None was planted. 
 | 24 | On a card of the counted set at 1440 x 900 the value "1 and 4" broke into two lines beside its long label | The same audit | On a card a value does not shrink, so its label wraps beside it (commit `64c970a`) | No test. The counted set was shot again and read |
 | 25 | Three stale sentences and a dead link. The opening's evidence still said that the only changed run committed was a pilot and that no score was claimed; the sources page still said that no licence had been chosen and gave no licence for two tools that the README names; the link to the reset vector file on the firmware project's master branch answered "not found", because that branch has renamed the file | The same audit | The sentences say what is committed; the link leads to the tag `edk2-stable202402`, where the file has its name, and the page says so (commit `778bfa2`) | The content check passes before and after: it cannot see a stale explanation or a dead address. Read by hand; the tag's page was opened on 2026-11-15 |
 | 26 | From a middle step of the scrolled story the End key carries the page to its foot, and the stage could stay on the step the jump left behind: the last markers can pass the window's middle line between two observations, and the rule of defect 22 was applied to the first observation only. Seen on the live site: the page at its foot with the stage on stop 5 of 7, and in a second drive on the step before the last | The walk of the live site (section 12) | Whenever an observation has no marker on the middle line, the step is the last one whose marker starts above it (`stepShown` in `site/src/model/scene.ts`, used by `site/src/stage/useStepScroll.ts`; commit `8413843`) | `model/scene.test.ts`, three tests of `stepShown`. A scripted drive of a local build pressed End and then Home from five different steps, ten times in all, and landed on the last step and on the opening every time. The site's tests do not open a browser, so the observer itself is not under test |
+| 27 | On an iPhone, in its own browser, the scrolled story ended the page after a little scrolling ("A problem occurred"). The stage held 17 full copies of the lit board picture over the dark one at all times, each as large as the board's box (2925 x 1828 pixels on a phone 390 px wide at three screen pixels to one), eight of them with a filter and a blend mode, and the words of all 22 steps over those. The cause is not proven: memory is what the numbers of section 13 point to, and the phone's browser does not say why it ends a page | The owner, on his phone, after publication | The board is drawn on one canvas with at most 1920 x 1200 pixels, and the stage holds one step's words (decision P6 of `ENGINEERING.md`; commits `4cd49a2`, `f7b6929`, `1a31fce`) | `stage/light.test.ts`, `stage/cutouts.test.ts`, `stage/words.test.ts`, and in `App.test.tsx` "keeps in the page only the words of the step in view", "draws the board's lights on one canvas" and "the board where its canvas cannot be drawn". Section 13 gives the measurements. **Not yet seen fixed on the phone** |
 
 ### Open, known, not fixed
 
@@ -185,7 +188,8 @@ These were found by review, by a test or by driving the site. None was planted. 
 - **The hosted runner, beyond three runs.** The two workflows have passed on one runner image at the commits section 12 names. Another Node.js or npm patch version, or a later version of an action taken by its major number, may still differ. The runner boots nothing, so it says nothing about the recordings.
 - **The live site, beyond one walk.** One Chromium-based desktop browser, one connection, one day, at commit `0fa1d15`. No preview service has fetched the page, the 13 links that lead to other sites were not requested, and the fix of defect 26 was driven on a local build only (section 12).
 - **Any second machine.** The recordings were reproduced only on the machine that made them, in every run from a new clone as well. The recorder refuses another firmware package; what another QEMU version does was not tried.
-- **Any browser but one**, any real phone, a screen with a device pixel ratio above 1, and a screen reader (section 4).
+- **Any browser but one**, and a screen reader (section 4). One real phone was tried, and the scrolled story failed on it (defect 27).
+- **The fix of defect 27 on a phone.** It was measured and looked at only in a desktop Chromium-based browser made to look like a phone. That it ends the fault on the phone is not known (section 13).
 - **Motion.** It was judged by the timing a script read and by the author's own scrolling. Frame rate was not measured, and no second person has scrolled the story (section 10).
 - **Repeatability of a changed run.** Each counted experiment was booted once, by rule.
 - **What a Trusted Computing Group document or the Platform Initialization specification requires.** Neither was read. No statement on the site or in the results claims a requirement from either.
@@ -367,3 +371,70 @@ The published address was opened on the same day in a new, empty profile of one 
 - **A page opened directly at the experiments or the sources fetches the dark laptop picture of the opening (30 kB) without using it**, because the index preloads it. Known and left.
 - **The fix of defect 26 on the live site.** It was driven on a local build of commit `8413843`. On the published build of `0fa1d15` the same drive showed the defect once; most of its other tries did not load in the time the script allowed and say nothing.
 - **Any later deployment.** Each push to `main` publishes again. The walk is of the build of `0fa1d15` only.
+
+## 13. The page that ended on a phone, and the board drawn on one canvas
+
+On 2026-11-16 the owner opened the published build of commit `3a2767e` on an iPhone 14 Pro Max, in its own browser. The scrolled story ended the page after a little scrolling ("A problem occurred"). The still page (`?static`), read to its end, and a frozen step (`?step=12`) did not. Nothing was recorded again, and no recording, prediction, score or sentence of the content was touched: this is a fault of how the site draws.
+
+**What every number below is, and is not.** They were taken on 2026-11-16 and 2026-11-17 in one desktop Chromium-based browser, run headless on a Windows laptop with an integrated graphics adapter and made to look like a phone: a window of 390 x 844 (and 430 x 932, the size of the phone above), touch input, a phone's user agent. It is not the phone's engine and not a phone. No run in it ever ended a page, so the fault itself was not reproduced, and none of this shows that the fault is gone. The device pixel ratio was set as the browser's own scale factor at start-up, because the ratio a page is merely told does not change how many pixels this browser draws. The scripts and the screenshots are not in the repository.
+
+### What changed
+
+Decision P6 of `ENGINEERING.md`: the board is one canvas that never has more pixels than its pictures (1920 x 1200); the light that spreads over it is timed in script with the stylesheet's former waits, lengths and curve; the stage of the scrolled story holds the words of the step in view and, for 0.7 s, of a step just left; and where a canvas cannot be drawn the step is shown as layers of the page.
+
+### Memory, before and after
+
+The old build is commit `3a2767e`, the new one commit `1a31fce`, both built locally. A window of 390 x 844 at three screen pixels to one unless a row says otherwise. "Graphics memory" is the browser's own report: tiles, decoded pictures, shared images, the two caches of its drawing library and compositor resources, added up, in MB.
+
+| Measurement | Old build | New build |
+|---|---|---|
+| Graphics memory in the middle of a step change (1.3 s into step 17 to 18) | 897.1 | 307.2 |
+| The same at one, two and three screen pixels to one | 195.2, 444.4, 897.1 (the first two on the published build) | 193.4, 238.1, 307.2 |
+| The same in a window of 430 x 932 | 1061.8 | 326.9 |
+| Graphics memory at rest: at the opening, on step 18 | 91.2, 115.9 | 256.8, 232.1 |
+| Layers larger than the window alive at once in a step change | 8 to 18, each 2925 x 1829 (163 to 367 MB at four bytes a pixel), for 2.1 to 7 s | 1: the canvas, whose own pixels are 1920 x 1200 (9.2 MB) and which is there at rest too |
+| All layers at the peak of a step change, at rest | 22 to 36, 6 to 10 | 8 to 12, 8 to 12 |
+| Graphics process, private bytes: at the opening, at 15 rests of a walk down and back, highest between them | 157, 193 to 583, 690 | 242, 220 to 346, 380 |
+| The same process over 15 fast round trips, then after a forced collection | not run to 15; 711 to 730 over 5, then 552 | 449 to 497, then 282 |
+| Script heap over the walk | 2.8 to 4.1 | 2.7 to 3.9 |
+| Elements in the page | 780 | 183 to 202 |
+| Step renders for 21 steps; long tasks while scrolling; script time in the walk down | 21; 0; 0.14 s | 21; 0; 0.51 s |
+| Still page: graphics memory at the top, in the middle after one reading | 125.9, 216.7 | 194.6, 482.2 |
+| Still page: graphics process at the top, middle and foot; highest | 151, 328, 187; 459 | 239, 377, 227; 481 |
+
+Read together: in this browser the peak of the scrolled story fell to about a third and no longer follows the screen's density, and what is left of that growth belongs to the window's own tiles, not to the picture. The level at rest rose by about 120 to 165 MB, because the canvas and the cut-outs are held all the time where the old layers were flattened at rest. **The still page costs more in this browser than it did**, about twice by the browser's own count in the middle of the page: it holds up to three canvases and the cut-outs where the old layers were painted into the page's own tiles. The still page is the one page that was seen to stay up on the phone in its old form, so that is a risk taken for a ceiling the page sets itself, and it is not measured where it matters. Over 15 round trips nothing grew: the script heap ended at 3.3 MB, the page at 183 elements with one canvas and one block of words, and the listeners where they began.
+
+### The look, before and after
+
+68 screenshots of each build were compared pixel by pixel: every frozen step at 1440 x 900; six steps at 390 x 844 at ratios 3 and 1 and at 430 x 932 at ratio 3; three steps each at 1440 x 900 at ratio 2, on a phone held sideways and on an upright tablet; two at 1024 x 768; the scrolled story at rest on seven steps; and five sections of the still page in two windows. Two runs of the old build gave the same pixels in every file, so any difference is the change.
+
+| Compared | Result |
+|---|---|
+| The whole page, words and all | 7 pairs identical (the steps with no board). The other 61 differ in the words only by how their edges are smoothed: over the canvas this browser smooths text in grey on every step, where before some steps had coloured fringes and some did not. Not seen on a screen at ratio 3, where neither build has fringes |
+| The picture alone, words hidden: all 22 steps at 1440 x 900 and the two at 1024 x 768 | No channel of any pixel differs by more than 6 levels of 255; the mean difference is under 0.06 |
+| The same 18 board steps against a picture composed outside any browser from the two plates and the nine masks by the stylesheet's own rules | Old and new builds are equally near it: mean 0.31 to 0.61 for both, and old against new 0.004 to 0.044 |
+| The picture alone on dense screens (ratio 2 and 3; 26 pairs with a board) | Mean difference 0.04 to 0.41, on the edges of bright parts only: the canvas is enlarged by the compositor where the old picture was enlarged while it was painted. Read at full size, no difference could be seen |
+| The picture alone at 390 x 844 at ratio 1 (5 pairs) | Mean 0.41 to 0.76, up to 65 levels on single pixels of fine detail: a board slid by a part of a pixel is sampled differently. Read enlarged, equally sharp |
+| The scrolled story at rest on step 3, phone at ratio 3 | The one pair that differs to the eye: the old build drew the part the step is about brighter in the scrolled story than on its own frozen step, with the same computed styles. The new build draws the frozen step's picture in both |
+| The light over time: the window's mean level at nine moments from 0.3 to 6.5 s after five step changes, forward and backward | Old and new within 0.04 of a level at every moment |
+| The page with no canvas to be had (the browser made to refuse one): three steps in two windows, and the scrolled story | The layers shown are exactly the step's, and the pictures are pixel for pixel those of the old build's frozen steps |
+
+### Behaviour that was driven
+
+| What | Result |
+|---|---|
+| Real touch drags through the story, 390 x 844 at ratio 3 | All 22 steps in order on the way down and the same in reverse on the way up; at most two blocks of words in the page at any sample; no error and no warning |
+| Frames | None asked for at rest; about 60 in the first second after a step change; none 2.2 s after the board has left view behind the laptop; none for a step change while the page is hidden, and the right picture when it is shown again, pixel for pixel |
+| A window that changes size | The canvas follows (1425 x 891, 1009 x 631, 1920 x 1200), and the picture is pixel for pixel that of a fresh load at the new size |
+| The still page | 18 canvases in the page, at most 3 holding pixels at once while it is read, none at its foot |
+| Long tasks | The story: none while scrolling; at load none to four of 50 to 90 ms, where the old build had one to three. The still page: one of 50 to 90 ms in some readings where the old build had none |
+
+### Not verified
+
+- **The phone.** Everything above is one desktop browser pretending. Whether the page stays up on the iPhone, whether its fades look as they did, and whether a 1920-pixel canvas is as sharp there as the old picture, is known only when the new build has been opened on it.
+- **The cause.** Memory is where the numbers point; the phone's browser gives no reason when it ends a page.
+- **Any other engine.** Firefox was not opened. How the phone's engine accounts for a canvas, for 18 canvases of which 3 hold pixels, and for words over a canvas, was not measured.
+- **The speed of the script's own blur on a phone.** About half a second of work on the laptop, in slices of at most 12 ms; not timed on a phone.
+- **Frame rate.** Frames were counted, not timed.
+- **The fresh-clone runs, the mutation checks, the unit tests under WSL and the suite with the virtual machine** were not repeated. The recorder's unit tests and the content check were run on Windows and pass as in section 3.
+
