@@ -195,8 +195,8 @@ export function runBoardLight(
 
   const sizes = "ResizeObserver" in window ? new ResizeObserver(resized) : null;
   sizes?.observe(canvas);
-  // A still section keeps its canvas while it is within a window's height of the window, and no longer.
-  const reach = Math.max(600, Math.round(window.innerHeight));
+  // A still section keeps its canvas while it is within half a window of the window, and no longer.
+  const reach = Math.max(300, Math.round(window.innerHeight / 2));
   const places =
     !animate && "IntersectionObserver" in window
       ? new IntersectionObserver(

@@ -20,13 +20,17 @@ export function alphaBounds(data: ArrayLike<number>, width: number, height: numb
   let top = height;
   let bottom = -1;
   for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      if (data[(y * width + x) * 4 + 3] === 0) continue;
-      if (x < left) left = x;
-      if (x > right) right = x;
-      if (y < top) top = y;
-      if (y > bottom) bottom = y;
-    }
+    // The first pixel of the row that is not clear, then the last: what lies between needs no look.
+    const row = y * width * 4 + 3;
+    let first = 0;
+    while (first < width && data[row + first * 4] === 0) first++;
+    if (first === width) continue;
+    let last = width - 1;
+    while (last > first && data[row + last * 4] === 0) last--;
+    if (first < left) left = first;
+    if (last > right) right = last;
+    if (y < top) top = y;
+    bottom = y;
   }
   return right < 0 ? null : { x: left, y: top, width: right - left + 1, height: bottom - top + 1 };
 }
@@ -313,27 +317,30 @@ export class Cutouts {
 
   private async prepare(): Promise<void> {
     const names: LightName[] = [...PARTS, "whole"];
-    const [dark, awake, masks, found] = await Promise.all([
-      picture(DARK),
-      picture(AWAKE),
-      Promise.all(names.map((name) => picture(MASK_OF[name]))),
-      Promise.all(names.map(boundsOf)),
-    ]);
+    // Everything is asked for at once; the cut-outs are then made one at a time, with a pause after each,
+    // so that making them never holds the page up for long.
+    const masks = names.map((name) => picture(MASK_OF[name]));
+    // A mask that fails is heard of where it is awaited below, and nowhere else.
+    for (const mask of masks) mask.catch(() => {});
+    const [dark, awake] = await Promise.all([picture(DARK), picture(AWAKE)]);
+    for (const [n, name] of names.entries()) {
+      const mask = await masks[n];
+      const { box, width, height } = await boundsOf(name);
+      if (this.gone) return;
+      this.masks.set(name, mask);
+      const place = box && boxOnCanvas(box, { width, height }, this);
+      if (place && place.width > 0 && place.height > 0) {
+        this.boxes.set(name, place);
+        const [canvas, context] = scratch(place.width, place.height);
+        this.cut(context, awake, place, place);
+        this.mask(context, mask, place);
+        this.made.set(`lit:${name}`, { source: canvas, ...place });
+      }
+      await new Promise<void>((resolve) => window.setTimeout(resolve));
+    }
     if (this.gone) return;
     this.awake = awake;
     this.made.set("dark", { source: dark, x: 0, y: 0, width: this.width, height: this.height });
-    names.forEach((name, n) => {
-      const { box, width, height } = found[n];
-      this.masks.set(name, masks[n]);
-      if (!box) return;
-      const place = boxOnCanvas(box, { width, height }, this);
-      if (place.width <= 0 || place.height <= 0) return;
-      this.boxes.set(name, place);
-      const [canvas, context] = scratch(place.width, place.height);
-      this.cut(context, awake, place, place);
-      this.mask(context, masks[n], place);
-      this.made.set(`lit:${name}`, { source: canvas, ...place });
-    });
   }
 
   /** Draws the part of a picture that lies under `from` on the canvas into a context, at `into`'s size. */
