@@ -3,6 +3,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { App } from "./App";
+import { BoardLayers } from "./components/Board";
 import { EvidencePanel } from "./components/EvidencePanel";
 import { EvidencePill, Stage } from "./components/Stage";
 import {
@@ -21,7 +22,8 @@ import {
   stop,
 } from "./content/load";
 import { PARTS } from "./content/types";
-import { STEPS, firstStepOf } from "./model/scene";
+import { STEPS, firstStepOf, layersAt } from "./model/scene";
+import { GLOW_BLUR_OF_STAGE, GLOW_BRIGHTNESS, GLOW_STRONG, LIT_FULL, LIT_REST } from "./stage/light";
 import css from "./styles/lux.css?raw";
 
 const count = (html: string, re: RegExp) => [...html.matchAll(re)].length;
@@ -45,20 +47,23 @@ describe("the scrolled page", () => {
     expect(html).toContain('<div class="pin">');
   });
 
-  it("keeps every step's words in the page and puts all but the current one out of reach", () => {
-    expect(count(html, /class="words /g)).toBe(STEPS.length);
-    expect(count(html, /class="words [a-z-]+"[^>]* data-on="false" inert=""/g)).toBe(STEPS.length - 1);
+  // Every step's words used to be in the page, faded out and out of reach. Each block covers the stage, so
+  // 22 of them lay over the picture; now a step at rest has its own words and no others.
+  it("keeps in the page only the words of the step in view", () => {
+    expect(count(html, /class="words /g)).toBe(1);
+    expect(html).toMatch(/class="words words-opening" data-on="true"/);
+    expect(html).not.toMatch(/class="words [a-z-]+"[^>]* data-on="false"/);
     expect(html).toContain(esc(OPENING.title.text.split(" ")[0]));
-    expect(html).toContain(esc(stopOne.statement.text.split(" its ")[0]));
+    expect(count(html, /<h2 class="statement/g)).toBe(0);
   });
 
   it("starts at the opening: the laptop in view, the board and every part dark", () => {
     expect(html).toMatch(/class="laptop"[^>]*data-on="true"/);
     expect(html).toMatch(/class="board" data-on="false"/);
     expect(html).toMatch(/class="ending" data-on="false"/);
-    expect(count(html, /class="lit"/g)).toBe(PARTS.length + 1);
-    expect(count(html, /class="lit" data-part="[a-z]+" data-on="true"/g)).toBe(0);
-    expect(count(html, /class="glow" data-part="[a-z]+" data-on="true"/g)).toBe(0);
+    expect(html).toContain(
+      '<canvas aria-hidden="true" data-lit="" data-rest="" data-strong="" data-whole="false"></canvas>',
+    );
   });
 
   it("makes a further screen of a stop a shorter stretch of scrolling than a new stop", () => {
@@ -93,9 +98,12 @@ describe("the scrolled page", () => {
     expect(html).toContain('<button type="button">Next step</button>');
   });
 
-  it("keeps every layer of the picture in the page, lit or not, so one step can fade into the next", () => {
-    expect(count(html, /class="lit" data-part="[a-z]+"/g)).toBe(PARTS.length + 1);
-    expect(count(html, /class="glow" data-part="[a-z]+"/g)).toBe(PARTS.length);
+  // The board's lights used to be 17 elements, each a full copy of the awake picture, always in the page.
+  // They are drawn on one canvas now; the laptops are still elements that fade.
+  it("draws the board's lights on one canvas, and keeps both laptops in the page, so one step can fade into the next", () => {
+    expect(count(html, /<canvas /g)).toBe(1);
+    expect(html).toMatch(/class="board" data-on="false" style="[^"]*" data-light="pending"><img [^>]*><canvas /);
+    expect(html).not.toMatch(/class="(lit|glow)"/);
     expect(html).toMatch(/class="ending" data-on="false"/);
     expect(html).toMatch(/class="dawn"[^>]*data-on="false"/);
   });
@@ -121,11 +129,13 @@ describe("?static: every step as a still section", () => {
     expect(count(html, /<h1/g)).toBe(1);
   });
 
-  it("draws in each section only the layers its step shows", () => {
-    const lit = STEPS.reduce((sum, step) => sum + (step.view === "board" ? step.lit.length : 0), 0);
-    const whole = STEPS.filter((step) => step.view === "board" && step.lit.length === PARTS.length).length;
-    expect(count(html, /class="lit" data-part="[a-z]+" data-on="true"/g)).toBe(lit + whole);
-    expect(html).not.toMatch(/class="(lit|glow)" data-part="[a-z]+" data-on="false"/);
+  it("draws in each section only what its step shows: one canvas per board, told which parts are lit", () => {
+    const boards = STEPS.filter((step) => step.view === "board");
+    const told = [...html.matchAll(/<canvas aria-hidden="true" data-lit="([a-z ]*)"/g)].map((m) => m[1]);
+    expect(told).toEqual(boards.map((step) => PARTS.filter((part) => step.lit.includes(part)).join(" ")));
+    const whole = boards.filter((step) => step.lit.length === PARTS.length).length;
+    expect(count(html, /data-whole="true"/g)).toBe(whole);
+    expect(html).not.toMatch(/class="(lit|glow)"/);
     expect(html).not.toMatch(/class="(laptop|board|ending)" data-on="false"/);
     expect(count(html, /class="dawn"/g)).toBe(1);
   });
@@ -141,9 +151,10 @@ describe("?static: every step as a still section", () => {
   it("shows each step's end state: stop 1's section has power and the processor lit", () => {
     const from = html.indexOf('id="step-2"');
     const section = html.slice(from, html.indexOf('id="step-3"'));
-    expect(section).toMatch(/data-part="power" data-on="true"/);
-    expect(section).toMatch(/data-part="processor" data-on="true"/);
-    expect(count(section, /class="lit" data-part="[a-z]+" data-on="true"/g)).toBe(2);
+    expect(section).toContain(
+      '<canvas aria-hidden="true" data-lit="power processor" data-rest="" data-strong="power processor"',
+    );
+    expect(count(section, /<canvas /g)).toBe(1);
   });
 
   it("ends on the laptop with its screen lit and the way on to the earlier site", () => {
@@ -252,6 +263,36 @@ describe("a stage", () => {
   });
 });
 
+describe("the board where its canvas cannot be drawn", () => {
+  const boards = STEPS.map((step, n) => [step.id, n] as const).filter(([, n]) => STEPS[n].view === "board");
+
+  it.each(boards)("%s is shown as layers: exactly the parts the step lights, and no other", (_, n) => {
+    const layers = layersAt(STEPS[n]);
+    const html = renderToStaticMarkup(<BoardLayers layers={layers} />);
+    const lit = [...html.matchAll(/class="lit" data-part="([a-z]+)" data-rest="(true|false)"/g)];
+    const all = STEPS[n].lit.length === PARTS.length;
+    expect(lit.map((m) => m[1])).toEqual([...PARTS.filter((part) => layers.parts[part].on), ...(all ? ["whole"] : [])]);
+    expect(lit.filter((m) => m[2] === "true").map((m) => m[1])).toEqual(
+      PARTS.filter((part) => layers.parts[part].rest),
+    );
+    const glow = [...html.matchAll(/class="glow" data-part="([a-z]+)"/g)].map((m) => m[1]);
+    expect(glow).toEqual(PARTS.filter((part) => layers.parts[part].strong));
+    // Each layer is cut out by its own part's mask, named twice for the browsers that need a prefix.
+    expect(count(html, /mask-image:url\(/g)).toBe(2 * (lit.length + glow.length));
+  });
+
+  it("gives the layers the canvas's own levels: full, half at rest, and the added light", () => {
+    const flat = css.replace(/\s+/g, " ");
+    expect(Number(/\.lit \{[^}]*opacity: ([\d.]+);/.exec(flat)![1])).toBe(LIT_FULL);
+    expect(Number(/\.lit\[data-rest="true"\] \{ opacity: ([\d.]+);/.exec(flat)![1])).toBe(LIT_REST);
+    expect(Number(/\.glow \{[^}]*opacity: ([\d.]+);/.exec(flat)![1])).toBe(GLOW_STRONG);
+    const filter = /\.glow \{[^}]*filter: brightness\(([\d.]+)\) blur\(([\d.]+)cqw\);/.exec(flat)!;
+    expect(Number(filter[1])).toBe(GLOW_BRIGHTNESS);
+    expect(Number(filter[2]) / 100).toBeCloseTo(GLOW_BLUR_OF_STAGE, 10);
+    expect(flat).toMatch(/\.glow \{[^}]*mix-blend-mode: screen;/);
+  });
+});
+
 describe("stops 2 to 7 on the stage", () => {
   const stage = (id: string) => renderToStaticMarkup(<Stage current={at(id)} solo onOpen={nothing} />);
 
@@ -316,8 +357,12 @@ describe("stops 2 to 7 on the stage", () => {
 
   it("gives the part a screen is about a stronger light, and no other", () => {
     const html = stage("s6-verify");
-    expect(html).toMatch(/class="glow" data-part="security" data-on="true"/);
-    expect(count(html, /class="glow" data-part="[a-z]+" data-on="true"/g)).toBe(1);
+    expect(html).toMatch(/<canvas [^>]*data-strong="security"/);
+    // Every other lit part rests, so the part the screen is about is the one warm point.
+    const lit = STEPS[at("s6-verify")].lit;
+    expect(html).toContain(
+      `data-rest="${PARTS.filter((part) => lit.includes(part) && part !== "security").join(" ")}"`,
+    );
   });
 
   it("marks the pilot as a pilot, over the laptop with its inside awake and its screen dark", () => {
@@ -355,8 +400,9 @@ describe("stops 2 to 7 on the stage", () => {
   });
 
   it("lights the whole board once the display cable is lit", () => {
-    expect(stage("s7-exit-call")).toMatch(/class="lit" data-part="whole" data-on="true"/);
-    expect(stage("s7-tables")).not.toContain('data-part="whole"');
+    expect(stage("s7-exit-call")).toMatch(/<canvas [^>]*data-whole="true"/);
+    expect(stage("s7-exit-call")).toMatch(/<canvas [^>]*data-rest=""/);
+    expect(stage("s7-tables")).toMatch(/<canvas [^>]*data-whole="false"/);
   });
 });
 
@@ -555,9 +601,13 @@ describe("the stylesheet", () => {
     expect(flat).toContain("transform: translateX(var(--pan)) scale(var(--zoom));");
   });
 
-  it("adds the stronger light and lights the screen by opacity alone", () => {
+  // The board's lights no longer fade in the stylesheet: the canvas times them (light.test.ts holds the
+  // numbers), and the layers that stand in for a canvas that cannot be drawn change at once.
+  it("lights the screen by opacity alone, and fades no layer of the board", () => {
     const flat = css.replace(/\s+/g, " ");
-    expect(flat).toMatch(/\.glow\[data-on="true"\] \{ opacity: 0\.\d+; transition: opacity /);
+    for (const rule of flat.matchAll(/\.(?:lit|glow)(?:\[[^\]]*\])? \{([^}]*)\}/g))
+      expect(rule[1]).not.toContain("transition");
+    expect(flat).toContain('.board[data-light="drawn"] > img { visibility: hidden; }');
     expect(flat).toMatch(/\.ending \.dawn\[data-on="true"\] \{ opacity: 1; transition: opacity /);
     expect(flat).toMatch(/\.ending\[data-on="false"\] \{ opacity: 0; transform: scale\([\d.]+\);/);
   });
