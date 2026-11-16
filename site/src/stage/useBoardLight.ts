@@ -5,11 +5,7 @@ import type { Layers } from "../model/scene";
 import { runBoardLight, type BoardLight, type LightStatus } from "./boardLight";
 import { lightKey } from "./light";
 
-export function useBoardLight(
-  canvas: RefObject<HTMLCanvasElement | null>,
-  layers: Layers,
-  animate: boolean,
-): LightStatus {
+export function useBoardLight(canvas: RefObject<HTMLCanvasElement | null>, layers: Layers): LightStatus {
   const [status, setStatus] = useState<LightStatus>("pending");
   const latest = useRef(layers);
   latest.current = layers;
@@ -17,13 +13,13 @@ export function useBoardLight(
 
   useEffect(() => {
     if (!canvas.current) return;
-    const running = runBoardLight(canvas.current, latest.current, animate, setStatus);
+    const running = runBoardLight(canvas.current, latest.current, setStatus);
     light.current = running;
     return () => {
       running.stop();
       light.current = null;
     };
-  }, [canvas, animate]);
+  }, [canvas]);
 
   // A render that changes no light changes nothing here: only a new state of the lights is a step change.
   const key = lightKey(layers);

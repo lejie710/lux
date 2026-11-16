@@ -129,13 +129,16 @@ describe("?static: every step as a still section", () => {
     expect(count(html, /<h1/g)).toBe(1);
   });
 
-  it("draws in each section only what its step shows: one canvas per board, told which parts are lit", () => {
+  // A still fades nothing, so it needs no canvas: its board is the few layers its step shows. This is the
+  // form the still page had when a phone kept it open, so it is kept as it was.
+  it("draws in each section only the layers its step shows, and makes no canvas", () => {
     const boards = STEPS.filter((step) => step.view === "board");
-    const told = [...html.matchAll(/<canvas aria-hidden="true" data-lit="([a-z ]*)"/g)].map((m) => m[1]);
-    expect(told).toEqual(boards.map((step) => PARTS.filter((part) => step.lit.includes(part)).join(" ")));
+    const lit = boards.reduce((sum, step) => sum + step.lit.length, 0);
     const whole = boards.filter((step) => step.lit.length === PARTS.length).length;
-    expect(count(html, /data-whole="true"/g)).toBe(whole);
-    expect(html).not.toMatch(/class="(lit|glow)"/);
+    expect(count(html, /class="lit" data-part="[a-z]+"/g)).toBe(lit + whole);
+    expect(count(html, /class="lit" data-part="whole"/g)).toBe(whole);
+    expect(count(html, /class="board" data-on="true" style="[^"]*" data-light="layers">/g)).toBe(boards.length);
+    expect(html).not.toContain("<canvas");
     expect(html).not.toMatch(/class="(laptop|board|ending)" data-on="false"/);
     expect(count(html, /class="dawn"/g)).toBe(1);
   });
@@ -151,10 +154,11 @@ describe("?static: every step as a still section", () => {
   it("shows each step's end state: stop 1's section has power and the processor lit", () => {
     const from = html.indexOf('id="step-2"');
     const section = html.slice(from, html.indexOf('id="step-3"'));
-    expect(section).toContain(
-      '<canvas aria-hidden="true" data-lit="power processor" data-rest="" data-strong="power processor"',
-    );
-    expect(count(section, /<canvas /g)).toBe(1);
+    expect(section).toMatch(/class="lit" data-part="power" data-rest="false"/);
+    expect(section).toMatch(/class="lit" data-part="processor" data-rest="false"/);
+    expect(count(section, /class="lit" data-part="[a-z]+"/g)).toBe(2);
+    expect(count(section, /class="glow" data-part="(power|processor)"/g)).toBe(2);
+    expect(count(section, /<canvas /g)).toBe(0);
   });
 
   it("ends on the laptop with its screen lit and the way on to the earlier site", () => {
@@ -263,7 +267,7 @@ describe("a stage", () => {
   });
 });
 
-describe("the board where its canvas cannot be drawn", () => {
+describe("the board as layers: a still, and the scrolled story where its canvas cannot be drawn", () => {
   const boards = STEPS.map((step, n) => [step.id, n] as const).filter(([, n]) => STEPS[n].view === "board");
 
   it.each(boards)("%s is shown as layers: exactly the parts the step lights, and no other", (_, n) => {
@@ -357,12 +361,12 @@ describe("stops 2 to 7 on the stage", () => {
 
   it("gives the part a screen is about a stronger light, and no other", () => {
     const html = stage("s6-verify");
-    expect(html).toMatch(/<canvas [^>]*data-strong="security"/);
+    expect(html).toMatch(/class="glow" data-part="security"/);
+    expect(count(html, /class="glow" data-part="[a-z]+"/g)).toBe(1);
     // Every other lit part rests, so the part the screen is about is the one warm point.
     const lit = STEPS[at("s6-verify")].lit;
-    expect(html).toContain(
-      `data-rest="${PARTS.filter((part) => lit.includes(part) && part !== "security").join(" ")}"`,
-    );
+    const resting = [...html.matchAll(/class="lit" data-part="([a-z]+)" data-rest="true"/g)].map((m) => m[1]);
+    expect(resting).toEqual(PARTS.filter((part) => lit.includes(part) && part !== "security"));
   });
 
   it("marks the pilot as a pilot, over the laptop with its inside awake and its screen dark", () => {
@@ -400,9 +404,9 @@ describe("stops 2 to 7 on the stage", () => {
   });
 
   it("lights the whole board once the display cable is lit", () => {
-    expect(stage("s7-exit-call")).toMatch(/<canvas [^>]*data-whole="true"/);
-    expect(stage("s7-exit-call")).toMatch(/<canvas [^>]*data-rest=""/);
-    expect(stage("s7-tables")).toMatch(/<canvas [^>]*data-whole="false"/);
+    expect(stage("s7-exit-call")).toMatch(/class="lit" data-part="whole" data-rest="false"/);
+    expect(stage("s7-exit-call")).not.toMatch(/class="lit" data-part="[a-z]+" data-rest="true"/);
+    expect(stage("s7-tables")).not.toContain('data-part="whole"');
   });
 });
 

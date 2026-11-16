@@ -1,7 +1,7 @@
-// Draws the board of one stage on its canvas and keeps it up to date: one frame when a step is shown as a
-// still, and a run of frames after a step change in the scrolled story, which ends when every light has
-// arrived. Nothing is drawn while nothing changes, while the page is hidden, or for a stage far from the
-// window. If the canvas cannot be made or drawn, it says so once and stops, and the stage shows its layers.
+// Draws the board of the scrolled story on its canvas and keeps it up to date: a run of frames after a step
+// change, which ends when every light has arrived. Nothing is drawn while nothing changes, while the page
+// is hidden, or once the board has left view. If the canvas cannot be made or drawn, it says so once and
+// stops, and the stage shows its layers. A step shown as a still has no canvas: it is drawn as layers.
 import { PARTS } from "../content/types";
 import type { Layers } from "../model/scene";
 import { acquire, paint, release, type Cutouts } from "./cutouts";
@@ -33,7 +33,6 @@ export interface BoardLight {
 export function runBoardLight(
   canvas: HTMLCanvasElement,
   first: Layers,
-  animate: boolean,
   report: (status: LightStatus) => void,
 ): BoardLight {
   const stage = canvas.closest<HTMLElement>(".stage") ?? canvas;
@@ -41,6 +40,8 @@ export function runBoardLight(
   let boardOn = first.board;
   let changedAt = 0;
   let set: Cutouts | null = null;
+  // The pieces asked for and not yet ready.
+  let coming: Cutouts | null = null;
   let context: CanvasRenderingContext2D | null = null;
   let drawn: Levels | null = null;
   let sized = "";
@@ -48,21 +49,27 @@ export function runBoardLight(
   let frame = 0;
   let timer = 0;
   let stopped = false;
-  // The pinned stage of the scrolled story is always held; a still section only while it is near the window.
-  let near = animate;
 
-  const still = () => !animate || window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const still = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-  /** Gives the canvas's memory and the shared pieces back. */
-  const drop = () => {
+  /** Gives the pieces back: those in use, and those asked for and not yet ready. */
+  const letGo = () => {
     taking++;
-    window.cancelAnimationFrame(frame);
-    frame = 0;
     if (set) {
       set.unlisten(redraw);
       release(set);
     }
+    if (coming) release(coming);
     set = null;
+    coming = null;
+    sized = "";
+  };
+
+  /** Gives the canvas's memory and the pieces back. */
+  const drop = () => {
+    letGo();
+    window.cancelAnimationFrame(frame);
+    frame = 0;
     context = null;
     drawn = null;
     sized = "";
@@ -94,8 +101,8 @@ export function runBoardLight(
 
   /** Whether another frame is due: a light is still on its way, on a page and a board that can be seen. */
   const moving = (now: number) =>
-    animate &&
     context !== null &&
+    set !== null &&
     !document.hidden &&
     !allSettled(tracks, now) &&
     (boardOn || now - changedAt < OUT_OF_SIGHT);
@@ -119,7 +126,7 @@ export function runBoardLight(
 
   /** Draws now, whatever was drawn before, and goes on if a light is on its way. */
   const redraw = () => {
-    if (stopped || !context) return;
+    if (stopped || !context || !set) return;
     drawn = null;
     try {
       draw(performance.now());
@@ -132,7 +139,7 @@ export function runBoardLight(
 
   /** Sizes the canvas for the board as it is laid out now, takes the pieces for that size, and draws. */
   const take = async () => {
-    if (stopped || !near) return;
+    if (stopped) return;
     const cssWidth = canvas.clientWidth;
     if (!cssWidth) return;
     // A board wider than its stage is slid sideways to the step's parts.
@@ -141,28 +148,26 @@ export function runBoardLight(
     const sigma = glowBlur(stageWidth, cssWidth, size.width);
     const key = `${size.width}x${size.height}@${sigma.toFixed(2)}`;
     if (key === sized) return;
-    const mine = ++taking;
+    // The pieces of another size are given back before the new ones are made, so the two sets are never
+    // held together. Until the new ones are ready the canvas keeps the picture it has.
+    letGo();
+    const mine = taking;
     const next = acquire(size.width, size.height, sigma);
+    coming = next;
+    sized = key;
     try {
       await next.ready;
     } catch {
-      release(next);
+      // Whoever asked after this one has given these pieces back already.
       if (mine === taking) fail();
       return;
     }
-    if (stopped || mine !== taking) {
-      release(next);
-      return;
-    }
+    if (stopped || mine !== taking) return;
     try {
-      if (set) {
-        set.unlisten(redraw);
-        release(set);
-      }
+      coming = null;
       set = next;
       // An added light that a frame had to do without is drawn as soon as it is made.
       set.listen(redraw);
-      sized = key;
       canvas.width = size.width;
       canvas.height = size.height;
       context = canvas.getContext("2d");
@@ -177,7 +182,7 @@ export function runBoardLight(
       return;
     }
     report("drawn");
-    if (animate) set.warm();
+    set.warm();
     run();
   };
 
@@ -186,48 +191,39 @@ export function runBoardLight(
     timer = window.setTimeout(take, RESIZE_WAIT);
   };
 
-  const shown = () => {
+  /**
+   * Makes the canvas and its pieces again from nothing: after the browser has taken a canvas's pixels away,
+   * the pieces may be blank as well, and nothing here can tell. Until they are made the dark plate shows.
+   */
+  const remake = () => {
+    if (stopped) return;
+    drop();
+    report("pending");
+    void take();
+  };
+
+  const shown = (event: Event) => {
     if (document.hidden) {
       window.cancelAnimationFrame(frame);
       frame = 0;
-    } else redraw();
+    } else if ((event as PageTransitionEvent).persisted) remake();
+    else redraw();
   };
 
   const sizes = "ResizeObserver" in window ? new ResizeObserver(resized) : null;
   sizes?.observe(canvas);
-  // A still section keeps its canvas while it is within half a window of the window, and no longer.
-  const reach = Math.max(300, Math.round(window.innerHeight / 2));
-  const places =
-    !animate && "IntersectionObserver" in window
-      ? new IntersectionObserver(
-          (entries) => {
-            const now = entries[entries.length - 1].isIntersecting;
-            if (now === near) return;
-            near = now;
-            if (near) void take();
-            else if (set) {
-              drop();
-              report("pending");
-            }
-          },
-          { rootMargin: `${reach}px 0px` },
-        )
-      : null;
-  if (places) places.observe(stage);
-  else near = true;
   window.addEventListener("resize", resized);
   window.addEventListener("pageshow", shown);
   document.addEventListener("visibilitychange", shown);
-  canvas.addEventListener("contextrestored", redraw);
+  canvas.addEventListener("contextrestored", remake);
 
   function unlisten() {
     window.clearTimeout(timer);
     sizes?.disconnect();
-    places?.disconnect();
     window.removeEventListener("resize", resized);
     window.removeEventListener("pageshow", shown);
     document.removeEventListener("visibilitychange", shown);
-    canvas.removeEventListener("contextrestored", redraw);
+    canvas.removeEventListener("contextrestored", remake);
   }
 
   void take();
@@ -239,7 +235,7 @@ export function runBoardLight(
       boardOn = layers.board;
       changedAt = now;
       tracks = still() ? tracksAt(layers) : retargetAll(tracks, layers, now);
-      if (!context) return;
+      if (!context || !set) return;
       ask(layers);
       try {
         draw(now);

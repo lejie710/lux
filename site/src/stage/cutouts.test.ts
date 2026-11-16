@@ -11,6 +11,7 @@ import {
   brighten,
   grown,
   paint,
+  readsBack,
   type Brush,
   type Piece,
 } from "./cutouts";
@@ -43,6 +44,23 @@ describe("where a mask has anything in it", () => {
   it("is the whole picture for a mask that reaches every edge", () => {
     const data = picture(3, 2, { "0,0": [0, 0, 0, 1], "2,1": [0, 0, 0, 1] });
     expect(alphaBounds(data, 3, 2)).toEqual({ x: 0, y: 0, width: 3, height: 2 });
+  });
+});
+
+describe("pixels read back from a canvas", () => {
+  const probe = (count: number, change: (n: number, value: number) => number = (_, value) => value) =>
+    Array.from({ length: count * 4 }, (_, n) => change(n, [10, 200, 90, 255][n % 4]));
+
+  it("are trusted when they are the colour that was drawn, or off by a rounding", () => {
+    expect(readsBack(probe(16))).toBe(true);
+    expect(readsBack(probe(16, (n, value) => value + (n % 3) - 1))).toBe(true);
+  });
+
+  it("are not trusted when they come back clear, altered, or not at all", () => {
+    expect(readsBack(new Uint8ClampedArray(64))).toBe(false);
+    expect(readsBack(probe(16, (n, value) => (n === 41 ? value + 9 : value)))).toBe(false);
+    expect(readsBack(probe(16, (n) => (n * 37) % 256))).toBe(false);
+    expect(readsBack([])).toBe(false);
   });
 });
 

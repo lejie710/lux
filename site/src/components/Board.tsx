@@ -1,7 +1,8 @@
-// The board of one stage. Its picture is drawn on one canvas: the dark plate, each lit part's cut-out of the
-// awake plate, the added light of the part the step is about. The canvas says in its attributes what the
-// step lights, so the state is in the page as well as in the pixels. Where a canvas cannot be made or drawn,
-// the same step is shown as layers instead: only the ones the step shows, and changed at once, not faded.
+// The board of one stage. In the scrolled story its picture is drawn on one canvas: the dark plate, each lit
+// part's cut-out of the awake plate, the added light of the part the step is about. The canvas says in its
+// attributes what the step lights, so the state is in the page as well as in the pixels. A step shown as a
+// still (a still section, a frozen step) is drawn as layers instead, only the ones the step shows; so is
+// the scrolled story where its canvas cannot be made or drawn, and there a step changes at once, not faded.
 import { useRef, type CSSProperties } from "react";
 import { PARTS } from "../content/types";
 import type { Layers, PartLayer } from "../model/scene";
@@ -18,8 +19,22 @@ interface BoardProps {
 }
 
 export function Board({ layers, frame, animate }: BoardProps) {
+  return animate ? <CanvasBoard layers={layers} frame={frame} /> : <StillBoard layers={layers} frame={frame} />;
+}
+
+/** A still: nothing fades, so the few layers the step shows are the whole picture and no canvas is made. */
+function StillBoard({ layers, frame }: Omit<BoardProps, "animate">) {
+  return (
+    <div className="board" data-on={layers.board} style={frame} data-light="layers">
+      <img src={DARK} alt="" width={1920} height={1200} />
+      <BoardLayers layers={layers} />
+    </div>
+  );
+}
+
+function CanvasBoard({ layers, frame }: Omit<BoardProps, "animate">) {
   const canvas = useRef<HTMLCanvasElement>(null);
-  const light = useBoardLight(canvas, layers, animate);
+  const light = useBoardLight(canvas, layers);
   const { lit, rest, strong, whole } = lightSummary(layers);
   return (
     <div className="board" data-on={layers.board} style={frame} data-light={light}>
@@ -41,9 +56,9 @@ export function Board({ layers, frame, animate }: BoardProps) {
 }
 
 /**
- * The board's lights as layers, for a page whose canvas failed: over the dark plate, one copy of the awake
- * plate per lit part, cut out by the part's mask, and a second copy over the part the step is about. Only
- * what the step shows is in the page.
+ * The board's lights as layers: over the dark plate, one copy of the awake plate per lit part, cut out by
+ * the part's mask, and a second copy over the part the step is about. Only what the step shows is in the
+ * page.
  */
 export function BoardLayers({ layers }: { layers: Layers }) {
   return (
