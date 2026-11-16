@@ -1,8 +1,8 @@
 // The pieces a frame of the board is drawn from: the dark picture, and for each part a cut-out of the awake
 // picture through that part's soft mask, once as it is and once brighter and a little soft, for the added
-// light. Each piece is only as large as its mask, and all of them are made once for a canvas size. A picture
-// the pieces are cut from is held only until its pieces are made. The functions over pixels are plain and
-// tested without a browser.
+// light. Each piece is only as large as its mask, and all of them are made once for a canvas size. The
+// pictures they are cut from are fetched once for the page. The functions over pixels are plain and tested
+// without a browser.
 import { PARTS, type Part } from "../content/types";
 import { GLOW_BRIGHTNESS, type Draw, type LightName } from "./light";
 import { AWAKE, DARK, MASK_OF } from "./plates";
@@ -201,27 +201,33 @@ export function paint(brush: Brush, pieces: (name: Draw["image"]) => Piece | nul
 
 // From here on: the browser.
 
-/** A picture fetched for one set of pieces. It is not decoded until it is first needed. */
-function load(url: string): Promise<HTMLImageElement> {
-  return new Promise<HTMLImageElement>((resolve, reject) => {
-    const image = new Image();
-    image.decoding = "async";
-    image.onload = () => resolve(image);
-    image.onerror = () => reject(new Error(`picture not loaded: ${url}`));
-    image.src = url;
-  });
+/**
+ * The pictures, fetched once for the page and kept: the pieces of another canvas size (after a turn of a
+ * phone) are cut from the same pictures, so the browser has nothing to fetch or decode a second time.
+ */
+const pictures = new Map<string, Promise<HTMLImageElement>>();
+
+/** A picture by its address. It is not decoded until it is first needed. */
+function picture(url: string): Promise<HTMLImageElement> {
+  let loading = pictures.get(url);
+  if (!loading) {
+    loading = new Promise<HTMLImageElement>((resolve, reject) => {
+      const image = new Image();
+      image.decoding = "async";
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(new Error(`picture not loaded: ${url}`));
+      image.src = url;
+    });
+    // A picture that failed is asked for again the next time.
+    loading.catch(() => pictures.delete(url));
+    pictures.set(url, loading);
+  }
+  return loading;
 }
 
 /** Decodes a picture before it is drawn, off the page's own thread where the browser can. */
 async function decode(image: HTMLImageElement): Promise<void> {
   if (typeof image.decode === "function") await image.decode();
-}
-
-/** A picture that is not needed again gives its decoded pixels back at once, without waiting to be collected. */
-function forget(image: HTMLImageElement): void {
-  image.onload = null;
-  image.onerror = null;
-  image.removeAttribute("src");
 }
 
 function scratch(width: number, height: number, read = false): [HTMLCanvasElement, CanvasRenderingContext2D] {
@@ -314,8 +320,6 @@ export class Cutouts {
   /** Whether a piece could not be made. A stage that finds this shows its layers instead of a canvas. */
   broken = false;
   private awake: HTMLImageElement | null = null;
-  /** The pictures this set has fetched and not yet let go. */
-  private pictures = new Set<HTMLImageElement>();
   private boxes = new Map<LightName, Box>();
   private made = new Map<Draw["image"], Piece>();
   /** The added lights a frame has asked for and does not have yet, the latest first. */
@@ -341,34 +345,22 @@ export class Cutouts {
     this.ready.catch(() => {});
   }
 
-  /** Keeps a fetched picture until it is let go; one that arrives after the set is gone is let go at once. */
-  private hold(image: HTMLImageElement): HTMLImageElement {
-    if (this.gone) forget(image);
-    else this.pictures.add(image);
-    return image;
-  }
-
-  private letGo(image: HTMLImageElement): void {
-    this.pictures.delete(image);
-    forget(image);
-  }
-
   private async prepare(): Promise<void> {
     checkReadback();
     const names: LightName[] = [...PARTS, "whole"];
-    // Everything is fetched at once. The masks are then decoded and used one at a time, each let go as soon
-    // as its cut-out is made, with a pause after each: making them never holds the page up for long, and
-    // no more than one decoded mask is held at a time.
-    const masks = names.map((name) => load(MASK_OF[name]).then((image) => this.hold(image)));
+    // Everything is fetched at once. The masks are then decoded and used one at a time, with a pause after
+    // each, so that making the cut-outs never holds the page up for long.
+    const masks = names.map((name) => picture(MASK_OF[name]));
     // A mask that fails is heard of where it is awaited below, and nowhere else.
     for (const mask of masks) mask.catch(() => {});
     const [dark, awake] = await Promise.all(
       [DARK, AWAKE].map(async (url) => {
-        const image = this.hold(await load(url));
+        const image = await picture(url);
         await decode(image);
         return image;
       }),
     );
+    if (this.gone) return;
     for (const [n, name] of names.entries()) {
       const mask = await masks[n];
       if (this.gone) return;
@@ -383,7 +375,6 @@ export class Cutouts {
       this.made.set(`lit:${name}`, { source: canvas, ...place });
       this.cut(context, awake, place, place);
       this.mask(context, mask, place);
-      this.letGo(mask);
       await new Promise<void>((resolve) => window.setTimeout(resolve));
     }
     if (this.gone) return;
@@ -539,13 +530,9 @@ export class Cutouts {
     }, wait);
   }
 
-  /**
-   * Once every piece is made, the awake picture is not needed again and is let go. A canvas of another size
-   * fetches it again, from the browser's cache, and decodes it again.
-   */
+  /** Once every piece is made, this set needs the awake picture no longer, nor the blur's work arrays. */
   private settle(): void {
     if (PARTS.some((name) => this.boxes.has(name) && !this.made.has(`glow:${name}`))) return;
-    if (this.awake) this.letGo(this.awake);
     this.awake = null;
     this.room = {};
   }
@@ -560,8 +547,6 @@ export class Cutouts {
     for (const [name, piece] of this.made) if (name !== "dark") empty(piece.source as HTMLCanvasElement);
     this.made.clear();
     this.boxes.clear();
-    for (const image of this.pictures) forget(image);
-    this.pictures.clear();
     this.awake = null;
     this.room = {};
   }
