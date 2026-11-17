@@ -217,14 +217,23 @@ button {
     opacity 0.6s ease;
 }
 .board img,
+.board canvas,
 .lit {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
 }
-/* One copy of the awake plate per part, cut out by that part's soft mask. Light spreads: each part that
-   lights at a step waits its turn. It goes out quickly and together. */
+/* The board's picture is drawn on one canvas: the dark plate, over it one cut-out of the awake plate per lit
+   part, and the added light of the part the step is about. Light spreads there: each part that lights at a
+   step waits its turn, and it goes out quickly and together. The canvas has at most the picture's own
+   pixels, whatever the screen, so its memory does not grow with the screen's density. Once it is drawn, the
+   dark plate under it is not painted. */
+.board[data-light="drawn"] > img {
+  visibility: hidden;
+}
+/* Where the canvas cannot be drawn, the same step is shown as layers, with no fade: one copy of the awake
+   plate per lit part, cut out by that part's soft mask. */
 .lit {
   background: url("../assets/board-awake.webp") center / 100% 100% no-repeat;
   -webkit-mask-position: center;
@@ -233,18 +242,12 @@ button {
   mask-size: 100% 100%;
   -webkit-mask-repeat: no-repeat;
   mask-repeat: no-repeat;
-  opacity: 0;
-  transition: opacity 0.5s ease;
-}
-.lit[data-on="true"] {
   opacity: 1;
-  transition: opacity 1.9s ease calc(0.5s + var(--order) * 0.9s);
 }
 /* A lit part that this step is not about rests at half its light, so the part the step is about is the one
    warm point of the picture. */
-.lit[data-on="true"][data-rest="true"] {
+.lit[data-rest="true"] {
   opacity: 0.5;
-  transition: opacity 1.2s ease;
 }
 /* The part a step is about gets a little more light: a second copy of the same cut-out, added on top. */
 .glow {
@@ -258,15 +261,9 @@ button {
   -webkit-mask-repeat: no-repeat;
   mask-repeat: no-repeat;
   mix-blend-mode: screen;
-  /* Brighter and a little soft, so the added light also spills just past the part's edges. The filter is
-     fixed; only the opacity changes. */
+  /* Brighter and a little soft, so the added light also spills just past the part's edges. */
   filter: brightness(1.35) blur(0.18cqw);
-  opacity: 0;
-  transition: opacity 0.6s ease;
-}
-.glow[data-on="true"] {
   opacity: 0.75;
-  transition: opacity 1.4s ease calc(0.7s + var(--order) * 0.9s);
 }
 
 /* The laptop of the ending, pulled back from the board: it arrives from close up as the board falls away,

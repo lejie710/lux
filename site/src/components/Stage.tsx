@@ -1,14 +1,14 @@
-// One stage: the picture in all its layers, and the words of each step over it. Every layer and every step's
-// words are always in the stage; the current step only sets which are seen, and the stylesheet fades between
-// them. A stage shown alone (a still section, or a frozen step) carries only its own step's words, and only
-// the layers of the picture that its step shows: nothing fades there, so nothing unseen needs to be drawn.
-import { Fragment, type CSSProperties } from "react";
-import boardDark from "../assets/board-dark.webp";
+// One stage: the picture, and the words of its step over it. In the scrolled story the laptops and the board
+// are always in the stage and the current step sets which is seen; the board's lights are drawn on one
+// canvas, and the words in the page are those of the step in view and, while they fade, of the step just
+// left. A stage shown alone (a still section, or a frozen step) carries only its own step's words and only
+// the pictures its step shows: nothing fades there, so nothing unseen needs to be drawn.
+import { Fragment, useRef, type CSSProperties } from "react";
 import laptopAwake from "../assets/laptop-awake.webp";
 import laptopDark from "../assets/laptop-dark.webp";
 import laptopInside from "../assets/laptop-inside.webp";
 import { PICTURE_NOTE, claimNumbers, define, recordedEvent } from "../content/load";
-import { PARTS, type Evidence, type OpeningScreen, type Part, type Statement } from "../content/types";
+import type { Evidence, OpeningScreen, Statement } from "../content/types";
 import {
   STEPS,
   firstStepOf,
@@ -17,18 +17,12 @@ import {
   pictureLabel,
   spanAt,
   splitEmphasis,
-  type PartLayer,
   type SceneStep,
 } from "../model/scene";
+import { useWords } from "../stage/words";
+import { Board } from "./Board";
 import { Mark } from "./Mark";
 import { markerId, openerId } from "./panel";
-
-const maskFiles = import.meta.glob<string>("../assets/masks/*.webp", { eager: true, import: "default" });
-const maskOf = (name: string) => maskFiles[`../assets/masks/${name}.webp`];
-/** The mask picture of each part, by part name. */
-export const MASKS = Object.fromEntries(PARTS.map((part) => [part, maskOf(part)])) as Record<Part, string>;
-/** The mask of the whole board: the ground between the parts. */
-export const WHOLE_MASK = maskOf("whole");
 
 /** Opens the evidence of a screen. `atClaims` asks for its list of claims, as a citation marker does. */
 export type OpenEvidence = (screenId: string, openerId: string, atClaims: boolean) => void;
@@ -36,7 +30,7 @@ export type OpenEvidence = (screenId: string, openerId: string, atClaims: boolea
 interface StageProps {
   /** The step the stage shows. */
   current: number;
-  /** Alone on the page: only this step's words are rendered. */
+  /** Alone on the page: a still. Only this step's words and pictures are rendered, and nothing fades. */
   solo?: boolean;
   /** Whether the page has a place for each step that a mark of the rail can lead to. */
   anchors?: boolean;
@@ -48,26 +42,23 @@ interface StageProps {
 export function Stage({ current, solo = false, anchors = true, onOpen, onStep }: StageProps) {
   const step = STEPS[current];
   const layers = layersAt(step);
-  // A stage that cross-fades keeps every layer; one shown alone draws only what its step shows.
+  // A stage that cross-fades keeps both laptops and the board; one shown alone draws only what its step shows.
   const drawn = (shown: boolean) => shown || !solo;
+  // The words in the page: this step's alone on a still, and in the scrolled story also those just left.
+  const stage = useRef<HTMLDivElement>(null);
+  const words = useWords(current, stage);
+  const kept = solo ? [current] : words.kept;
+  const on = solo ? current : words.on;
   // A screen with a supporting line under its statement leaves the laptop of the ending less room.
   const low = Boolean(step.screen.pilot_label || step.screen.handover);
   const frame = { "--focus": focusAt(current), "--span": Math.max(spanAt(current), 0.01) } as CSSProperties;
   return (
-    <div className="stage" data-step={step.id}>
+    <div className="stage" data-step={step.id} ref={stage}>
       <div className="picture" role="img" aria-label={pictureLabel(step)}>
         {drawn(layers.laptop) && (
           <img className="laptop" src={laptopDark} alt="" width={1280} height={960} data-on={layers.laptop} />
         )}
-        {drawn(layers.board) && (
-          <div className="board" data-on={layers.board} style={frame}>
-            <img src={boardDark} alt="" width={1920} height={1200} />
-            {PARTS.map((part) => (
-              <Light key={part} name={part} layer={layers.parts[part]} solo={solo} />
-            ))}
-            <Light name="whole" layer={layers.whole} solo={solo} />
-          </div>
-        )}
+        {drawn(layers.board) && <Board layers={layers} frame={frame} animate={!solo} />}
         {/* The laptop of the ending: its inside awake, and over that the same laptop with its screen lit. As
             the screen lights, the stylesheet turns down the light under the keys. */}
         {drawn(layers.ending) && (
@@ -79,11 +70,9 @@ export function Stage({ current, solo = false, anchors = true, onOpen, onStep }:
           </div>
         )}
       </div>
-      {STEPS.map((s, n) =>
-        solo && n !== current ? null : (
-          <Words key={s.id} step={s} on={n === current} anchors={anchors} onOpen={onOpen} />
-        ),
-      )}
+      {kept.map((n) => (
+        <Words key={STEPS[n].id} step={STEPS[n]} on={n === on} anchors={anchors} onOpen={onOpen} />
+      ))}
       {onStep && (
         <p className="step-nav">
           <button type="button" disabled={current === 0} onClick={() => onStep(current - 1)}>
@@ -96,29 +85,6 @@ export function Stage({ current, solo = false, anchors = true, onOpen, onStep }:
       )}
       <p className="picture-note">{step.screen.picture_caption ?? PICTURE_NOTE}</p>
     </div>
-  );
-}
-
-/**
- * The light of one part: a copy of the awake picture cut out by the part's mask, and over it a second copy
- * that adds a little more light while the step is about that part. A lit part the step is not about rests:
- * its light is turned down.
- */
-function Light({ name, layer, solo }: { name: string; layer: PartLayer; solo: boolean }) {
-  const style = {
-    "--order": layer.order,
-    maskImage: `url("${maskOf(name)}")`,
-    WebkitMaskImage: `url("${maskOf(name)}")`,
-  } as CSSProperties;
-  return (
-    <>
-      {(layer.on || !solo) && (
-        <div className="lit" data-part={name} data-on={layer.on} data-rest={layer.rest} style={style} />
-      )}
-      {name !== "whole" && (layer.strong || !solo) && (
-        <div className="glow" data-part={name} data-on={layer.strong} style={style} />
-      )}
-    </>
   );
 }
 

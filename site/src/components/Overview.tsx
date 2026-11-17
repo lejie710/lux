@@ -2,11 +2,10 @@
 // the boot has reached by the end of that stop, and its name. Each leads back to its stop. A small picture
 // of the whole board looks the same at every stop, so each one is drawn close on the parts its stop is
 // about; the last, where every part is lit, shows the whole board.
-import boardDark from "../assets/board-dark.webp";
 import { STOPS, headline } from "../content/load";
 import { PARTS, type Part, type Stop } from "../content/types";
 import { firstStepOf, tileFrame } from "../model/scene";
-import { MASKS, WHOLE_MASK } from "./Stage";
+import { DARK as boardDark, MASKS, WHOLE_MASK } from "../stage/plates";
 
 /** The parts lit when a stop ends: its last screen's, since light never goes out along the story. */
 export function litAtEndOf(stop: Stop): readonly Part[] {
