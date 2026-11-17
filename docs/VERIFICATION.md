@@ -168,7 +168,7 @@ These were found by review, by a test or by driving the site. None was planted. 
 
 | # | What | Why it is open |
 |---|---|---|
-| O1 | The site is one script of 940 kB, and it grows with every recording | Splitting it by page means making the one synchronous door to the recordings asynchronous, a change of structure. Left with its measurement |
+| O1 | The site is one script of about 954 kB (940 kB before section 13), and it grows with every recording | Splitting it by page means making the one synchronous door to the recordings asynchronous, a change of structure. Left with its measurement |
 | O2 | A few status sentences in `content/experiments.json` repeat what the files show (for example the status of a counted card) | They are true and checked by reading. Nothing fails if one goes stale |
 | O3 | Process cleanup when QEMU is killed from outside is not covered by a unit test | It needs real processes. The integration test and `scripts/check-clean.sh` cover it |
 | O4 | `recorder/pe.py` names Microsoft's Authenticode format document as its method reference, while the site lists that document as not read | The digest is confirmed against what the firmware measured, and no claim on the site cites the document. The README says both |
@@ -190,7 +190,7 @@ These were found by review, by a test or by driving the site. None was planted. 
 - **The live site, beyond one walk.** One Chromium-based desktop browser, one connection, one day, at commit `0fa1d15`. No preview service has fetched the page, the 13 links that lead to other sites were not requested, and the fix of defect 26 was driven on a local build only (section 12).
 - **Any second machine.** The recordings were reproduced only on the machine that made them, in every run from a new clone as well. The recorder refuses another firmware package; what another QEMU version does was not tried.
 - **Any browser but one**, and a screen reader (section 4). One real phone was tried: the scrolled story failed on it (defect 27), and after the change of section 13 its owner reported that it no longer did.
-- **The fix of defect 27, beyond one report.** It was measured and looked at only in a desktop Chromium-based browser made to look like a phone, in which the fault never showed with either build. On 2026-11-17, with the change merged (`4a110a6`) and published, the author opened the live site on the phone that had shown the fault, an iPhone 14 Pro Max in its own browser, and reported that the story no longer ended the page. One phone, one browser, one report by the author: which paths he walked was not recorded, nothing was measured on the phone, and no other phone or phone browser was tried. The cause is still not proven (section 13).
+- **The fix of defect 27, beyond one report.** It was measured and looked at only in a desktop Chromium-based browser made to look like a phone, in which the fault never showed with either build. On 2026-11-17, with the change merged (`4a110a6`) and published, the author opened the live site on the phone that had shown the fault, an iPhone 14 Pro Max, and reported that the story no longer ended the page. One phone, one browser, one report by the author: which browser he used and which paths he walked was not recorded, nothing was measured on the phone, and no other phone or phone browser was tried. The cause is still not proven (section 13).
 - **Motion.** It was judged by the timing a script read and by the author's own scrolling. Frame rate was not measured, and no second person has scrolled the story (section 10).
 - **Repeatability of a changed run.** Each counted experiment was booted once, by rule.
 - **What a Trusted Computing Group document or the Platform Initialization specification requires.** Neither was read. No statement on the site or in the results claims a requirement from either.
@@ -476,7 +476,7 @@ At commit `d11246d`, by script through the debugging port.
 
 ### The phone, after the change was published
 
-On 2026-11-17 the change was merged to `main` (merge commit `4a110a6`) and published. The author then opened the live site on the same phone, the iPhone 14 Pro Max of the report, in the same browser, and reported that the scrolled story no longer ended the page. That is all that is known from the phone:
+On 2026-11-17 the change was merged to `main` (merge commit `4a110a6`) and published. The author then opened the live site on the same phone, the iPhone 14 Pro Max of the report, and reported that the scrolled story no longer ended the page. Which browser he used was not recorded; it is taken to be the phone's own, as in the first report. That is all that is known from the phone:
 
 - **One phone, one browser, one report by the author.** No second person, no second phone, no other browser on a phone.
 - **The paths he walked were not recorded.** Whether he scrolled slowly to the last step and back, flung the story fast, turned the phone, or left for another app and came back, and for how long he read, is not known.
@@ -490,7 +490,7 @@ On 2026-11-17 the change was merged to `main` (merge commit `4a110a6`) and publi
 
 ### Not verified
 
-- **The phone, beyond one report.** The author's report of 2026-11-17 (above) is the whole of it: one iPhone, its own browser, paths and duration not recorded, nothing measured. That is not "works on phones".
+- **The phone, beyond one report.** The author's report of 2026-11-17 (above) is the whole of it: one iPhone, one browser that the report does not name, paths and duration not recorded, nothing measured. That is not "works on phones".
 - **Other phones and other browsers on a phone.** None was tried.
 - **The cause.** Memory is where the numbers point; the phone's browser gives no reason when it ends a page. The report does not change that.
 - **Whether the phone's browser judges a page by its peak or by its level at rest.** The peak fell and the level at rest rose in the desktop browser, and the page is reported to stay up; that fits a judgement by the peak and does not show it.

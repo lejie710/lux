@@ -84,7 +84,7 @@ Not tested, and carried here from `docs/VERIFICATION.md`:
 | Anything after the handoff: kernel start-up, an operating system's own boot manager | The story ends when firmware steps back |
 | An attack tutorial: no bypass of Secure Boot, no reproduction of a known vulnerability | Each experiment changes one thing on the project's own virtual machine to see how the protection reacts. That is validation |
 | A live virtual machine in the browser | Readers see recorded evidence |
-| A course with quizzes, progress or accounts; other languages; a polished phone version | It is an explainer for a wide screen, readable on a phone, in English |
+| A course with quizzes, progress or accounts; other languages; a polished phone version | It is an explainer for a wide screen, in English, readable on a phone as far as one phone has shown (see "Limits") |
 | A measure of whether readers understand it | No reader study was run |
 
 ## What the site shows
@@ -138,7 +138,7 @@ npm run dev -- --port 5191
 
 In the scrolled story one press of Space or Page Down is one step on, and Shift with Space or Page Up one step back. The first thing the keyboard reaches is a link to `/?static`, the whole story as a plain page.
 
-The site is one script of 940 kB (182 kB as the live host sends it, compressed with gzip), one stylesheet, two font files and the pictures. The build writes 17 font files, and a browser fetches only the two Latin ones. About two thirds of the script is the recordings and the content. The measured first load is given under "The live site".
+The site is one script of about 954 kB (191 kB compressed with gzip in the build's own report; what the live host sends was measured for the earlier build only, 182 kB of 940 kB), one stylesheet, two font files and the pictures. The build writes 17 font files, and a browser fetches only the two Latin ones. About two thirds of the script is the recordings and the content. The measured first load is given under "The live site".
 
 ### Hosting
 
